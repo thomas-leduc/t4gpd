@@ -1,9 +1,9 @@
 '''
-Created on 16 juin 2020
+Created on 20 avr. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2021 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,33 +20,32 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import round, sqrt
+from numpy import sqrt
 from shapely.geometry import LineString, MultiLineString, MultiPolygon, Point, Polygon
-
 from t4gpd.commons.ArrayCoding import ArrayCoding
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
-class DensifierLib(object):
+class PointsDensifierLib(object):
     '''
     classdocs
     '''
 
     @staticmethod
-    def __densifyByCount(line, npts, gid, pathid):
+    def __densifyByCount(line, npts, blockid, contourid):
         distance = line.length / (npts - 1)
-        return DensifierLib.__densifyByDistance(line, distance, gid, pathid)
+        return PointsDensifierLib.__densifyByDistance(line, distance, blockid, contourid)
 
     @staticmethod
-    def __densifyByDistance(line, distance, gid, pathid, adjustableDist=True):
+    def __densifyByDistance(line, distance, blockid, contourid, adjustableDist=True):
         if not isinstance(line, LineString):
             raise IllegalArgumentTypeException(line, 'LineString')
-        
+
         if adjustableDist:
             _d = line.length
             if (_d > distance):
                 distance = _d / round(_d / distance)
-        
+
         listOfCoords = line.coords
 
         result, nodeid, remainingDist = list(), 0, 0.0
@@ -60,49 +59,59 @@ class DensifierLib(object):
                 k = remainingDist
                 while (k <= norm):
                     samplePoint = Point([ a[0] + k * speedv[0], a[1] + k * speedv[1] ])
-                    result.append({'gid':gid, 'pathid': pathid, 'nodeid': nodeid,
-                                   'motion_dir':ArrayCoding.encode(speedv), 'geometry':samplePoint})
+                    result.append({'node_id': ArrayCoding.encode([blockid, contourid, nodeid]),
+                                   'motion_dir': ArrayCoding.encode(speedv),
+                                   'geometry': samplePoint})
                     k += distance
-                    gid += 1
                     nodeid += 1
 
                 remainingDist = k - norm
-        return gid, pathid + 1, result
+        return result
 
     @staticmethod
-    def densifyByCount(geom, npts, gid=0, pathid=0):
+    def densifyByCount(geom, npts, blockid, contourid=0):
         if isinstance(geom, LineString):
-            gid, pathid, result = DensifierLib.__densifyByCount(geom, npts, gid, pathid)
+            result = PointsDensifierLib.__densifyByCount(geom, npts, blockid, contourid)
 
         elif isinstance(geom, Polygon):
-            gid, pathid, result = DensifierLib.densifyByCount(geom.exterior, npts, gid, pathid)
+            result = PointsDensifierLib.__densifyByCount(geom.exterior, npts, blockid, contourid)
             for g in geom.interiors:
-                gid, pathid, _result = DensifierLib.densifyByCount(g, npts, gid, pathid)
-                result += _result
+                contourid += 1
+                result += PointsDensifierLib.__densifyByCount(g, npts, blockid, contourid)
 
         elif isinstance(geom, MultiLineString) or isinstance(geom, MultiPolygon):
             result = list()
             for g in geom.geoms:
-                gid, pathid, _result = DensifierLib.densifyByCount(g, npts, gid, pathid)
-                result += _result
+                result += PointsDensifierLib.__densifyByCount(g, npts, blockid, contourid)
+                contourid += 1
 
-        return gid, pathid, result
+        else:
+            result = []
+
+        return result
 
     @staticmethod
-    def densifyByDistance(geom, distance, gid=0, pathid=0, adjustableDist=True):
+    def densifyByDistance(geom, distance, blockid, contourid=0, adjustableDist=True):
         if isinstance(geom, LineString):
-            gid, pathid, result = DensifierLib.__densifyByDistance(geom, distance, gid, pathid, adjustableDist)
+            result = PointsDensifierLib.__densifyByDistance(
+                geom, distance, blockid, contourid, adjustableDist)
 
         elif isinstance(geom, Polygon):
-            gid, pathid, result = DensifierLib.densifyByDistance(geom.exterior, distance, gid, pathid, adjustableDist)
+            result = PointsDensifierLib.__densifyByDistance(
+                geom.exterior, distance, blockid, contourid, adjustableDist)
             for g in geom.interiors:
-                gid, pathid, _result = DensifierLib.densifyByDistance(g, distance, gid, pathid, adjustableDist)
-                result += _result
+                contourid += 1
+                result += PointsDensifierLib.__densifyByDistance(
+                    g, distance, blockid, contourid, adjustableDist)
 
         elif isinstance(geom, MultiLineString) or isinstance(geom, MultiPolygon):
             result = list()
             for g in geom.geoms:
-                gid, pathid, _result = DensifierLib.densifyByDistance(g, distance, gid, pathid, adjustableDist)
-                result += _result
+                result += PointsDensifierLib.densifyByDistance(
+                    g, distance, blockid, contourid, adjustableDist)
+                contourid += 1
 
-        return gid, pathid, result
+        else:
+            result = []
+
+        return result

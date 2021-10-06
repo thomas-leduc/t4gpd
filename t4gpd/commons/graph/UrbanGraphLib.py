@@ -20,90 +20,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from shapely.geometry import LinearRing, LineString, Point, Polygon
+from shapely.geometry import LineString, Point
+from t4gpd.commons.graph.AbstractUrbanGraphLib import AbstractUrbanGraphLib
 
-from t4gpd.commons.GeomLib import GeomLib
 
-
-class UrbanGraphLib(object):
+class UrbanGraphLib(AbstractUrbanGraphLib):
     '''
     classdocs
     '''
 
-    def __init__(self):
+    def __init__(self, roads):
         '''
         Constructor
         '''
-        self.ciVertices = dict()
-        self.icVertices = dict()
-        self.edges = dict()
-        
-    def add(self, features):
-        if isinstance(features, list):
-            for feature in features:
-                self.add(feature)
-        else:
-            if GeomLib.isAShapelyGeometry(features):
-                geom = features
-            else:
-                geom = features.geometry
-
-            if GeomLib.isMultipart(geom):
-                for g in geom.geoms:
-                    self.add(g)
-            elif isinstance(geom, LineString):
-                self.__addPolyline(geom)
-            elif isinstance(geom, Polygon):
-                self.__addPolyline(geom.exterior)
-                for g in geom.interiors:
-                    self.__addPolyline(g)
-            else:
-                raise Exception('Illegal argument in UrbanGraphLib.add(...)!')
-        # print('self.icVertices: %s' % self.icVertices)
-        # print('self.edges: %s' % self.edges)
-
-    def __addPolyline(self, line):
-        if isinstance(line, LinearRing):
-            coords = line.coords[:-1]
-        else:
-            coords = line.coords
-
-        if (2 <= len(coords)):
-            prev = self.__addAndGetANode(coords[0])
-            for i in range(1, len(coords)):
-                curr = self.__addAndGetANode(coords[i]);
-                if self.edges.get(prev) is None:
-                    self.edges[prev] = set([ curr ])
-                else:
-                    self.edges[prev].add(curr)
-                if self.edges.get(curr) is None:
-                    self.edges[curr] = set([ prev ])
-                else:
-                    self.edges[curr].add(prev)
-                prev = curr;
-
-    @staticmethod
-    def hashCoord(coord):
-        str_coord = ('%f_%f') % (coord[0], coord[1])
-        return str_coord
-
-    def __addAndGetANode(self, coord):
-        str_coord = UrbanGraphLib.hashCoord(coord)
-        if self.ciVertices.get(str_coord) is None:
-            nodeIndex = len(self.ciVertices)
-            self.ciVertices[str_coord] = nodeIndex
-            self.icVertices[nodeIndex] = coord
-            return nodeIndex   
-        else:
-            nodeIndex = self.ciVertices[str_coord]
-            return nodeIndex   
+        self.roads, self.graph, self.ciVertices, self.icVertices, self.edges = AbstractUrbanGraphLib.initializeGraph(roads)
+        self.spatialIdx = self.roads.sindex
 
     def getUniqueRoadsSectionsNodes(self):
         result = list()
-        for k, v in list(self.edges.items()):
+        for k, v in self.edges.items():
             nbConnectedVertices = len(v)
             if 2 != nbConnectedVertices:
-                result.append({ 'geometry': Point(self.icVertices[k]), 'gid': k,
+                result.append({'geometry': Point(self.icVertices[k]), 'gid': k,
                                'nb_connections': nbConnectedVertices })
         return result
 

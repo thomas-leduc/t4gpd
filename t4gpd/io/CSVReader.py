@@ -33,7 +33,7 @@ class CSVReader(GeoProcess):
     '''
 
     def __init__(self, inputFile, xFieldName='longitude', yFieldName='latitude',
-                 fieldSep=',', srcEpsgCode='EPSG:4326', dstEpsgCode=None):
+                 fieldSep=',', srcEpsgCode='EPSG:4326', dstEpsgCode=None, decimalSep='.'):
         '''
         Constructor
         '''
@@ -43,9 +43,10 @@ class CSVReader(GeoProcess):
         self.fieldSep = fieldSep
         self.crs = srcEpsgCode
         self.dstEpsgCode = dstEpsgCode
+        self.decimalSep = decimalSep
 
     def run(self):
-        _rows = CSVLib.read(self.inputFile, self.fieldSep)
+        _rows = CSVLib.read(self.inputFile, self.fieldSep, self.decimalSep)
 
         rows = []
         for row in _rows:
@@ -53,7 +54,7 @@ class CSVReader(GeoProcess):
             rows.append(row)
 
         outputGdf = GeoDataFrame(rows, crs=self.crs)
-        
+
         if not self.dstEpsgCode is None:
             outputGdf = outputGdf.to_crs(self.dstEpsgCode)
         return outputGdf

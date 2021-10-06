@@ -24,7 +24,7 @@ from geopandas.geodataframe import GeoDataFrame
 
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.UrbanGraphLib import UrbanGraphLib
+from t4gpd.commons.graph.UrbanGraphLibOld import UrbanGraphLibOld
 
 
 class STToRoadsSections(GeoProcess):
@@ -42,9 +42,8 @@ class STToRoadsSections(GeoProcess):
         self.withoutCulDeSac = withoutCulDeSac
 
     def run(self):
-        ga = UrbanGraphLib()
-        for _, row in self.inputGdf.iterrows():
-            ga.add(row)
+        ga = UrbanGraphLibOld()
+        ga.add([row for _, row in self.inputGdf.iterrows()])
 
         if self.withoutCulDeSac:
             rs = ga.getUniqueRoadsSectionsWithoutCulDeSac()

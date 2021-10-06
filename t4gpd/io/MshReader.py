@@ -40,10 +40,11 @@ class MshReader(GeoProcess):
         self.newOrigin = Point((minx, miny))
 
     def __getCoordinates(self, nodes, i1, i2, i3):
+        # TL 10.03.2021: add z-components
         return Polygon([
-            [nodes[i1].x + self.newOrigin.x, nodes[i1].y + self.newOrigin.y],
-            [nodes[i2].x + self.newOrigin.x, nodes[i2].y + self.newOrigin.y],
-            [nodes[i3].x + self.newOrigin.x, nodes[i3].y + self.newOrigin.y]
+            [nodes[i1].x + self.newOrigin.x, nodes[i1].y + self.newOrigin.y, nodes[i1].z],
+            [nodes[i2].x + self.newOrigin.x, nodes[i2].y + self.newOrigin.y, nodes[i2].z],
+            [nodes[i3].x + self.newOrigin.x, nodes[i3].y + self.newOrigin.y, nodes[i3].z]
             ])
 
     def __error(self, nline, line, expected):

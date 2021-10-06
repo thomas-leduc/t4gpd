@@ -24,7 +24,7 @@ from geopandas.geodataframe import GeoDataFrame
 
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.UrbanGraphLib import UrbanGraphLib
+from t4gpd.commons.graph.UrbanGraphLibOld import UrbanGraphLibOld
 
 
 class STToRoadsSectionsNodes(GeoProcess):
@@ -41,8 +41,8 @@ class STToRoadsSectionsNodes(GeoProcess):
         self.inputGdf = inputGdf
 
     def run(self):
-        ga = UrbanGraphLib()
-        for _, row in self.inputGdf.iterrows():
-            ga.add(row)
+        ga = UrbanGraphLibOld()
+        ga.add([row for _, row in self.inputGdf.iterrows()])
+
         rsn = ga.getUniqueRoadsSectionsNodes()
         return GeoDataFrame(rsn, crs=self.inputGdf.crs)

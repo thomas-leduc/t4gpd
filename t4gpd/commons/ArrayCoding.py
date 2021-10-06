@@ -29,7 +29,11 @@ class ArrayCoding(object):
 
     @staticmethod
     def encode(listOfValues, separator='#'):
-        return separator.join([str(v) for v in listOfValues])
+        try:
+            iter(listOfValues)
+            return separator.join([str(v) for v in listOfValues])
+        except TypeError:
+            return str(listOfValues)
 
     @staticmethod
     def decode(string, outputType=float, separator='#'):

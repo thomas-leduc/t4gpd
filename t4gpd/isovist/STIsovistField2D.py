@@ -21,10 +21,10 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Point
+from shapely.geometry import LineString, Point, Polygon
 from t4gpd.commons.GeoProcess import GeoProcess
-from t4gpd.commons.RayCastingLib import RayCastingLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.commons.RayCastingLib import RayCastingLib
 
 
 class STIsovistField2D(GeoProcess):
@@ -49,15 +49,23 @@ class STIsovistField2D(GeoProcess):
         self.shootingDirs = RayCastingLib.preparePanopticRays(nRays)
         self.rayLength = rayLength
 
-
     def run(self):
         rowsIsovRays, rowsIsov = list(), list()
         for _, row in self.viewpoints.iterrows():
             vp = Point((row.geometry.x, row.geometry.y))  # To handle Point Z
-            rays, isov, _, _ = RayCastingLib.multipleRayCast2D(self.buildings, self.masksSIdx,
+            rays, ctrPoints, _, _ = RayCastingLib.multipleRayCast2D(self.buildings, self.masksSIdx,
                                                                     vp, self.shootingDirs, self.rayLength)
-            rowsIsovRays.append(self.updateOrAppend(row, {'geometry':rays}))
-            rowsIsov.append(self.updateOrAppend(row, {'geometry':isov}))
 
-        return [GeoDataFrame(rowsIsovRays, crs=self.viewpoints.crs),
-                GeoDataFrame(rowsIsov, crs=self.viewpoints.crs)]
+            isov = Polygon(ctrPoints) 
+            isovCentre = isov.centroid
+            drift = LineString([vp, isovCentre])
+
+            rowsIsovRays.append(self.updateOrAppend(row, { 
+                'geometry': rays, 'viewpoint': vp.wkt, 'vect_drift': drift.wkt }))
+            rowsIsov.append(self.updateOrAppend(row, {
+                'geometry': isov, 'viewpoint': vp.wkt, 'vect_drift': drift.wkt }))
+
+        return [
+            GeoDataFrame(rowsIsovRays, crs=self.viewpoints.crs),
+            GeoDataFrame(rowsIsov, crs=self.viewpoints.crs)
+            ]

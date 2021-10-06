@@ -7,9 +7,6 @@ https://packaging.python.org/tutorials/packaging-projects/
 '''
 from setuptools import setup, find_packages
 
-from t4gpd.Version import Version
-
-
 with open('README.md') as readme_file:
     README = readme_file.read()
 
@@ -19,7 +16,7 @@ with open('README.md') as readme_file:
 setup_args = dict(
     name='t4gpd',
     # version='0.0.1',
-    version=Version.number(),
+    version=open('t4gpd/_version.py').readlines()[-1].split()[-1].strip("\"'"),
     description='Set of tools based on Python, GeoPandas and Shapely to achieve urban geoprocessing',
     long_description_content_type="text/markdown",
     long_description=README + '\n\n',
@@ -30,7 +27,7 @@ setup_args = dict(
     author='Thomas Leduc',
     author_email='thomas.leduc@crenau.archi.fr',
     keywords=['Geospatial analysis', 'Urban form', 'Urban morphology', 'Isovist'],
-    url='https://sourcesup.renater.fr/projects/t4gs',
+    url='https://t4gpd-docs.readthedocs.io',
     download_url='https://sourcesup.renater.fr/frs/?group_id=463',
     classifiers=[
         "Programming Language :: Python :: 3",

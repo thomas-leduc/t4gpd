@@ -29,7 +29,9 @@ class CSVLib(object):
     '''
 
     @staticmethod
-    def __getValue(s):
+    def readLexeme(s, decimalSep='.'):
+        if ('.' != decimalSep):
+            s = s.replace(decimalSep, '.')
         try:
             nb = float(s)
             if nb.is_integer():
@@ -48,7 +50,7 @@ class CSVLib(object):
         return s
 
     @staticmethod
-    def read(inputFile, fieldSep=','):
+    def read(inputFile, fieldSep=',', decimalSep='.'):
         rows, outputFields = [], []
 
         with open(inputFile, 'r') as f:
@@ -66,6 +68,7 @@ class CSVLib(object):
                 else:
                     row = dict()
                     for i, value in enumerate(values):
-                        row[outputFields[i]] = CSVLib.__getValue(value)
+                        value = value.replace('"', '')
+                        row[outputFields[i]] = CSVLib.readLexeme(value, decimalSep)
                     rows.append(row)
         return rows

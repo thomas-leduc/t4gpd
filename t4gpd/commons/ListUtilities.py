@@ -20,6 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from pandas.core.common import flatten
 
 
 class ListUtilities(object):
@@ -28,13 +29,34 @@ class ListUtilities(object):
     '''
 
     @staticmethod
-    def isASubSeq(bigList, smallList):
+    def isASubList(smallList, bigList):
+        return all(i in bigList for i in smallList)
+        
+    @staticmethod
+    def isASubSeq(smallList, bigList):
         if (len(bigList) < len(smallList)):
             return False
         for i in range(len(bigList)):            
             if smallList == ListUtilities.rotate(bigList, i)[:len(smallList)]:
                 return True
         return False
+
+    @staticmethod
+    def flatten(myList):
+        return list(flatten(myList))
+
+    @staticmethod
+    def lengthOfTheLongestConsecutiveSeq(seq):
+        seq = sorted(seq)
+        prev, currLen, longestLen = None, 0, 0
+        for curr in seq:
+            currLen += 1
+            if prev is not None:
+                if 1 < (curr - prev):
+                    longestLen = max(longestLen, currLen - 1)
+                    currLen = 1
+            prev = curr
+        return max(longestLen, currLen)
 
     @staticmethod
     def rotate(seq, n):

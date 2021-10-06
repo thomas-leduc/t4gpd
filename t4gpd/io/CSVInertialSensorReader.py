@@ -37,7 +37,8 @@ class CSVInertialSensorReader(GeoProcess):
     def __init__(self, inputFile, xFieldName='X', yFieldName='Y', zFieldName='Z',
                  distFieldName='Distance', azimFieldName='degree',
                  lon0FieldName='longitude', lat0FieldName='latitude',
-                 fieldSep=',', srcEpsgCode='EPSG:4326', dstEpsgCode='EPSG:2154', cartesian=True):
+                 fieldSep=',', srcEpsgCode='EPSG:4326', dstEpsgCode='EPSG:2154',
+                 cartesian=True, decimalSep='.'):
         '''
         Constructor
         '''
@@ -59,6 +60,7 @@ class CSVInertialSensorReader(GeoProcess):
         self.fieldSep = fieldSep
         self.crs = srcEpsgCode
         self.dstEpsgCode = dstEpsgCode
+        self.decimalSep = decimalSep
 
     @staticmethod
     def __transform(pt, srcEpsgCode, dstEpsgCode):
@@ -75,7 +77,7 @@ class CSVInertialSensorReader(GeoProcess):
         return outputGdf.geometry[0]
 
     def run(self):
-        _rows = CSVLib.read(self.inputFile, self.fieldSep)
+        _rows = CSVLib.read(self.inputFile, self.fieldSep, self.decimalSep)
 
         p0 = Point(0, 0)
         if ((self.lon0FieldName is not None) and (self.lat0FieldName is not None)):

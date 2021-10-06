@@ -40,7 +40,7 @@ class Epsilon(object):
             if (abs(x - y) <= epsilon):
                 return True
         elif (isinstance(x, Point) and isinstance(y, Point)):
-            if ((abs(x.x() - y.x()) < epsilon) and (abs(x.y() - y.y()) < epsilon)):
+            if ((abs(x.x - y.x) < epsilon) and (abs(x.y - y.y) < epsilon)):
                 return True
         elif (isinstance(x, list) or isinstance(x, tuple)) and (isinstance(y, list) or isinstance(y, tuple)):
             if len(x) == len(y):
@@ -62,7 +62,7 @@ class Epsilon(object):
         if (isinstance(x, int) or isinstance(x, float) or isinstance(x, float64)):
             return Epsilon.equals(x, 0, epsilon)
         elif isinstance(x, Point):
-            return (Epsilon.equals(x.x(), 0, epsilon) and Epsilon.equals(x.y(), 0, epsilon))
+            return (Epsilon.equals(x.x, 0, epsilon) and Epsilon.equals(x.y, 0, epsilon))
         elif (isinstance(x, list) or isinstance(x, tuple)):
             return all([Epsilon.isZero(item, epsilon) for item in x])
         raise Exception('Illegal argument: x must be int, float, QgsPoint, list, or tuple (of int, float or QgsPoint)!')

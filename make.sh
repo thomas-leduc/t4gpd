@@ -7,7 +7,8 @@ PIP='pip3';
 
 function _clean() {
 	rm --force --recursive build t4gpd.egg-info;
-	find . -name __pycache__ | xargs rm --force --recursive;
+	find . -name __pycache__ -print0 | xargs -0 rm --force --recursive;
+	find . -name \*.pyc -print0 | xargs -0 rm --force;
 }
 
 function _comment() {
@@ -25,7 +26,8 @@ function _compile() {
 }
 
 function _get_version() {
-	local VERSION=$(sed -ne "/^\ *return '\([^']*\)'/ {s//\1/;p;}" t4gpd/Version.py);
+	#~ local VERSION=$(sed -ne "/^\ *return '\([^']*\)'/ {s//\1/;p;}" t4gpd/Version.py);
+	local VERSION=$(sed -ne "/^\ *__version__ = '\([^']*\)'/ {s//\1/;p;}" t4gpd/_version.py);
 	echo ${VERSION};
 }
 

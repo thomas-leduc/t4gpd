@@ -1,5 +1,5 @@
 '''
-Created on 17 juin 2020
+Created on 31 dec. 2020
 
 @author: tleduc
 
@@ -20,13 +20,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from t4gpd.commons.GeoProcess import GeoProcess
+from t4gpd.commons.graph.MCALib import MCALib
 
 
-class Version(object):
+class STBetweennessCentrality(GeoProcess):
     '''
     classdocs
     '''
 
-    @staticmethod
-    def number():
-        return '0.1.0'
+    def __init__(self, roads):
+        '''
+        Constructor
+        '''
+        self.mca = MCALib(roads)
+
+    def run(self):
+        return self.mca.betweenness_centrality()

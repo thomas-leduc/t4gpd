@@ -50,8 +50,8 @@ class GmshTriangulator(GeoProcess):
         if gmsh is None:
             if path.exists('c:/Program Files (x86)/gmsh-2.11.0/gmsh.exe'):
                 self.gmsh = 'c:/Program Files (x86)/gmsh-2.11.0/gmsh.exe'
-            elif path.exists('/usr/bin/gmsh'):
-                self.gmsh = '/usr/bin/gmsh'
+            elif path.exists('/usr/local/bin/gmsh'):
+                self.gmsh = '/usr/local/bin/gmsh'
             else:
                 raise Exception('You must specify Gmsh location!')
         else:

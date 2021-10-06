@@ -21,9 +21,9 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
-
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
 
 class STGeoProcess(GeoProcess):
@@ -35,6 +35,10 @@ class STGeoProcess(GeoProcess):
         '''
         Constructor
         '''
+        if not (isinstance(geoprocessToApply, AbstractGeoprocess) or 
+                issubclass(geoprocessToApply, AbstractGeoprocess)):
+            raise IllegalArgumentTypeException(geoprocessToApply, 'AbstractGeoprocess')
+
         if not isinstance(inputGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
 

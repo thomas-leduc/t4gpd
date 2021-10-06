@@ -43,7 +43,7 @@ class AngleLib(object):
             return (2.0 * pi + result)
         else:
             return result
-     
+
     @staticmethod
     def angleBetween(direction1, direction2):
         result = AngleLib.normAzimuth(direction2) - AngleLib.normAzimuth(direction1)
@@ -55,4 +55,3 @@ class AngleLib(object):
     @staticmethod
     def angleBetweenNodes(node1, orig, node2):
         return AngleLib.angleBetween([ node1[0] - orig[0] , node1[1] - orig[1] ], [ node2[0] - orig[0] , node2[1] - orig[1] ])
-        

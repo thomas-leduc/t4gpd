@@ -57,11 +57,11 @@ class MyNode(object):
         return x if isinstance(x, float) else x()
 
     def __eq__(self, other):
-        # print 'test MyNode equality: %s =?= %s' % (self, other)
         selfx, selfy, selfz = [ self.foo(self.x), self.foo(self.y), self.foo(self.z)]
         otherx, othery, otherz = [ self.foo(other.x), self.foo(other.y), self.foo(other.z)]
-        
-        return isinstance(other, MyNode) and Epsilon.equals(selfx, otherx) and Epsilon.equals(selfy, othery) and Epsilon.equals(selfz, otherz)
+        result = (isinstance(other, MyNode) and Epsilon.equals(selfx, otherx) and 
+                  Epsilon.equals(selfy, othery) and Epsilon.equals(selfz, otherz))
+        return result 
 
     def __hash__(self):
         selfx, selfy, selfz = [ self.foo(self.x), self.foo(self.y), self.foo(self.z)]
@@ -75,4 +75,4 @@ class MyNode(object):
 
     def __repr__(self):
         selfx, selfy, selfz = [ self.foo(self.x), self.foo(self.y), self.foo(self.z)]
-        return '(%f, %f, %f)' % (selfx, selfy, selfz)
+        return '(%.1f, %.1f, %.1f)' % (selfx, selfy, selfz)

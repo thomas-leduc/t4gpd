@@ -94,4 +94,4 @@ class EllipseLib(object):
     def parametricEquation(x0, y0, semiXAxis, semiYAxis, theta, t):
         x = x0 + semiXAxis * cos(theta) * cos(t) - semiYAxis * sin(theta) * sin(t)
         y = y0 + semiXAxis * sin(theta) * cos(t) + semiYAxis * cos(theta) * sin(t)
-        return Point((x, y))
+        return ((x, y))

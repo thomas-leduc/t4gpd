@@ -48,10 +48,10 @@ class GeoWriter(GeoProcess):
         self.toLocalCrs = toLocalCrs
 
     def run(self):
-        newOrigin = Point((0.0, 0.0))
+        newOrigin = Point((0.0, 0.0, 0.0))
         if self.toLocalCrs:
             minx, miny, _, _ = self.inputGdf.total_bounds
-            newOrigin = Point((minx, miny))
+            newOrigin = Point((minx, miny, 0.0))
 
         mapOfNodes = {}
         mapOfEdges = {}
@@ -104,7 +104,7 @@ class GeoWriter(GeoProcess):
         return len(arrayOfLineLoops)
 
     def __dumpCoords(self, node, newOrigin):
-        return '%.2f, %.2f, 0' % (node.x - newOrigin.x, node.y - newOrigin.y)
+        return '%.2f, %.2f, %.2f' % (node.x - newOrigin.x, node.y - newOrigin.y, node.z - newOrigin.z)
 
     def __dumpNodes(self, output, mapOfNodes, newOrigin):
         output.write('lc = %g;\n' % self.lc)

@@ -1,9 +1,9 @@
 '''
-Created on 16 juin 2020
+Created on 20 avr. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2021 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,25 +21,27 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
-
-from t4gpd.commons.DensifierLib import DensifierLib
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.commons.PointsDensifierLib import PointsDensifierLib
 
 
-class STDensifier(GeoProcess):
+class STPointsDensifier(GeoProcess):
     '''
     classdocs
     '''
 
-    def __init__(self, inputGdf, distance, adjustableDist=True, removeDuplicate=True):
+    def __init__(self, gdf, distance, pathidFieldname=None, adjustableDist=True, removeDuplicate=True):
         '''
         Constructor
         '''
-        if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
+        if not isinstance(gdf, GeoDataFrame):
+            raise IllegalArgumentTypeException(gdf, 'GeoDataFrame')
+        if not ((pathidFieldname is None) or (pathidFieldname in gdf)):
+            raise Exception(f'{pathidFieldname} is not a valid fieldname!')
 
-        self.inputGdf = inputGdf
+        self.gdf = gdf
+        self.pathidFieldname = pathidFieldname
         self.distance = distance
         self.adjustableDist = adjustableDist
         self.removeDuplicate = removeDuplicate
@@ -47,25 +49,34 @@ class STDensifier(GeoProcess):
     def run(self):
         rows = []
 
-        gid, pathid = 0, 0
-
         if self.removeDuplicate:
             alreadyRegistered = set()
-            for _, row in self.inputGdf.iterrows():
+            for rowId, row in self.gdf.iterrows():
                 geom = row.geometry
-                gid, pathid, result = DensifierLib.densifyByDistance(geom, self.distance, gid, pathid, self.adjustableDist)
+                if not self.pathidFieldname is None:
+                    rowId = row[self.pathidFieldname]
+
+                result = PointsDensifierLib.densifyByDistance(
+                    geom, self.distance, rowId, contourid=0,
+                    adjustableDist=self.adjustableDist)
+
                 for _row in result:
                     tmp = str(_row['geometry'])
                     if tmp not in alreadyRegistered:
                         alreadyRegistered.add(tmp)
-                        # rows.append(_row)
                         rows.append(self.updateOrAppend(row, _row))
+
         else:
-            for _, row in self.inputGdf.iterrows():
+            for rowId, row in self.gdf.iterrows():
                 geom = row.geometry
-                gid, pathid, result = DensifierLib.densifyByDistance(geom, self.distance, gid, pathid, self.adjustableDist)
+                if not self.pathidFieldname is None:
+                    rowId = row[self.pathidFieldname]
+
+                result = PointsDensifierLib.densifyByDistance(
+                    geom, self.distance, rowId, contourid=0,
+                    adjustableDist=self.adjustableDist)
+
                 for _row in result:
-                    # rows.append(_row)
                     rows.append(self.updateOrAppend(row, _row))
 
-        return GeoDataFrame(rows, crs=self.inputGdf.crs)
+        return GeoDataFrame(rows, crs=self.gdf.crs)
