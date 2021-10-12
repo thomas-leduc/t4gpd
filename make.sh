@@ -31,11 +31,6 @@ function _get_version() {
 	echo ${VERSION};
 }
 
-function _copy_sam() {
-	local VERSION=$(_get_version);
-	cp ./dist/t4gpd-${VERSION}.tar.gz ~/Dropbox/crenau/7_encadrements/sam.mailly/dev;
-}
-
 function _deploy() {
 	local VERSION=$(_get_version);
 	${PIP} install --user ./dist/t4gpd-${VERSION}.tar.gz;
@@ -52,8 +47,14 @@ function _show() {
 	_comment "${PIP} show t4gpd";
 }
 
+function _twine() {
+	local VERSION=$(_get_version);
+	#~ twine upload ./dist/t4gpd-${VERSION}.tar.gz;
+	_comment "twine upload ./dist/t4gpd-${VERSION}.tar.gz";
+}
+
 function _usage() {
-	echo "Usage: $(basename ${0}) [clean|compile|deploy|distclean|help|sam|show]" >& 2;
+	echo "Usage: $(basename ${0}) [clean|compile|deploy|distclean|help|show|twine" >& 2;
 	exit 1;
 }
 
@@ -67,8 +68,8 @@ case ${#} in
 			compile) _compile;;
 			deploy) _deploy;;
 			distclean) _distclean;;
-			sam) _copy_sam;;
 			show) _show;;
+			twine) _twine;;
 			*) _usage;;
 		esac;;
 	*)
