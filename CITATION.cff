@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Leduc"
+  given-names: "Thomas"
+  orcid: "https://orcid.org/0000-0002-5728-9787"
+title: "t4gpd"
+version: 0.2.0
+date-released: 2021-05-01
+url: "https://pypi.org/project/t4gpd/"
