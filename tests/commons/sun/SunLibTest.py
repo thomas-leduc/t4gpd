@@ -50,6 +50,10 @@ class SunLibTest(unittest.TestCase):
         # SunLib(model='solene').plotSunriseSunset()
         SunLib(gdf=LatLonLib.NANTES, model='pysolar').plotSunriseSunset()
 
+    def testPlotSolarPanorama(self):
+        # SunLib(model='solene').plotSunriseSunset()
+        SunLib(gdf=LatLonLib.NANTES, model='pysolar').plotSolarPanorama()
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

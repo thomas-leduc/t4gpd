@@ -63,7 +63,7 @@ class STDilationErosion(GeoProcess):
                 if GeomLib.isPolygonal(g):
                     rowsOfSquares.append({ 'FID': fid, 'geometry': g })
         else:
-            rowsOfSquares.append({ 'FID': 0, 'geometry': g })
+            rowsOfSquares.append({ 'FID': 0, 'geometry': uoSquares })
         squaresGdf = GeoDataFrame(rowsOfSquares, crs=self.inputGdf.crs)
 
         ##### STREETS IDENTIFICATION ####################

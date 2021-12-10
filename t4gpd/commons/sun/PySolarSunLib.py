@@ -27,7 +27,6 @@ from pysolar import solar
 from suntimes.suntimes import SunTimes
 from t4gpd.commons.sun.AbstractSunLib import AbstractSunLib
 
-
 warnings.filterwarnings('ignore', message="I don't know about leap seconds after 2020")
 
 
@@ -39,9 +38,14 @@ class PySolarSunLib(AbstractSunLib):
     def __azimToTrigonometric(self, solarAzimuthAngle):
         return (360 - (solarAzimuthAngle - 90)) % 360
 
-    def getSolarAnglesInDegrees(self, dt):
+    def getNativeSolarAnglesInDegrees(self, dt):
         alti = solar.get_altitude(self.lat, self.lon, dt)
-        azim = self.__azimToTrigonometric(solar.get_azimuth(self.lat, self.lon, dt))
+        azim = solar.get_azimuth(self.lat, self.lon, dt)
+        return alti, azim
+
+    def getSolarAnglesInDegrees(self, dt):
+        alti, azim = self.getNativeSolarAnglesInDegrees(dt)
+        azim = self.__azimToTrigonometric(azim)
         return alti, azim
 
     def getSolarDeclination(self, dt):

@@ -45,7 +45,7 @@ class STToRoadsSectionsNodesTest(unittest.TestCase):
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, Point, 'Is a GeoDataFrame of Points')
-            self.assertIn(row['nb_connections'], [1, 3, 4], 'nb_connections attribute values')
+            self.assertIn(row['valency'], [1, 3, 4], 'Test valency attribute values')
 
         # result.to_file('/tmp/xxx.shp')
 

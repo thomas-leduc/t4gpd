@@ -20,6 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from inspect import isclass
+
 from geopandas.geodataframe import GeoDataFrame
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -35,18 +37,31 @@ class STGeoProcess(GeoProcess):
         '''
         Constructor
         '''
-        if not (isinstance(geoprocessToApply, AbstractGeoprocess) or 
-                issubclass(geoprocessToApply, AbstractGeoprocess)):
-            raise IllegalArgumentTypeException(geoprocessToApply, 'AbstractGeoprocess')
+        if not (self.__is_a_geoprocess(geoprocessToApply) or 
+                self.__is_a_collection_of_geoprocesses(geoprocessToApply)):
+            raise IllegalArgumentTypeException(geoprocessToApply, '(list of) AbstractGeoprocess')
 
         if not isinstance(inputGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
 
-        self.geoprocessToApply = geoprocessToApply
+        if (self.__is_a_geoprocess(geoprocessToApply)):
+            self.geoprocessToApply = [geoprocessToApply]
+        else:
+            self.geoprocessToApply = geoprocessToApply
         self.inputGdf = inputGdf
+
+    def __is_a_geoprocess(self, obj):
+        return (isinstance(obj, AbstractGeoprocess) or 
+                (isclass(obj) and issubclass(obj, AbstractGeoprocess)))
+
+    def __is_a_collection_of_geoprocesses(self, obj):
+        return (isinstance(obj, (list, tuple)) and all([self.__is_a_geoprocess(_obj) for _obj in obj]))
 
     def run(self):
         rows = []
         for _, row in self.inputGdf.iterrows():
-            rows.append(self.updateOrAppend(row, self.geoprocessToApply.runWithArgs(row)))
+            result = dict()
+            for op in self.geoprocessToApply:
+                result.update(op.runWithArgs(row))
+            rows.append(self.updateOrAppend(row, result))
         return GeoDataFrame(rows, crs=self.inputGdf.crs)

@@ -6,6 +6,7 @@ Created on 18 juin 2020
 import unittest
 
 from geopandas.geodataframe import GeoDataFrame
+from numpy import pi
 from shapely.geometry import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
@@ -18,9 +19,9 @@ class GeomLibTest(unittest.TestCase):
         b = Point((0, 9))
         c = Point((9, 9))
         d = Point((9, 0))
-        
+
         self.linearring = LinearRing([(100, 0), (100, 100), (0, 100)])
-        
+
         self.point = a
         self.multipoint = MultiPoint((a, b, c, d))
         self.linestring = LineString((a, b, c))
@@ -28,7 +29,7 @@ class GeomLibTest(unittest.TestCase):
         self.polygon = Polygon((a, b, c, d), [[(3, 3), (3, 6), (6, 6), (6, 3)]])
         self.polygon2 = Polygon(((0, 0), (10, 0), (10, 90), (100, 90), (100, 100), (0, 100), (0, 0)))
         self.multipolygon = MultiPolygon((self.polygon, Polygon(self.linearring)))
-        
+
         self.gc = GeometryCollection([self.point, self.linestring, self.polygon])
 
     def tearDown(self):
@@ -67,6 +68,15 @@ class GeomLibTest(unittest.TestCase):
                     [ 12.34 == p.z  for p in GeomLib.getListOfShapelyPoints(result) ]),
                     'z value test')
 
+    def testFromRayLengthsToPolygon(self):
+        result = GeomLib.fromRayLengthsToPolygon([1.0, 1.0, 1.0, 1.0], origin=Point((0.0, 0.0)))
+        self.assertIsInstance(result, Polygon, 'Is a Polygon (1)')
+        self.assertAlmostEqual(2.0, result.area, None, 'Test Polygon area (1)', 1e-6)
+
+        result = GeomLib.fromRayLengthsToPolygon([1.0] * 64, origin=Point((123.0, 456.0)))
+        self.assertIsInstance(result, Polygon, 'Is a Polygon (2)')
+        self.assertAlmostEqual(pi, result.area, None, 'Test Polygon area (2)', 1e-2)
+
     def testGetEnclosingFeatures(self):
         buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
         spatialIndex = buildings.sindex
@@ -101,7 +111,7 @@ class GeomLibTest(unittest.TestCase):
         buildings = GeoDataFrame([{ 'geometry': p1.buffer(5.0)}])
         self.assertTrue(GeomLib.isAnIndoorPoint(p1, buildings, buildings.sindex), 'Is an indoor point (1)')
         self.assertFalse(GeomLib.isAnIndoorPoint(p2, buildings, buildings.sindex), 'Is an indoor point (2)')
-        
+
     def testIsAShapelyGeometry(self):
         for geom in [self.point, self.linearring, self.linestring, self.polygon,
                      self.multipoint, self.multilinestring, self.multipolygon, self.gc]:

@@ -124,8 +124,11 @@ class STSnappingPointsOnLines2(GeoProcess):
                 if (projWayPoints[tagName]['startStepCount'] <= stepCount <= projWayPoints[tagName]['stopStepCount']):
                     projWayPoints[tagName]['nPoints'] += 1
 
-        for tagName in projWayPoints.keys():
-            projWayPoints[tagName]['deltaL'] = projWayPoints[tagName]['deltaL'] / projWayPoints[tagName]['nPoints']
+        for tagName in list(projWayPoints.keys()):
+            if (0 == projWayPoints[tagName]['nPoints']):
+                del(projWayPoints[tagName])
+            else:
+                projWayPoints[tagName]['deltaL'] = projWayPoints[tagName]['deltaL'] / projWayPoints[tagName]['nPoints']
 
         # 4th STEP: POPULATE THE OUTPUT ROWS RESULT
         inputMeasurePoints = dict()
@@ -133,13 +136,14 @@ class STSnappingPointsOnLines2(GeoProcess):
             stepCount = point[self.stepCountFieldname]
             inputMeasurePoints[stepCount] = point
 
-        currCurvAbsc, startStepCount, rows = 0, 0, []
+        initialStartStepCount = min(inputMeasurePoints.keys())
+        currCurvAbsc, startStepCount, rows = 0, initialStartStepCount, []
         for tagName in sorted(projWayPoints.keys()):
             incCurvAbsc = projWayPoints[tagName]['deltaL']
             stopStepCount = projWayPoints[tagName]['stopStepCount']
 
             for stepCount in range(startStepCount, stopStepCount + 1):
-                if 0 < stepCount:
+                if initialStartStepCount < stepCount:
                     currCurvAbsc += incCurvAbsc
                 row = inputMeasurePoints[stepCount]
                 projPoint = pathGeom.interpolate(currCurvAbsc)

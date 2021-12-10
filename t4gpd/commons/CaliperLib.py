@@ -92,7 +92,7 @@ class CaliperLib(object):
         p3 = [ p2[0] + v[0] * maxDv, p2[1] + v[1] * maxDv ]
         p4 = [ p1[0] + v[0] * maxDv, p1[1] + v[1] * maxDv ]
 
-        return [Polygon([p1, p2, p3, p4, p1]), maxDu - minDu, maxDv]
+        return [Polygon([p1, p2, p3, p4, p1]), max(maxDu - minDu, maxDv), min(maxDu - minDu, maxDv)]
 
     @staticmethod
     def __getAntipodalVertex(pairOfVertices, vertices):

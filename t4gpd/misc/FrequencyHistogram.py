@@ -20,9 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from pandas import DataFrame
 from t4gpd.commons.GeoProcess import GeoProcess
-from geopandas.geodataframe import GeoDataFrame
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+
 import matplotlib.pyplot as plt
 
 
@@ -31,13 +32,13 @@ class FrequencyHistogram(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, inputGdf, fieldnames, nClusters, minValues=None, maxValues=None, outputFile='',
-                 density=False, cumulative=False):
+    def __init__(self, inputGdf, fieldnames, nClusters='auto', rangeValues=None, outputFile='',
+                 density=False, cumulative=False, title=None, fontsize=20):
         '''
         Constructor
         '''
-        if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
+        if not isinstance(inputGdf, DataFrame):
+            raise IllegalArgumentTypeException(inputGdf, 'DataFrame')
         self.inputGdf = inputGdf
 
         if isinstance(fieldnames, str):
@@ -53,28 +54,28 @@ class FrequencyHistogram(GeoProcess):
 
         self.nClusters = nClusters if isinstance(nClusters, (list, tuple)) else [nClusters] * self.nFields
 
-        if minValues is None:
-            self.minValues = [None] * self.nFields
-        else:
-            self.minValues = minValues if isinstance(minValues, (list, tuple)) else [minValues] * self.nFields
-        if maxValues is None:
-            self.maxValues = [None] * self.nFields
-        else:
-            self.maxValues = maxValues if isinstance(maxValues, (list, tuple)) else [maxValues] * self.nFields
+        if rangeValues is None:
+            self.rangeValues = [None] * self.nFields
+        elif isinstance(rangeValues, (list, tuple)):
+            if ((2 == len(rangeValues)) and 
+                isinstance(rangeValues[0], (int, float)) and
+                isinstance(rangeValues[1], (int, float))):
+                self.rangeValues = [rangeValues] * self.nFields
+            else:
+                self.rangeValues = rangeValues
 
         if (self.nFields != len(self.nClusters)):
             raise IllegalArgumentTypeException(
                 self.nClusters, 'nClusters must be either an int or a list of %d items' % self.nFields)
-        if (self.nFields != len(self.minValues)):
+        if (self.nFields != len(self.rangeValues)):
             raise IllegalArgumentTypeException(
-                self.minValues, 'minValues must be either a float or a list of %d items' % self.nFields)
-        if (self.nFields != len(self.maxValues)):
-            raise IllegalArgumentTypeException(
-                self.maxValues, 'maxValues must be either a float or a list of %d items' % self.nFields)
+                self.rangeValues, 'rangeValues must be either a float or a list of %d items' % self.nFields)
 
         self.outputFile = outputFile
         self.density = density
         self.cumulative = cumulative
+        self.title = title
+        self.fontsize = fontsize
 
     def run(self):
         values = [list(self.inputGdf[fieldname]) for fieldname in self.fieldnames]
@@ -86,22 +87,26 @@ class FrequencyHistogram(GeoProcess):
 
         for fignum in range(self.nFields):
             plt.subplot(numrows, numcols, fignum + 1)  # numrows, numcols, fignum     
-            plt.title('Histogram of %s' % self.fieldnames[fignum])
-            plt.xlabel(self.fieldnames[fignum])
+            plt.xlabel(self.fieldnames[fignum], fontsize=self.fontsize)
             if self.density:
-                plt.ylabel('Probability density')
+                plt.ylabel('Probability density', fontsize=self.fontsize)
             else:
-                plt.ylabel('Number of values')
+                plt.ylabel('Number of values', fontsize=self.fontsize)
             plt.grid(True)
 
             n, bins, _ = plt.hist(values[fignum], bins=self.nClusters[fignum],
                                   density=self.density, cumulative=self.cumulative,
-                                  range=(self.minValues[fignum], self.maxValues[fignum]),
+                                  range=self.rangeValues[fignum],
                                   facecolor='gray', edgecolor='black', orientation='vertical',
                                   hatch='', histtype='bar', align='mid', rwidth=1.0)
             x = [(bins[i] + bins[i + 1]) / 2.0 for i in range(len(bins) - 1)]
             pairsOfWeightsAndRanges.append([n, bins])
-            plt.plot(x, n, 'ro', x, n, 'r--')
+            if self.title is None:
+                plt.title('Histogram of %s (%d bins)' % (self.fieldnames[fignum], len(n)),
+                          fontsize=self.fontsize + 4)
+            else:
+                plt.title(self.title, fontsize=self.fontsize + 4)
+            # plt.plot(x, n, 'ro', x, n, 'r--')
 
         if self.outputFile is not None:
             if ('' == self.outputFile):
@@ -109,4 +114,5 @@ class FrequencyHistogram(GeoProcess):
             else:
                 plt.savefig(self.outputFile, format='pdf', bbox_inches='tight')  # , facecolor='w', edgecolor='k', pad_inches=0.15)
 
+        plt.close(mainFig)
         return pairsOfWeightsAndRanges

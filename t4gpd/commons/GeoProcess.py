@@ -58,7 +58,7 @@ class GeoProcess(object):
         result.update(addDict)
         return result
 
-    def append(self, inSeries, addDict):
+    def appendNewItems(self, inSeries, addDict):
         result = dict(inSeries)
         for k, v in addDict.items():
             if k not in result:

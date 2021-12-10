@@ -171,3 +171,57 @@ class SunLib(object):
         plt.grid()
         plt.plot(daysInYear, sunrises, daysInYear, sunsets)
         plt.show()      
+
+    def plotSolarPanorama(self):
+        year = datetime.now().year
+        _, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
+
+        if (isinstance(self.model, SoleneSunLib)):
+            _title = 'Solene model'
+        elif (isinstance(self.model, PySolarSunLib)):
+            _title = 'PySolar implementation'
+        plt.title('%s: solar panorama - year %d\nLatitude: %.1f°, Longitude: %.1f°' % (
+            _title, year, self.lat, self.lon))
+        plt.xlabel('Azim. [$^0$]')
+        plt.ylabel('Alti. [$^0$]')
+
+        altis, azims = {}, {}
+        hrsAltis, hrsAzims = {}, {}
+
+        for hour in range(0, 24):
+            hrsAltis[hour], hrsAzims[hour] = [], []
+
+        for month in range(6, 13, 3):
+            altis[month], azims[month] = [], [] 
+            t0 = datetime(year, month, 21, tzinfo=timezone.utc)
+            _sunrise = self.model.getSunrise(t0)
+            _sunset = self.model.getSunset(t0)
+
+            for hour in range(0, 24):
+                for minute in range(0, 60, 10):
+                    _dt = t0 + timedelta(hours=hour) + timedelta(minutes=minute)
+                    if True or (_sunrise < _dt < _sunset):
+                        _alti, _azim = self.model.getNativeSolarAnglesInDegrees(_dt)
+                        if (0 <= _alti):
+                            altis[month].append(_alti)
+                            azims[month].append(_azim)
+                        if (0 == minute):
+                            hrsAltis[hour].append(_alti)
+                            hrsAzims[hour].append(_azim)
+
+            basemap.plot(azims[month], altis[month], label=_dt.strftime('%b %d'))
+
+        for hour in range(5, 20, 1):
+            if (0 == (hour % 2)):
+                basemap.plot(hrsAzims[hour], hrsAltis[hour], 'k-.')
+                basemap.text((3 * hrsAzims[hour][0] + hrsAzims[hour][-1]) / 4,
+                              (3 * hrsAltis[hour][0] + hrsAltis[hour][-1]) / 4,
+                              f'{hour}:00', fontsize=9).set_color('black')
+
+        for lbl, azim in [('East', 90), ('South', 180), ('West', 270)]:
+            basemap.axvline(x=azim, linestyle=':', color='black', linewidth=1)
+            basemap.text(azim, 70, lbl, fontsize=9).set_color('black')
+        basemap.set_ylim(0, 90)
+
+        basemap.legend()
+        plt.show()      

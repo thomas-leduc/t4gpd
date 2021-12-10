@@ -20,15 +20,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame, overlay
+from pandas import concat
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.morph.STPolygonize import STPolygonize
-
-import geopandas as gpd
-import pandas as pd
 
 
 class STMakeBlocks(GeoProcess):
@@ -56,16 +54,14 @@ class STMakeBlocks(GeoProcess):
     def __mkBlocks(buildings, roads, roi):
         # POLYGONIZE ROADS
         if not roi is None:
-            _roads = GeoDataFrame(pd.concat([roads[['geometry']], roi[['geometry']]]), crs=roads.crs)
+            _roads = GeoDataFrame(concat([roads[['geometry']], roi[['geometry']]]), crs=roads.crs)
         else:
             _roads = roads
         _polygons = STPolygonize(_roads).run()
 
         # GROUP BUILDINGS PER URBAN BLOCKS
-        _buildings = gpd.overlay(buildings[['geometry']], _polygons, how='intersection')
+        _buildings = overlay(buildings[['geometry']], _polygons, how='intersection')
         _blocks = _buildings.dissolve(by='gid', as_index=False)
-
-        _blocks.to_file('/home/tleduc/Dropbox/crenau/2_papiers_a_ecrire/2021_wavelet/dev/data-p9/_blocks1.shp')
 
         # TRY TO REMOVE CONCAVITIES IN EACH BLOCK
         roadsIdx = roads.sindex
@@ -85,7 +81,7 @@ class STMakeBlocks(GeoProcess):
         if isinstance(_concavities, Polygon):
             _concavities = MultiPolygon([_concavities])
         result = [block]
-        for _concavity in _concavities:
+        for _concavity in _concavities.geoms:
             if (0 == len(list(filter(_concavity.intersects, _subsetOfRoads.geometry)))):
                 result.append(_concavity)
         # return unary_union(result)

@@ -22,7 +22,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from functools import reduce
 
-from numpy import sqrt, pi
+from numpy import cos, sin, sqrt, pi
 from pandas.core.common import flatten
 from shapely.geometry import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
 from shapely.ops import nearest_points, transform, unary_union
@@ -137,6 +137,14 @@ class GeomLib(object):
             raise IllegalArgumentTypeException(multiline, 'MultiLineString')
             # return []
         return [line.length for line in multiline.geoms]
+
+    @staticmethod
+    def fromRayLengthsToPolygon(rayLengths, origin=Point((0.0, 0.0))):
+        nRays = len(rayLengths)
+        offset = 2 * pi / nRays
+        return Polygon([(origin.x + rayLengths[i] * cos(i * offset),
+                         origin.y + rayLengths[i] * sin(i * offset)
+                         ) for i in range(nRays)])
 
     @staticmethod
     def getEnclosingFeatures(inputGdf, inputSpatialIndex, point):
@@ -297,7 +305,7 @@ class GeomLib(object):
         for buildingId in buildingsIds:
             building = buildings.loc[buildingId]
             buildingGeom = building.geometry
-            if point.intersects(buildingGeom):
+            if point.within(buildingGeom):
                 return True
         return False
 

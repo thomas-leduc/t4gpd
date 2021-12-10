@@ -21,7 +21,6 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
-
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -77,6 +76,6 @@ class STSpatialJoin(GeoProcess):
                 rowRight = self.inputGdfRight.loc[idRight]
                 geomRight = rowRight.geometry
                 if self.query([geomLeft, geomRight]):
-                    rows.append(self.append(rowLeft, rowRight))
+                    rows.append(self.appendNewItems(rowLeft, rowRight))
 
         return GeoDataFrame(rows, crs=self.inputGdfLeft.crs)

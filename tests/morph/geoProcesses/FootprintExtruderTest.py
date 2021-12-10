@@ -57,7 +57,7 @@ class FootprintExtruderTest(unittest.TestCase):
             self.assertEqual(15.0, row['HAUTEUR'], 'Test HAUTEUR attribute value')
 
     def testRun2(self):
-        self.buildings = self.buildings.explode() 
+        self.buildings = self.buildings.explode(ignore_index=True) 
 
         op = FootprintExtruder(self.buildings, 'HAUTEUR', forceZCoordToZero=True)
         result = STGeoProcess(op, self.buildings).run()

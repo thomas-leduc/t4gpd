@@ -71,10 +71,10 @@ class Logos(object):
 
         _gdf = STPointsDensifier(gdf, distance=45.0, pathidFieldname=None, adjustableDist=True, removeDuplicate=True).run()
         _tin = triangulate(unary_union(GeomLib.getListOfShapelyPoints(unary_union(_gdf.geometry))))
-        _gdf = GeoDataFrame([{'geometry': MultiPolygon(_tin)}]).explode()
+        _gdf = GeoDataFrame([{'geometry': MultiPolygon(_tin)}]).explode(ignore_index=True)
         gdf.geometry = gdf.geometry.apply(lambda g: g.buffer(1e-3))
 
-        _gdf = geopandas.overlay(_gdf, gdf, how='intersection')
+        _gdf = geopandas.overlay(_gdf, gdf, how='intersection', keep_geom_type=True)
         _gdf['gid'] = range(len(_gdf))
         _gdf['gid'] = _gdf.gid % 4
 

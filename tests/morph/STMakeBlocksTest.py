@@ -24,7 +24,7 @@ import unittest
 
 from shapely.geometry import box
 
-import geopandas as gpd
+from geopandas import GeoDataFrame
 from t4gpd.morph.STMakeBlocks import STMakeBlocks
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 
@@ -39,9 +39,13 @@ class STMakeBlocksTest(unittest.TestCase):
         pass
 
     def testRun(self):
-        roi = gpd.GeoDataFrame([{'geometry': box(*self.roads.total_bounds)}], crs=self.buildings.crs)
+        roi = GeoDataFrame([{'geometry': box(*self.roads.total_bounds)}], crs=self.buildings.crs)
         result = STMakeBlocks(self.buildings, self.roads, roi=roi).run()
-        # result.to_file('../data/_bl.shp')
+
+        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
+        self.assertEqual(7, len(result), 'Count rows')
+        self.assertEqual(2, len(result.columns), 'Count columns')
+
         '''
         import matplotlib.pyplot as plt
         basemap = self.buildings.boundary.plot(edgecolor='dimgrey', color='lightgrey',)

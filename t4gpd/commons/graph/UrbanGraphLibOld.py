@@ -104,7 +104,7 @@ class UrbanGraphLibOld(object):
             nbConnectedVertices = len(v)
             if 2 != nbConnectedVertices:
                 result.append({ 'geometry': Point(self.icVertices[k]), 'gid': k,
-                               'nb_connections': nbConnectedVertices })
+                               'valency': nbConnectedVertices })
         return result
 
     def __getNextVertex(self, prev, curr):

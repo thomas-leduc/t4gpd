@@ -38,5 +38,7 @@ class TestUtils(object):
         raise Exception('dataset not found: %s' % (basename)) 
 
     @staticmethod
-    def loadDataSet(dirname, basename):
-        return read_file(TestUtils.getDataSetFilename(dirname, basename))
+    def loadDataSet(dirname, basename, driver=None):
+        if driver is None:
+            return read_file(TestUtils.getDataSetFilename(dirname, basename))
+        return read_file(TestUtils.getDataSetFilename(dirname, basename), driver=driver)

@@ -275,6 +275,6 @@ class MshReader(GeoProcess):
             print('MshReader:: read V4')
             rows = self.__readV4()
         else: 
-            raise Exception('\n\n\t*** MshReader:: file format version #%d must be implemented! ***' % version)
+            raise NotImplementedError(f'\n\n\t*** MshReader:: file format version #{version} must be implemented! ***')
 
         return GeoDataFrame(rows, crs=self.crs)

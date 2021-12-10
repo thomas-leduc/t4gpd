@@ -34,7 +34,7 @@ class STMultipleOverlaps2Test(unittest.TestCase):
         self.assertEqual(3, len(result), 'Count rows')
         self.assertEqual(2, len(result.columns), 'Count columns')
 
-        result2 = result.explode()
+        result2 = result.explode(ignore_index=True)
 
         self.assertIsInstance(result2, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(6, len(result2), 'Count rows')

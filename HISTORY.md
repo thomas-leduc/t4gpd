@@ -1,6 +1,30 @@
 # Package t4gpd history
 
+## Version 0.3.0 - rev. 11625 - 9 Dec. 2021
+* Second release on PyPI
+* Add new tests.io.ZipLoaderTest class
+* Add new io.ZipLoader class
+* Add new misc.PopulationPyramid class
+* Add new pyqgis/{AddMemoryLayer,SetSymbolLib,ShowFeatureCount} classes
+* Add new tests datasets: la_defense_{measurepts.csv, pathway.gpkg, waypoints.gpkg}
+* Add new tests.io.ZipWriterTest class
+* Add new io.ZipWriter class
+* Add new io.Reloading class
+* Add new tests.commons.CalendarLibTest class
+* Add new commons.CalendarLib class
+* Add new tests.morph.geoProcesses.{GetInteriorPointTest, IsAnIndoorPointTest} classes
+* Add new morph.geoProcesses.{GetInteriorPoint, IsAnIndoorPoint} classes
+* Add new comfort.{Empirical,Linear,Universal}ThermalIndices classes
+* Add new comfort.indices.Tmrt{GlobeTemperature,Out,Radiometer} classes
+* Add new comfort.indices.{ASV,DI,ETU,H,HI,NET,OUTSET,PE,PET,PMV,PT,SET,SETmist,THI,UTCI,WCT} classes
+* Add new comfort.indices.AbstractThermalComfortIndice class
+* Add new comfort.algo.Tmrt{GlobeTemperature,Out}Lib classes
+* Add new comfort.algo.{ETU,PET,PMV,PT,SET,UTCI}Lib classes
+* Add new comfort.algo.WindSpeedExtrapolationLib class
+* Add new comfort.algo.{Constants,Commons}Lib classes
+
 ## Version 0.2.0 - rev. 11186 - 30 Apr. 2021
+* First release on PyPI
 * Add new tests.sun.STTreeHardShadow2Test class
 * Add new tests.commons.sun.ShadowLibTest class
 * Add new commons.sun.ShadowLib class

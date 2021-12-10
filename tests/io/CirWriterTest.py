@@ -42,7 +42,7 @@ class CirWriterTest(unittest.TestCase):
 
         op = FootprintExtruder(unitFace, 'HAUTEUR', forceZCoordToZero=True)
         self.unitVolume = STGeoProcess(op, unitFace).run()
-        self.unitVolume = self.unitVolume.explode()
+        self.unitVolume = self.unitVolume.explode(ignore_index=True)
 
     def tearDown(self):
         pass
