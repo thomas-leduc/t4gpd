@@ -87,7 +87,7 @@ class STMultipleOverlapsTest(unittest.TestCase):
         basemap = self.inputGdf.boundary.plot(edgecolor='black', linewidth=1.3)
         result.plot(ax=basemap, column='nOverlap', alpha=0.2)
         result.apply(lambda x: basemap.annotate(
-            s='%d\n%s' % (x.nOverlap, x.matched_id), xy=x.geometry.centroid.coords[0],
+            text='%d\n%s' % (x.nOverlap, x.matched_id), xy=x.geometry.centroid.coords[0],
             color='black', size=11, ha='center'), axis=1);
         plt.show()
         '''

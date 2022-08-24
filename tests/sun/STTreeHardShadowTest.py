@@ -3,7 +3,7 @@ Created on 27 aug. 2020
 
 @author: tleduc
 '''
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import unittest
 
 from geopandas import clip
@@ -41,7 +41,7 @@ class STTreeHardShadowTest(unittest.TestCase):
         result = STTreeHardShadow(
             self.trees, self.datetimes, treeHeightFieldname='h_arbre',
             treeCrownRadiusFieldname='r_houppier', altitudeOfShadowPlane=0.0,
-            aggregate=False, tz=None, model='pysolar', npoints=32).run()
+            aggregate=False, tz=timezone.utc, model='pysolar', npoints=32).run()
 
         datetimes = [str(dt) for dt in list(self.datetimes.values())[0]]
 

@@ -21,8 +21,10 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
+from shapely.geometry import Point
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.commons.RayCasting2Lib import RayCasting2Lib
 from t4gpd.commons.RayCastingLib import RayCastingLib
 from t4gpd.commons.SVFLib import SVFLib
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
@@ -51,21 +53,28 @@ class SkyViewFactor(AbstractGeoprocess):
         self.elevationFieldname = elevationFieldname
 
         if (1981 == method):
-            print('SVF calculation method: Oke (1981), nRays = %d, maxRayLen = %.1f' % (nRays, maxRayLen))
+            print(f'SVF calculation method: Oke (1981), nRays = {nRays}, maxRayLen = {maxRayLen:.1f}')
             self.method = SVFLib.svf1981
         else:
-            print('SVF calculation method: Bernard et al. (2018), nRays = %d, maxRayLen = %.1f' % (nRays, maxRayLen))
+            print(f'SVF calculation method: Bernard et al. (2018), nRays = {nRays}, maxRayLen = {maxRayLen:.1f}')
             self.method = SVFLib.svf2018
 
         self.background = background
 
     def runWithArgs(self, row):
-        viewPoint = row.geometry.centroid
+        viewPoint = row.geometry
+        if not isinstance(viewPoint, Point):
+            viewPoint = viewPoint.centroid
 
         if GeomLib.isAnIndoorPoint(viewPoint, self.buildingsGdf, self.spatialIndex):
             return { 'svf': 0.0 }
 
+        '''
         _, _, hitDists, hitMasks, _ = RayCastingLib.multipleRayCast25D(
+            self.buildingsGdf, self.spatialIndex, viewPoint, self.shootingDirs,
+            self.maxRayLen, self.elevationFieldname, self.background)
+        '''
+        _, _, hitDists, hitMasks, _ = RayCasting2Lib.outdoorMultipleRayCast25D(
             self.buildingsGdf, self.spatialIndex, viewPoint, self.shootingDirs,
             self.maxRayLen, self.elevationFieldname, self.background)
 

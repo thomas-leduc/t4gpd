@@ -46,7 +46,7 @@ class AbstractGridLib(object):
 
     def indoorGrid(self):
         _grid = self.indoorOutdoorGrid()
-        _grid = _grid[_grid.indoor == 1]
+        _grid = _grid.loc[ _grid[_grid.indoor == 1].index ]
         _grid.reset_index(drop=True, inplace=True)
         return _grid
 
@@ -65,6 +65,6 @@ class AbstractGridLib(object):
 
     def outdoorGrid(self):
         _grid = self.indoorOutdoorGrid()
-        _grid = _grid[_grid.indoor == 0]
+        _grid = _grid.loc[ _grid[_grid.indoor == 0].index ]
         _grid.reset_index(drop=True, inplace=True)
         return _grid

@@ -47,7 +47,7 @@ class FootprintExtruderTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(3, len(result.columns), 'Count columns')
+        self.assertEqual(len(self.building.columns), len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, MultiPolygon, 'Is a GeoDataFrame of MultiPolygon')
@@ -64,7 +64,7 @@ class FootprintExtruderTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(250, len(result), 'Count rows')
-        self.assertEqual(3, len(result.columns), 'Count columns')
+        self.assertEqual(len(self.building.columns), len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, MultiPolygon, 'Is a GeoDataFrame of MultiPolygon')

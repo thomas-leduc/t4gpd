@@ -37,7 +37,7 @@ class ZipWriterTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testName(self):
+    def testRun(self):
         buildings = GeoDataFrameDemos.ensaNantesBuildings()
         roads = GeoDataFrameDemos.ensaNantesRoads()
         misc = DataFrame(data=[(i, 10 * i) for i in range(4)], columns=['colA', 'colB'])

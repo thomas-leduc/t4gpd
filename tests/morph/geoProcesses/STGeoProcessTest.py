@@ -44,7 +44,7 @@ class STGeoProcessTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(8, len(result.columns), 'Count columns')
+        self.assertEqual(5 + len(self.buildings.columns), len(result.columns), 'Count columns')
 
         for fieldname in ['n_con_comp', 'a_conv_def', 'p_conv_def', 'big_concav', 'small_conc']:
             self.assertTrue(fieldname in result, f'Test if "{fieldname}" is a valid fieldname')
@@ -55,7 +55,7 @@ class STGeoProcessTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(8, len(result.columns), 'Count columns')
+        self.assertEqual(5 + len(self.buildings.columns), len(result.columns), 'Count columns')
 
         for fieldname in ['n_con_comp', 'a_conv_def', 'p_conv_def', 'big_concav', 'small_conc']:
             self.assertTrue(fieldname in result, f'Test if "{fieldname}" is a valid fieldname')
@@ -68,7 +68,7 @@ class STGeoProcessTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(16, len(result.columns), 'Count columns')
+        self.assertEqual(13 + len(self.buildings.columns), len(result.columns), 'Count columns')
 
         for fieldname in ['n_con_comp', 'a_conv_def', 'p_conv_def', 'big_concav', 'small_conc',
                           'gravelius', 'jaggedness', 'miller', 'morton', 'a_circ_def',

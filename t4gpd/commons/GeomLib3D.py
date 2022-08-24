@@ -20,8 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import sqrt
-from shapely.geometry import LinearRing, Polygon
+from numpy import mean, sqrt
+from shapely.geometry import LinearRing, Point, Polygon
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -32,12 +32,24 @@ class GeomLib3D(object):
     '''
 
     @staticmethod
+    def centroid(geom):
+        tmp = GeomLib.getListOfShapelyPoints(geom, withoutClosingLoops=True)
+        if (0 == len(tmp)):
+            return Point()
+        tmp = [[p.x, p.y, p.z] for p in tmp]
+        return Point(mean(tmp, axis=0))
+
+    @staticmethod
     def crossProduct(u, v):
         return [
             (u[1] * v[2]) - (u[2] * v[1]),
             (u[2] * v[0]) - (u[0] * v[2]),
             (u[0] * v[1]) - (u[1] * v[0])
             ]
+
+    @staticmethod
+    def distFromTo(a, b):
+        return sqrt(GeomLib3D.squaredDistance3D(a, b))
 
     @staticmethod
     def dotProduct(u, v):
@@ -107,6 +119,8 @@ class GeomLib3D(object):
             if (i != _maxDiamIdx):
                 _currRadius = GeomLib3D.vector_to(coords[0], coords[i])
                 _currCrossProduct = GeomLib3D.crossProduct(_firstRadius, _currRadius)
+                if (i < _maxDiamIdx):
+                    _currCrossProduct = [-_currCrossProduct[0], -_currCrossProduct[1], -_currCrossProduct[2]]
                 _currNorm = GeomLib3D.squaredNorm3D(_currCrossProduct)
                 if (abs(_maxNorm) < abs(_currNorm)):
                     _maxNorm, _maxCrossProduct, _secondRadius = _currNorm, _currCrossProduct, _currRadius
@@ -131,7 +145,7 @@ class GeomLib3D(object):
         _norm = GeomLib3D.norm3D(u)
         if (0 < _norm):
             _invNorm = 1.0 / _norm
-            return (_invNorm * u[0], _invNorm * u[1], _invNorm * u[2])
+            return [_invNorm * u[0], _invNorm * u[1], _invNorm * u[2]]
         raise IllegalArgumentTypeException(u, 'Must be non-null vector!')
 
     @staticmethod
@@ -139,4 +153,4 @@ class GeomLib3D(object):
         dx = q[0] - p[0]
         dy = q[1] - p[1]
         dz = q[2] - p[2]
-        return (dx, dy, dz)
+        return [dx, dy, dz]

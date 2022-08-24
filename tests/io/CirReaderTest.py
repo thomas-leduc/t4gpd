@@ -29,6 +29,7 @@ from t4gpd.commons.GeomLib3D import GeomLib3D
 from t4gpd.io.CirReader import CirReader
 
 from t4gpd.commons.TestUtils import TestUtils
+from t4gpd.demos.GeoDataFrameDemos5 import GeoDataFrameDemos5
 
 
 class CirReaderTest(unittest.TestCase):
@@ -39,19 +40,45 @@ class CirReaderTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testRun(self):
+    def testRun1(self):
         result = CirReader(self.inputFilename).run()
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(6, len(result), 'Count rows')
-        self.assertEqual(1, len(result.columns), 'Count columns')
+        self.assertEqual(2, len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
+            self.assertIn(int(row.cir_id), range(1, 1 + len(result)), 'Test gid attr. values')
             self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygons')
             self.assertTrue(GeomLib.is3D(row.geometry), 'Is a GeoDataFrame of 3D Polygons')
             self.assertEqual(1.0, abs(GeomLib3D.getArea(row.geometry)), 'Test 3D Polygon area')
+            # self.assertListEqual(row.normal_vec, GeomLib3D.getFaceNormalVector(row.geometry), 'Test normal vector')
 
-        # result.to_file('/tmp/xxx.shp')
+    def testRun2(self):
+        result = GeoDataFrameDemos5.cirSceneMasque1Corr()
+
+        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
+        self.assertEqual(370, len(result), 'Count rows')
+        self.assertEqual(2, len(result.columns), 'Count columns')
+
+        for _, row in result.iterrows():
+            self.assertIn(int(row.cir_id), range(1, 1 + len(result)), 'Test gid attr. values')
+            self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygons')
+            self.assertTrue(GeomLib.is3D(row.geometry), 'Is a GeoDataFrame of 3D Polygons')
+            # self.assertListEqual(row.normal_vec, GeomLib3D.getFaceNormalVector(row.geometry), 'Test normal vector')
+
+    def testRun3(self):
+        result = GeoDataFrameDemos5.cirSceneMasque2Corr()
+
+        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
+        self.assertEqual(370, len(result), 'Count rows')
+        self.assertEqual(2, len(result.columns), 'Count columns')
+
+        for _, row in result.iterrows():
+            self.assertIn(int(row.cir_id), range(1, 1 + len(result)), 'Test gid attr. values')
+            self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygons')
+            self.assertTrue(GeomLib.is3D(row.geometry), 'Is a GeoDataFrame of 3D Polygons')
+            # self.assertListEqual(row.normal_vec, GeomLib3D.getFaceNormalVector(row.geometry), 'Test normal vector')
 
 
 if __name__ == "__main__":

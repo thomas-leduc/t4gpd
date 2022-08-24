@@ -1,11 +1,51 @@
 # Package t4gpd history
 
+## Version 0.4.1 - rev. 12508 - 24 Aug. 2022
+* Third release on PyPI
+* Add new pyqgis.Emphasizer class
+* Add new io.{CirValReader,ValReader} classes
+* Add new io.SalomeWriter class
+* Add new tests.pyvista.geoProcesses.{Oriented,Panoptic}RayCasting3DTest classes
+* Add new pyvista.geoProcesses.{Oriented,PanopticRay}Casting3D classes
+* Add new tests.pyvista.geoProcesses.AutomaticFaceOrientationTest class
+* Add new pyvista.geoProcesses.AutomaticFaceOrientation class
+* Add new tests.pyvista.geoProcesses.FromContourToNormalVectorTest class
+* Add new pyvista.geoProcesses.FromContourToNormalVector class
+* Add new pyqgis.MapPrinter class
+* Add new morph.RepresentativePoint class
+* Add new tests.pyvista.STRaysToViewFactorsTest class
+* Add new tests.pyvista.{GeodeCiel,Icosahedron}Test classes
+* Add new pyvista.{GeodeCiel,Icosahedron} classes
+* Add new pyvista.commons.Triangle3D class
+* Add new pyvista.geoProcesses.MoveSensorsAwayFromSurface class
+* Add new pyvista.commons.RayCasting3DLib class
+* Add new pyvista.STRaysToViewFactors class
+* Add new io.AbstractReader class
+* Add new tests.raster.STToRasterTest class
+* Add new raster.STToRaster class
+* Add new commons.RayCasting3Lib class
+* Add new commons.RayCasting2Lib class
+* Enhance commons.GeomLib with new meth. {getAnchoringBuildingId, isABorderPoint, isAnOutdoorPoint}(...) + refactor isAnIndoorPoint(...)
+* Debug commons.SVFLib class
+* Add new tests.pyvista.ToUnstructuredGridTest class
+* Add new pyvista.ToUnstructuredGrid class
+* Add new tests.morph.STPointsDensifier2Test class
+* Add new morph.STPointsDensifier2 class
+* Add new PointsDensifierLib.densifyByCurvilinearAbscissa(...) static method
+* Add new GridFaceLib class
+* Add new demos.GeoDataFrameDemos{2,3,4,5} classes
+* Add new pyplot.MultipleMarkerStyles class
+* Update demos.GeoDataFrameDemos class
+* Update geoProcesses.StarShapedIndices class
+* Rename class commons.ShannonEntropy to commons.Entropy
+* Add new file CITATION.cff
+
 ## Version 0.3.0 - rev. 11625 - 9 Dec. 2021
 * Second release on PyPI
 * Add new tests.io.ZipLoaderTest class
 * Add new io.ZipLoader class
 * Add new misc.PopulationPyramid class
-* Add new pyqgis/{AddMemoryLayer,SetSymbolLib,ShowFeatureCount} classes
+* Add new pyqgis/{AddMemoryLayer,SetSymbolLib,ShowFeatureCount,ZoomLib} classes
 * Add new tests datasets: la_defense_{measurepts.csv, pathway.gpkg, waypoints.gpkg}
 * Add new tests.io.ZipWriterTest class
 * Add new io.ZipWriter class

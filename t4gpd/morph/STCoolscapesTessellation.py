@@ -20,8 +20,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
 from numpy import inf
+from pandas import concat
 from shapely.geometry import LineString
 from shapely.ops import unary_union
 from t4gpd.commons.GeoProcess import GeoProcess
@@ -64,7 +65,7 @@ class STCoolscapesTessellation(GeoProcess):
             _bigBuffZone, self.magnitude * self.sampleDist, pathidFieldname=None,
             adjustableDist=True, removeDuplicate=True).run()
 
-        return _sensors.append(_otherSensors)
+        return concat([_sensors, _otherSensors])
 
     def __orderTessellationCells(self, tessellation):
         mydict = dict()

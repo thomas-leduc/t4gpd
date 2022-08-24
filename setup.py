@@ -49,10 +49,20 @@ setup_args = dict(
 )
 
 install_requires = [
-    # 'matplotlib>=2.0.1',
-    # 'numpy',
+    # 'Dijkstar',
     # 'geopandas',
-    # 'shapely'
+    # 'matplotlib>=2.0.1',
+    # 'networkx',
+    # 'numpy',
+    # 'opencv-python',
+    # 'pysolar',
+    # 'pythermalcomfort',
+    # 'pyvista',
+    # 'PyWavelets',
+    # 'scikit-learn',
+    # 'scipy',
+    # 'shapely',
+    # 'suntimes'
 ]
 
 if __name__ == '__main__':

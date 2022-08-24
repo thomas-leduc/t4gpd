@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import exp, sin
+from numpy import exp, pi, sin
 from t4gpd.commons.AngleLib import AngleLib
 
 
@@ -39,6 +39,25 @@ class PerrinDeBrichambaut(object):
     POLLUTED_SKY = 2
 
     @staticmethod
+    def diffuseSolarIrradiance(solarAltitudeAngle, skyType=STANDARD_SKY):
+        '''
+        Ghodbane, M., & Boumeddane, B. (2016). Estimating solar radiation according to semi 
+        empirical approach of Perrin de Brichambaut: application on several areas with different 
+        climate in Algeria. International Journal of Energetica, 1(1), 20. 
+        https://doi.org/10.47238/ijeca.v1i1.12
+        '''
+        assert (0 <= solarAltitudeAngle <= (pi / 2)), 'solarAltitudeAngle in radians!'
+
+        if (PerrinDeBrichambaut.PURE_SKY == skyType):
+            D = 0.75
+        elif (PerrinDeBrichambaut.STANDARD_SKY == skyType):
+            D = 1
+        elif (PerrinDeBrichambaut.POLLUTED_SKY == skyType):
+            D = 4 / 3
+
+        return 125 * D * sin(solarAltitudeAngle) ** 0.4
+
+    @staticmethod
     def directNormalIrradiance(solarAltitudeAngle, skyType=STANDARD_SKY):
         '''
         Direct Normal Irradiance is the amount of solar radiation received per unit area by a
@@ -53,18 +72,16 @@ class PerrinDeBrichambaut(object):
         Eclairement energetique (W/m2) solaire direct et normal (pour une surface 
         perpendiculaire aux rayons solaires), en conditions d'insolation normales
         '''
+        assert (0 <= solarAltitudeAngle <= (pi / 2)), 'solarAltitudeAngle in radians!'
+
         angle = AngleLib.toDegrees(solarAltitudeAngle)
-        
+
         if (PerrinDeBrichambaut.PURE_SKY == skyType):
-            angle = AngleLib.toRadians(angle + 1.0)
-            return 1210.0 * exp(-1.0 / (6.0 * sin(angle)))
-
+            A, B, C = 1210, 6, 1
         elif (PerrinDeBrichambaut.STANDARD_SKY == skyType):
-            # angle = Angle.toRadians(angle + 1.6)
-            angle = AngleLib.toRadians(angle + 2.0)
-            # return 1230.0 * exp(-1.0 / (3.8 * sin(angle)))
-            return 1230.0 * exp(-1.0 / (4.0 * sin(angle)))
-
+            A, B, C = 1230, 4, 2
+            # A, B, C = 1230, 3.8, 1.6
         elif (PerrinDeBrichambaut.POLLUTED_SKY == skyType):
-            angle = AngleLib.toRadians(angle + 3.0)
-            return 1260.0 * exp(-1.0 / (2.3 * sin(angle)))
+            A, B, C = 1260, 2.3, 3
+
+        return A * exp(-1 / (B * sin(AngleLib.toRadians(angle + C))))

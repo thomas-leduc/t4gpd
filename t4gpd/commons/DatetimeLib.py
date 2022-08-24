@@ -32,9 +32,7 @@ class DatetimeLib(object):
     '''
 
     @staticmethod
-    def generate(dt, tz=None):
-        tz = timezone.utc if (tz is None) else tz
-
+    def generate(dt, tz=timezone.utc):
         if ((isinstance(dt, (list, ndarray, tuple))) and (3 == len(dt)) and
             (isinstance(dt[0], datetime)) and (isinstance(dt[1], datetime)) and
             (isinstance(dt[2], timedelta))):
@@ -84,7 +82,7 @@ class DatetimeLib(object):
         raise IllegalArgumentTypeException(dt, '(list of) date, time, datetime, or 3-uple of (datetime, datetime, timedelta)')
 
     @staticmethod
-    def fromDatetimesDictToListOfSunPositions(datetimes, sunModel, tz=None):
+    def fromDatetimesDictToListOfSunPositions(datetimes, sunModel, tz=timezone.utc):
         if not isinstance(datetimes, dict):
             datetimes = DatetimeLib.generate(datetimes, tz)
 
@@ -94,6 +92,49 @@ class DatetimeLib(object):
             for _dt in _dts:
                 radDir = sunModel.getRadiationDirection(_dt)
                 solarAlti, solarAzim = sunModel.getSolarAnglesInRadians(_dt)
-                result.append([_dt, radDir, solarAlti, solarAzim])            
+                result.append([_dt, radDir, solarAlti, solarAzim])       
 
         return result
+
+    '''
+    @staticmethod
+    def fromListOfDatetimesToListOfSunPositions(datetimes, sunModel, tz=timezone.utc):
+        result = []
+        for dt in datetimes:
+            radDir = sunModel.getRadiationDirection(dt)
+            solarAlti, solarAzim = sunModel.getSolarAnglesInRadians(dt)
+            result.append([dt, radDir, solarAlti, solarAzim])
+        return result
+    '''
+
+    @staticmethod
+    def range(dtStart, dtStop, dtDelta, tz=timezone.utc):
+        if (isinstance(dtStart, (date, datetime)) and 
+            isinstance(dtStop, (date, datetime)) and
+            isinstance(dtDelta, timedelta)):
+
+            if isinstance(dtStart, date):
+                dtStart = datetime(*dtStart.timetuple()[:3], tzinfo=tz)
+            elif dtStart.tzinfo is None:
+                dtStart = dtStart.replace(tzinfo=tz)
+
+            if isinstance(dtStop, date):
+                dtStop = datetime(*dtStop.timetuple()[:3], 23, 59, tzinfo=tz)
+            elif dtStop.tzinfo is None:
+                dtStop = dtStop.replace(tzinfo=tz)
+
+            result, _dt = [], dtStart
+            while (_dt <= dtStop):
+                result.append(_dt)
+                _dt = _dt + dtDelta
+            return result
+
+        raise Exception('Expecting: 3-uple of (datetime, datetime, timedelta)')
+
+    @staticmethod
+    def shareTheSameTZ(dt1, dt2):
+        return (
+            isinstance(dt1, datetime) and 
+            isinstance(dt2, datetime) and 
+            (dt1.tzinfo == dt2.tzinfo)
+            )

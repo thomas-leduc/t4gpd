@@ -141,7 +141,7 @@ class SetSymbolLib(object):
             'color': color,
             'outline_color': outline_color,
             'width_border': width_border,
-            'style_border' : style_border})
+            'style_border': style_border})
         SetSymbolLib.__setSymbol(layer, fillSymbol)
 
     @staticmethod
@@ -178,6 +178,7 @@ class SetSymbolLib(object):
 
     @staticmethod
     def setLineSymbol(layer, color='black', penstyle='solid', width='0.55'):
+        # dash, dash dot, dash dot dot, dot, solid
         lineSymbol = QgsLineSymbol.createSimple({
             'color': color, 'penstyle': penstyle, 'width': width})
         SetSymbolLib.__setSymbol(layer, lineSymbol)

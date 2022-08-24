@@ -44,7 +44,7 @@ class GridFaceTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(4, len(result.columns), 'Count columns')
+        self.assertEqual(1 + len(self.building.columns), len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, MultiPoint, 'Is a GeoDataFrame of MultiPoint')
@@ -65,7 +65,7 @@ class GridFaceTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(4, len(result.columns), 'Count columns')
+        self.assertEqual(1 + len(self.building.columns), len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, MultiPolygon, 'Is a GeoDataFrame of MultiPolygon')

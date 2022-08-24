@@ -65,3 +65,22 @@ class STGeoProcess(GeoProcess):
                 result.update(op.runWithArgs(row))
             rows.append(self.updateOrAppend(row, result))
         return GeoDataFrame(rows, crs=self.inputGdf.crs)
+
+    '''
+    def _run(self, inputGdf):
+        rows = []
+        for _, row in inputGdf.iterrows():
+            result = dict()
+            for op in self.geoprocessToApply:
+                result.update(op.runWithArgs(row))
+            rows.append(self.updateOrAppend(row, result))
+        return GeoDataFrame(rows, crs=inputGdf.crs)
+
+    def parallel(self):
+        ncpu, nrows = cpu_count(), len(self.inputGdf)
+        loi = unique(linspace(0, nrows, ncpu).astype(int))
+        gdfs = [self.inputGdf.iloc[loi[i - 1]:loi[i]] for i in range(1, len(loi))]
+        with Pool(processes=ncpu) as pool:
+            gdfs = pool.map(self._run, gdfs)
+        return concat(gdfs)
+    '''

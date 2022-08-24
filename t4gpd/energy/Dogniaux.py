@@ -20,7 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import exp, sin
+from numpy import exp, pi, sin
+from t4gpd.commons.AngleLib import AngleLib
 
 
 class Dogniaux(object):
@@ -43,9 +44,16 @@ class Dogniaux(object):
     def __opticalAirMass(solarAltitudeAngle):
         # https://en.wikipedia.org/wiki/Air_mass_%28astronomy%29
         # d'apres (Miguet, 2000; p. 164)
-        y = (3.885 + solarAltitudeAngle) ** (-1.253);
-        z = sin(solarAltitudeAngle);
-        return (1.0 / (z + 0.15 * y))
+        assert (0 <= solarAltitudeAngle <= (pi / 2)), 'solarAltitudeAngle in radians!'
+        '''
+        return (1.0 / (sin(solarAltitudeAngle) + 0.15 * 
+                       (AngleLib.toDegrees(solarAltitudeAngle) + 3.885) ** (-1.253)))
+        return (1.0 / (sin(solarAltitudeAngle) + 0.50572 * 
+                       (AngleLib.toDegrees(solarAltitudeAngle) + 6.07995) ** (-1.6364)))
+        return 1.0 / sin(solarAltitudeAngle)
+        '''
+        return (1.0 / (sin(solarAltitudeAngle) + 0.50572 * 
+                       (AngleLib.toDegrees(solarAltitudeAngle) + 6.07995) ** (-1.6364)))
 
     @staticmethod
     def __extinctionAtmosphericCoefficient(atmosphericTrouble, angstromTurbidity):
@@ -58,6 +66,8 @@ class Dogniaux(object):
 
     @staticmethod
     def directNormalIrradiance(solarAltitudeAngle):
+        assert (0 <= solarAltitudeAngle <= (pi / 2)), 'solarAltitudeAngle in radians!'
+
         # TODO: Corresponding plotted diagram does not match (Miguet, 2000; p. 172)
         atmosphericTrouble = 3.0  # ~ urban area (Miguet, 2000; p. 166)
         angstromTurbidity = 0.15

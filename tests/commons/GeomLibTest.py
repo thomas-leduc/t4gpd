@@ -10,6 +10,7 @@ from numpy import pi
 from shapely.geometry import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+from shapely.wkt import loads
 
 
 class GeomLibTest(unittest.TestCase):
@@ -77,6 +78,18 @@ class GeomLibTest(unittest.TestCase):
         self.assertIsInstance(result, Polygon, 'Is a Polygon (2)')
         self.assertAlmostEqual(pi, result.area, None, 'Test Polygon area (2)', 1e-2)
 
+    def testFromPolygonToListOfTriangles(self):
+        input1 = loads('POLYGON ((0 0, 10 0, 10 10, 0 10, 9 5, 0 0))')
+        input2 = loads('POLYGON ((200 100, 200 150, 250 150, 250 200, 200 250, 200 300, 150 300, 150 250, 180 250, 180 200, 150 200, 100 150, 150 150, 200 100))')
+        input3 = loads('POLYGON ((353904.8 6695053.6, 353901.3 6695076.9, 353922.4 6695040.6, 353917.4 6695026.8, 353914.5 6695041, 353914.8 6695041.3, 353915 6695041.6, 353915.2 6695042, 353915.3 6695042.2, 353915.4 6695042.6, 353915.4 6695043.6, 353915.3 6695044, 353915.2 6695044.2, 353915 6695044.4, 353914.9 6695044.5, 353914.8 6695044.6, 353904.8 6695053.6))')
+        input4 = GeoDataFrameDemos.singleBuildingInNantes().geometry.squeeze()
+
+        for geom in [input1, input2, input3, input4]:
+            result = GeomLib.fromPolygonToListOfTriangles(geom)
+            self.assertIsInstance(result, list, 'Is a list of triangles (1)')
+            self.assertEqual(len(geom.exterior.coords) - 3, len(result), 'Is a list of triangles (2)')
+            self.assertAlmostEqual(MultiPolygon(result).area, geom.area, None, 'Test area', 1e-6)
+
     def testGetEnclosingFeatures(self):
         buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
         spatialIndex = buildings.sindex
@@ -105,12 +118,32 @@ class GeomLibTest(unittest.TestCase):
             for pt in result:
                 self.assertTrue(isinstance(pt, Point))
 
+    def testIsABorderPoint(self):
+        p = loads('MULTIPOLYGON (((0 0, 0 9, 9 9, 9 0, 0 0), (3 3, 3 6, 6 6, 6 3, 3 3)), ((10 0, 19 0, 19 9, 10 0)))')
+        buildings = GeoDataFrame([{ 'geometry': p }])
+
+        for pt in [Point((0, 0)), Point((3, 3)), Point((6, 6)), Point((10, 0)), Point((14.5, 4.5))]:
+            self.assertTrue(GeomLib.isABorderPoint(pt, buildings, buildings.sindex), 'Is a border point (1)')
+
+        for pt in [Point((1, 1)), Point((4.5, 4.5)), Point((12, 1))]:
+            self.assertFalse(GeomLib.isABorderPoint(pt, buildings, buildings.sindex), 'Is a border point (2)')
+
     def testIsAnIndoorPoint(self):
         p1 = Point((0, 0))
         p2 = Point((10, 0))
         buildings = GeoDataFrame([{ 'geometry': p1.buffer(5.0)}])
         self.assertTrue(GeomLib.isAnIndoorPoint(p1, buildings, buildings.sindex), 'Is an indoor point (1)')
         self.assertFalse(GeomLib.isAnIndoorPoint(p2, buildings, buildings.sindex), 'Is an indoor point (2)')
+
+    def testIsAnOutdoorPoint(self):
+        p = loads('MULTIPOLYGON (((0 0, 0 9, 9 9, 9 0, 0 0), (3 3, 3 6, 6 6, 6 3, 3 3)), ((10 0, 19 0, 19 9, 10 0)))')
+        buildings = GeoDataFrame([{ 'geometry': p }])
+
+        for pt in [Point((0, 0)), Point((1, 1)), Point((3, 3)), Point((6, 6)), Point((10, 0)), Point((14.5, 4.5))]:
+            self.assertFalse(GeomLib.isAnOutdoorPoint(pt, buildings, buildings.sindex), 'Is an outdoor point (1)')
+
+        for pt in [Point((4.5, 4.5)), Point((100, 100))]:
+            self.assertTrue(GeomLib.isAnOutdoorPoint(pt, buildings, buildings.sindex), 'Is an outdoor point (2)')
 
     def testIsAShapelyGeometry(self):
         for geom in [self.point, self.linearring, self.linestring, self.polygon,
@@ -169,6 +202,55 @@ class GeomLibTest(unittest.TestCase):
             self.assertTrue(geom.has_z, 'has_z test (1)')
             result = GeomLib.removeZCoordinate(geom)
             self.assertFalse(result.has_z, 'has_z test (2)')
+
+    def testSplitSegmentAccordingToTheDistanceToViewpoint(self):
+        # FIRST SET OF TESTS
+        segm, viewpt, dist = LineString([[0, 0], [8, 0]]), Point(0, 3), 1.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertListEqual([], result, '[1] Too short distance test')
+
+        segm, viewpt, dist = LineString([[0, 0], [8, 0]]), Point(0, 3), 100.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertListEqual([], result, '[1] Too long distance test')
+
+        segm, viewpt, dist = LineString([[0, 0], [8, 0]]), Point(0, 3), 3.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertIsInstance(result, list, '[1] Single point solution (1)')
+        self.assertListEqual([Point([0, 0])], result, '[1] Single point solution (2)')
+
+        segm, viewpt, dist = LineString([[0, 0], [8, 0]]), Point(0, 3), 5.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertIsInstance(result, list, '[1] Single point solution (3)')
+        self.assertListEqual([Point([4, 0])], result, '[1] Single point solution (4)')
+
+        segm, viewpt, dist = LineString([[-8, 0], [8, 0]]), Point(0, 3), 5.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertIsInstance(result, list, '[1] Pair of points solution (1)')
+        self.assertListEqual([Point([4, 0]), Point([-4, 0])], result, '[1] Pair of points solution (2)')
+
+        # SECOND SET OF TESTS
+        segm, viewpt, dist = LineString([[0, 0], [0, 8]]), Point(3, 0), 1.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertListEqual([], result, '[2] Too short distance test')
+
+        segm, viewpt, dist = LineString([[0, 0], [0, 8]]), Point(3, 0), 100.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertListEqual([], result, '[2] Too long distance test')
+
+        segm, viewpt, dist = LineString([[0, 0], [0, 8]]), Point(3, 0), 3.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertIsInstance(result, list, '[2] Single point solution (1)')
+        self.assertListEqual([Point([0, 0])], result, '[2] Single point solution (2)')
+
+        segm, viewpt, dist = LineString([[0, 0], [0, 8]]), Point(3, 0), 5.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertIsInstance(result, list, '[2] Single point solution (3)')
+        self.assertListEqual([Point([0, 4])], result, '[2] Single point solution (4)')
+
+        segm, viewpt, dist = LineString([[0, -8], [0, 8]]), Point(3, 0), 5.0
+        result = GeomLib.splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist)
+        self.assertIsInstance(result, list, '[2] Pair of points solution (1)')
+        self.assertListEqual([Point([0, 4]), Point([0, -4])], result, '[2] Pair of points solution (2)')
 
     def testToListOfBipointsAsLineStrings(self):
         for geom in (self.linestring, self.linearring, self.multilinestring, self.polygon,

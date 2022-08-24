@@ -3,7 +3,7 @@ Created on 27 aug. 2020
 
 @author: tleduc
 '''
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import unittest
 
 from geopandas.geodataframe import GeoDataFrame
@@ -27,7 +27,7 @@ class STHardShadowTest(unittest.TestCase):
     def testRun1(self):
         result = STHardShadow(
             self.buildings, self.datetimes, occludersElevationFieldname='HAUTEUR',
-            altitudeOfShadowPlane=0, aggregate=True, tz=None, model='pysolar').run()
+            altitudeOfShadowPlane=0, aggregate=True, tz=timezone.utc, model='pysolar').run()
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(3, len(result), 'Count rows')
@@ -54,7 +54,7 @@ class STHardShadowTest(unittest.TestCase):
     def testRun2(self):
         result = STHardShadow(
             self.buildings, self.datetimes, occludersElevationFieldname='HAUTEUR',
-            altitudeOfShadowPlane=0, aggregate=False, tz=None, model='pysolar').run()
+            altitudeOfShadowPlane=0, aggregate=False, tz=timezone.utc, model='pysolar').run()
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(132, len(result), 'Count rows')

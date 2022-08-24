@@ -8,7 +8,7 @@ import math
 
 
 def set_mist_optimized(tdb, tr, v, rh, met, clo, vapor_pressure, wme, body_surface_area,
-                       patm, fa_eff, p_mist):  # fa_eff et p_mist ajouté par Xenia
+                       patm, fa_eff, p_mist):  # fa_eff et p_mist ajoute par Xenia
     # Initial variables as defined in the ASHRAE 55-2017
     air_velocity = max(v, 0.1)
     k_clo = 0.25
@@ -32,7 +32,7 @@ def set_mist_optimized(tdb, tr, v, rh, met, clo, vapor_pressure, wme, body_surfa
 
     pressure_in_atmospheres = patm / 101325
     length_time_simulation = 60  # length time simulation
-    r_clo = 0.155 * clo  # thermal resistance of clothing, °C M^2 /W
+    r_clo = 0.155 * clo  # thermal resistance of clothing, C M^2 /W
 
     f_a_cl = 1.0 + 0.15 * clo  # increase in body surface area due to clothing
     lr = 2.2 / pressure_in_atmospheres  # Lewis ratio
@@ -48,7 +48,7 @@ def set_mist_optimized(tdb, tr, v, rh, met, clo, vapor_pressure, wme, body_surfa
 
     # h_cc corrected convective heat transfer coefficient
     h_cc = 3.0 * pow(pressure_in_atmospheres, 0.53)
-    # h_fc forced convective heat transfer coefficient, W/(m2 °C)
+    # h_fc forced convective heat transfer coefficient, W/(m2 C)
     h_fc = 8.600001 * pow((air_velocity * pressure_in_atmospheres), 0.53)
     h_cc = max(h_cc, h_fc)
 
@@ -94,16 +94,16 @@ def set_mist_optimized(tdb, tr, v, rh, met, clo, vapor_pressure, wme, body_surfa
         s_skin = h_fcs - dry - e_sk  # rate of energy storage in the skin
         TCSK = 0.97 * alfa * body_weight
         TCCR = 0.97 * (1 - alfa) * body_weight
-        DTSK = (s_skin * body_surface_area) / (TCSK * 60.0)  # °C per minute
+        DTSK = (s_skin * body_surface_area) / (TCSK * 60.0)  # C per minute
         DTCR = s_core * body_surface_area / (TCCR * 60.0)
         temp_skin = temp_skin + DTSK
         temp_core = temp_core + DTCR
-        t_body = alfa * temp_skin + (1 - alfa) * temp_core  # mean body temperature, °C
+        t_body = alfa * temp_skin + (1 - alfa) * temp_core  # mean body temperature, C
         # sk_sig thermoregulatory control signal from the skin
         sk_sig = temp_skin - temp_skin_neutral
         warms = (sk_sig > 0) * sk_sig  # vasodialtion signal
         colds = ((-1.0 * sk_sig) > 0) * (-1.0 * sk_sig)  # vasoconstriction signal
-        # c_reg_sig thermoregulatory control signal from the skin, °C
+        # c_reg_sig thermoregulatory control signal from the skin, C
         c_reg_sig = temp_core - temp_core_neutral
         # c_warm vasodilation signal
         c_warm = (c_reg_sig > 0) * c_reg_sig
@@ -155,7 +155,7 @@ def set_mist_optimized(tdb, tr, v, rh, met, clo, vapor_pressure, wme, body_surfa
     # rate of total evaporative heat loss from the skin at misting
     e_mist = fa_eff * (1 - p_wet) * p_mist * (p_clo - vapor_pressure) / r_ea
   
-    # sum of skin wetness at clothed nodes Esk+Emist - total evaporative heat loss from the skin in misting environement
+    # sum of skin wetness at clothed nodes Esk+Emist - total evaporative heat loss from the skin in misting environment
     e_clo = e_sk + e_mist
   
     # total heat loss from skin, W

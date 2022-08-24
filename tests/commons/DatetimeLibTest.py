@@ -116,6 +116,18 @@ class DatetimeLibTest(unittest.TestCase):
                     self.assertAlmostEqual(20, AngleLib.toDegrees(_solarAlti), None,
                                            'Test solarAlti at noon (winter solstice)', 0.6)
 
+    def testRange(self):
+        dtStart = date(2022, 3, 1)
+        dtStop = date(2022, 3, 1)
+        result = DatetimeLib.range(dtStart, dtStop, dtDelta=timedelta(hours=6))
+        self.assertIsInstance(result, list, 'DatetimeLib.range(...) is a list')
+        self.assertEqual(4, len(result), 'DatetimeLib.range(...) is a 4-item list')
+        for _dt in result:
+            self.assertIsInstance(_dt, datetime, 'DatetimeLib.range(...) is a list of datetimes')
+        self.assertListEqual([1, 1, 1, 1], [dt.day for dt in result], 'Test days')
+        self.assertListEqual([0, 6, 12, 18], [dt.hour for dt in result], 'Test hours')
+        self.assertListEqual([0, 0, 0, 0], [dt.minute for dt in result], 'Test minutes')
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

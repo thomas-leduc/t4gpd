@@ -147,6 +147,32 @@ class GeomLib(object):
                          ) for i in range(nRays)])
 
     @staticmethod
+    def fromPolygonToListOfTriangles(polygon):
+        if not isinstance(polygon, Polygon):
+            raise IllegalArgumentTypeException(polygon, 'Polygon')
+        if GeomLib.isHoled(polygon):
+            raise Exception('The processing of polygons with holes remains to be developed!')
+
+        p = list(GeomLib.normalizeRingOrientation(polygon).exterior.coords)[:-1]
+        i, n, result = 0, len(p), []
+        while n > 0:
+            if (3 >= n):
+                result.append(Polygon(p))
+                n, p = 0, []
+            else:
+                i, ip1, ip2 = i % n, (i + 1) % n, (i + 2) % n
+
+                if ((0 <= GeomLib.zCrossProduct(p[i], p[ip1], p[ip2])) and
+                    LineString([p[i], p[ip2]]).within(Polygon(p))):
+                    result.append(Polygon([ p[i], p[ip1], p[ip2] ]))
+                    del(p[ip1])
+                    n = n - 1
+
+                i += 1
+
+        return result 
+        
+    @staticmethod
     def getEnclosingFeatures(inputGdf, inputSpatialIndex, point):
         result = []
         ids = list(inputSpatialIndex.intersection(point.bounds))
@@ -223,18 +249,20 @@ class GeomLib(object):
         return AngleLib.toDegrees(azimuth)
 
     @staticmethod
-    def getListOfShapelyPoints(obj):
+    def getListOfShapelyPoints(obj, withoutClosingLoops=False):
         if isinstance(obj, Point):
             return [obj]
         elif isinstance(obj, LineString):
+            if withoutClosingLoops and (obj.is_closed):
+                return [Point(p) for p in obj.coords[:-1]]
             return [Point(p) for p in obj.coords]
         elif isinstance(obj, Polygon):
-            result = GeomLib.getListOfShapelyPoints(obj.exterior)
+            result = GeomLib.getListOfShapelyPoints(obj.exterior, withoutClosingLoops)
             for ring in obj.interiors:
-                result += GeomLib.getListOfShapelyPoints(ring)
+                result += GeomLib.getListOfShapelyPoints(ring, withoutClosingLoops)
             return result
         elif GeomLib.isMultipart(obj):
-            return reduce(lambda a, b: a + b, [GeomLib.getListOfShapelyPoints(g) for g in obj.geoms])            
+            return reduce(lambda a, b: a + b, [GeomLib.getListOfShapelyPoints(g, withoutClosingLoops) for g in obj.geoms])            
         raise IllegalArgumentTypeException(obj, 'Shapely geometry')
 
     @staticmethod
@@ -295,19 +323,49 @@ class GeomLib(object):
 
     @staticmethod
     def is3D(obj):
-        if GeomLib.isAShapelyGeometry(obj):
-            return obj.has_z
+        return GeomLib.isAShapelyGeometry(obj) and obj.has_z
+
+    @staticmethod
+    def getAnchoringBuildingId(point, buildings, spatialIndex):
+        # isAnAnchoringPolygon = isABorderPoint OR isAnInsidePoint
+        isAnAnchoringPolygon = lambda point, polygon: (
+            point.relate(polygon) in ['F0FFFF212', '0FFFFF212'])
+        buildingsIds = list(spatialIndex.intersection(point.bounds))
+        for buildingId in buildingsIds:
+            buildingGeom = buildings.loc[buildingId].geometry
+            if isAnAnchoringPolygon(point, buildingGeom):
+                return buildingId
+        return None
+
+    @staticmethod
+    def isABorderPoint(point, buildings, spatialIndex):
+        isAPointOnTheBorder = lambda point, polygon: ('F0FFFF212' == point.relate(polygon))
+        buildingsIds = list(spatialIndex.intersection(point.bounds))
+        for buildingId in buildingsIds:
+            buildingGeom = buildings.loc[buildingId].geometry
+            if isAPointOnTheBorder(point, buildingGeom):
+                return True
         return False
 
     @staticmethod
     def isAnIndoorPoint(point, buildings, spatialIndex):
+        isAnInsidePoint = lambda point, polygon: ('0FFFFF212' == point.relate(polygon))
         buildingsIds = list(spatialIndex.intersection(point.bounds))
         for buildingId in buildingsIds:
-            building = buildings.loc[buildingId]
-            buildingGeom = building.geometry
-            if point.within(buildingGeom):
+            buildingGeom = buildings.loc[buildingId].geometry
+            if isAnInsidePoint(point, buildingGeom):
                 return True
         return False
+
+    @staticmethod
+    def isAnOutdoorPoint(point, buildings, spatialIndex):
+        isAnOutsidePoint = lambda point, polygon: ('FF0FFF212' == point.relate(polygon))
+        buildingsIds = list(spatialIndex.intersection(point.bounds))
+        for buildingId in buildingsIds:
+            buildingGeom = buildings.loc[buildingId].geometry
+            if not isAnOutsidePoint(point, buildingGeom):
+                return False
+        return True
 
     @staticmethod
     def isAShapelyGeometry(obj):
@@ -421,6 +479,29 @@ class GeomLib(object):
         raise IllegalArgumentTypeException(obj, 'Shapely geometry')
 
     @staticmethod
+    def reverseRingOrientation(obj):
+        # if (isinstance(obj, LineString) and obj.is_ring):
+        if isinstance(obj, LineString):
+            return LineString(reversed(obj.coords))
+
+        elif isinstance(obj, Polygon):
+            extRing = GeomLib.reverseRingOrientation(obj.exterior)
+            intRings = [GeomLib.reverseRingOrientation(hole) for hole in obj.interiors]
+            return Polygon(extRing, intRings)
+
+        elif isinstance(obj, MultiLineString):
+            result = []
+            for geom in obj.geoms:
+                result.append(GeomLib.reverseRingOrientation(geom))
+            return MultiLineString(result)
+
+        elif isinstance(obj, MultiPolygon):
+            result = []
+            for geom in obj.geoms:
+                result.append(GeomLib.reverseRingOrientation(geom))
+            return MultiPolygon(result)
+
+    @staticmethod
     def ringSignedArea(ring):
         # https://en.wikipedia.org/wiki/Shoelace_formula
         if (isinstance(ring, LineString)):  # and ring.is_ring):
@@ -435,6 +516,50 @@ class GeomLib(object):
                 x1, y1 = x2, y2
             return area / 2.0
         raise IllegalArgumentTypeException(ring, 'LineString')
+
+    @staticmethod
+    def splitSegmentAccordingToTheDistanceToViewpoint(segm, viewpt, dist):
+        if not (isinstance(segm, LineString) and (2 == len(segm.coords))):
+            raise IllegalArgumentTypeException(segm, '2-point LineString')
+        if not isinstance(viewpt, Point):
+            raise IllegalArgumentTypeException(viewpt, 'Point')
+        p0, p1 = segm.coords
+
+        # CHECK IF THE RESULTING POINT IS ON THE SEGMENT
+        _maxDist = max(viewpt.distance(Point(p0)), viewpt.distance(Point(p1)))
+        if ((dist < viewpt.distance(segm)) or (_maxDist < dist)):
+            return []
+
+        # LET'S SOLVE THE FOLLOWING SYSTEM:
+        # x = x0 + (x1 - x0) * t
+        # y = y0 + (y1 - y0) * t
+        # (x - xv)**2 + (y - yv)**2 = dist**2
+        # 0 <= t <= 1
+        dx, dy = p1[0] - p0[0], p1[1] - p0[1]
+        vx, vy = p0[0] - viewpt.x, p0[1] - viewpt.y
+
+        a = (dx * dx + dy * dy)
+        b = 2 * (dx * vx + dy * vy)
+        c = (vx * vx + vy * vy - dist * dist)
+        discr = b * b - 4 * a * c
+
+        if (0 < discr):
+            t1 = (-b + sqrt(discr)) / (2 * a)
+            t2 = (-b - sqrt(discr)) / (2 * a)
+
+            result = []
+            if (0 <= t1 <= 1):
+                result.append(Point([p0[0] + dx * t1, p0[1] + dy * t1]))
+            if (0 <= t2 <= 1):
+                result.append(Point([p0[0] + dx * t2, p0[1] + dy * t2]))
+            return result
+
+        elif (0 == discr):
+            t0 = -b / (2 * a)
+            if (0 <= t0 <= 1):
+                return [ Point([p0[0] + dx * t0, p0[1] + dy * t0]) ]
+
+        raise Exception('Unreachable instruction!')
 
     @staticmethod
     def toListOfLineStrings(obj):

@@ -57,9 +57,10 @@ class CirWriterTest(unittest.TestCase):
 
             self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
             self.assertEqual(6, len(result), 'Count rows')
-            self.assertEqual(1, len(result.columns), 'Count columns')
+            self.assertEqual(2, len(result.columns), 'Count columns')
 
             for _, row in result.iterrows():
+                self.assertIn(int(row.cir_id), range(1, 1 + len(result)), 'Test gid attr. values')
                 self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygons')
                 self.assertTrue(GeomLib.is3D(row.geometry), 'Is a GeoDataFrame of 3D Polygons')
                 self.assertEqual(1.0, abs(GeomLib3D.getArea(row.geometry)), 'Test 3D Polygon area')

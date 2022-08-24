@@ -23,7 +23,7 @@ class STSkeletonizeTest(unittest.TestCase):
 
         self.assertIsInstance(result, gpd.GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(3, len(result.columns), 'Count columns')
+        self.assertEqual(len(self.inputGdf.columns), len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, MultiLineString, 'Is a GeoDataFrame of MultiLineString')

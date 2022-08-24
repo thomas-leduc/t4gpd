@@ -145,7 +145,7 @@ class STSnappingPointsOnLines2(GeoProcess):
             for stepCount in range(startStepCount, stopStepCount + 1):
                 if initialStartStepCount < stepCount:
                     currCurvAbsc += incCurvAbsc
-                row = inputMeasurePoints[stepCount]
+                row = inputMeasurePoints[stepCount].to_dict()
                 projPoint = pathGeom.interpolate(currCurvAbsc)
                 dist_to_l = row['geometry'].distance(projPoint) if ('geometry' in row) else None    
                 row['geometry'] = projPoint

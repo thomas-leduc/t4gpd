@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import unittest
 
 from geopandas import clip
@@ -62,7 +62,7 @@ class STTreeHardShadow2Test(unittest.TestCase):
             treeCrownHeightFieldname='h_houppier',
             treeUpperCrownRadiusFieldname='up_rad',
             treeLowerCrownRadiusFieldname='down_rad',
-            altitudeOfShadowPlane=0.0, aggregate=False, tz=None,
+            altitudeOfShadowPlane=0.0, aggregate=False, tz=timezone.utc,
             model='pysolar', npoints=32).run()
 
         datetimes = [str(dt) for dt in list(self.datetimes.values())[0]]

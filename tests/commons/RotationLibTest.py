@@ -21,10 +21,12 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import unittest
-from t4gpd.commons.AngleLib import AngleLib
+
+from numpy import array_equal, asarray, sqrt
 from shapely.geometry import LinearRing, LineString, MultiLineString, MultiPoint, Point, Polygon
-from t4gpd.commons.RotationLib import RotationLib
+from t4gpd.commons.AngleLib import AngleLib
 from t4gpd.commons.Epsilon import Epsilon
+from t4gpd.commons.RotationLib import RotationLib
 
 
 class RotationLibTest(unittest.TestCase):
@@ -34,6 +36,20 @@ class RotationLibTest(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def testMakeRotationMatrix(self):
+        expected = asarray([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+        actual = RotationLib.makeRotationMatrix([1, 0, 0], [0, 1, 0])
+        self.assertTrue(array_equal(actual, expected), 'msg')
+
+        a = 1 / sqrt(2)
+        expected = asarray([[-a, 0, -a], [0, 1, 0], [a, 0, -a]])
+        actual = RotationLib.makeRotationMatrix([1, 0, 0], [-a, 0, a])
+        for nl in range(3):
+            for nc in range(3):
+                self.assertAlmostEqual(
+                    expected[nl, nc], actual[nl, nc], None,
+                    f'\nInequality in row {nl} and column {nc}', 1e-9)
 
     def testRotate2DXYZ(self):
         for p in [Point((1, 0)), (1, 0)]:

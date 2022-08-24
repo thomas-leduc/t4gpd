@@ -21,14 +21,15 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import re
-from shapely.geometry import Polygon
 
 from geopandas.geodataframe import GeoDataFrame
+from shapely.geometry import Polygon
+from t4gpd.commons.ArrayCoding import ArrayCoding
 from t4gpd.commons.CSVLib import CSVLib
-from t4gpd.commons.GeoProcess import GeoProcess
+from t4gpd.io.AbstractReader import AbstractReader
 
 
-class CirReader(GeoProcess):
+class CirReader(AbstractReader):
     '''
     classdocs
     '''
@@ -41,17 +42,15 @@ class CirReader(GeoProcess):
         '''
         self.inputFile = inputFile
         self.data = self.__initialParsing()
-        self.dataLen = len(self.data)
         self.ptr = 0
-
-    def __eof(self):
-        return (self.dataLen <= self.ptr)
 
     def __initialParsing(self):
         result = []
-        with open(self.inputFile, 'r') as f:
+
+        with CirReader.opener(self.inputFile) as f:
             for line in f:
                 result += [CSVLib.readLexeme(value) for value in line.split()]
+
         return result
 
     def __read(self):
@@ -59,7 +58,7 @@ class CirReader(GeoProcess):
         return self.data[self.ptr - 1]
  
     def __read3Coords(self):
-        return self.__read(), self.__read(), self.__read()
+        return [self.__read(), self.__read(), self.__read()]
 
     def __readBBox(self):
         self.ptr += 10
@@ -78,10 +77,15 @@ class CirReader(GeoProcess):
     def __readFace(self):
         faceNumber = self.__readFaceNumber()
         nbContours = self.__read()
-        normal = self.__read3Coords()
+        normal_vec = self.__read3Coords()
         result = []
-        for _ in range(nbContours):
-            result.append(self.__readContour())
+        for ctrNumber in range(nbContours):
+            gid = ArrayCoding.encode([faceNumber] if (1 == nbContours) else [faceNumber, ctrNumber])
+            result.append({
+                'cir_id': gid,
+                'geometry': self.__readContour(),
+                # 'normal_vec': ArrayCoding.encode(normal_vec) if self.encode else normal_vec
+                })
         return result
 
     def __readFaceNumber(self):
@@ -96,10 +100,8 @@ class CirReader(GeoProcess):
         nbOfNodes, result = self.__read(), []
         for _ in range(nbOfNodes):
             result.append(self.__read3Coords())
-        return result[:-1]
-
-    def __rewind(self):
-        self.ptr -= 1
+        return result
+        # return result[:-1]
 
     def run(self):
         result = []
@@ -111,6 +113,4 @@ class CirReader(GeoProcess):
             for _ in range(nbFaces):
                 result += self.__readFace()
 
-        return GeoDataFrame(
-            [{'geometry': geom} for geom in result]
-            )
+        return GeoDataFrame(result)

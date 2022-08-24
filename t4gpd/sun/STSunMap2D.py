@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from datetime import datetime
+from datetime import datetime, timezone
 
 from geopandas.geodataframe import GeoDataFrame
 from numpy import cos, sin
@@ -38,7 +38,7 @@ class STSunMap2D(GeoProcess):
     '''
 
     def __init__(self, viewpointsGdf, datetimes, size=4.0, projectionName='Stereographic',
-                 tz=None, model='pysolar'):
+                 tz=timezone.utc, model='pysolar'):
         '''
         Constructor
         '''

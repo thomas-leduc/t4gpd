@@ -33,7 +33,8 @@ class FootprintExtruder(AbstractGeoprocess):
     classdocs
     '''
 
-    def __init__(self, buildingsGdf, elevationFieldname='HAUTEUR', forceZCoordToZero=True):
+    def __init__(self, buildingsGdf, elevationFieldname='HAUTEUR', forceZCoordToZero=True,
+                 withoutBuildingFloors=False):
         '''
         Constructor
         '''
@@ -44,6 +45,7 @@ class FootprintExtruder(AbstractGeoprocess):
             raise Exception('%s is not a relevant field name!' % (elevationFieldname))
         self.elevationFieldname = elevationFieldname
         self.forceZCoordToZero = forceZCoordToZero
+        self.withoutBuildingFloors = withoutBuildingFloors
 
     def __wallsPerRing(self, groundRing, roofRing):
         _down, _up = groundRing.coords, roofRing.coords
@@ -86,4 +88,6 @@ class FootprintExtruder(AbstractGeoprocess):
         _ground = GeomLib.normalizeRingOrientation(_ground, ccw=False)
         _roof = GeomLib.normalizeRingOrientation(_roof, ccw=True)
 
+        if self.withoutBuildingFloors:
+            return { 'geometry': MultiPolygon([_roof] + _walls) }
         return { 'geometry': MultiPolygon([_ground, _roof] + _walls) }

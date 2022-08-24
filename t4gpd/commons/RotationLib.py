@@ -20,11 +20,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from numpy import array_equal, cos, cross, dot, eye, sin, vstack
+from numpy.linalg import norm
 from shapely.coords import CoordinateSequence
-from shapely.geometry import GeometryCollection, MultiPoint, MultiLineString, MultiPolygon, LinearRing, LineString, Point, Polygon
+from shapely.geometry import GeometryCollection, MultiPoint, MultiLineString, \
+    MultiPolygon, LinearRing, LineString, Point, Polygon
 from shapely.geometry.base import GeometrySequence
-
-from numpy import cos, sin
 from t4gpd.commons.GeomLib import GeomLib
 
 
@@ -32,6 +33,36 @@ class RotationLib(object):
     '''
     classdocs
     '''
+
+    @staticmethod
+    def makeRotationMatrix(vectA, vectB):
+        '''
+        OCTAVE FORMALISM:
+        U = [1; 0; 0];
+        V = [0; 1; 0];
+        I = eye(3);
+        cosTheta = dot(U,V);
+        sinTheta = norm(cross(U,V));
+        a = cross(U,V) / sinTheta;
+        R = cosTheta * I + (1 - cosTheta) * a * a' + sinTheta * cross(I, [a,a,a])'
+        '''
+        # epsilon = 1e-16  # TO PREVENT THE ZERO DIVISION
+        epsilon = 0
+        A = vectA / (norm(vectA) + epsilon)
+        B = vectB / (norm(vectB) + epsilon)
+        assert not array_equal(A, B), 'Normalized vectors must not be equal'
+
+        # https://www.developpez.net/forums/d1235157/general-developpement/algorithme-mathematiques/mathematiques/matrice-rotation-entre-vecteurs/
+        # https://fr.wikipedia.org/wiki/Rotation_vectorielle
+        I = eye(3)
+        cosTheta = dot(A, B)
+        sinTheta = norm(cross(A, B))
+        a = cross(A, B) / sinTheta
+
+        R = cosTheta * I + (1 - cosTheta) * a.reshape(-1, 1) * a.reshape(1, -1) + \
+            sinTheta * cross(I, vstack([a, a, a]).T, axisa=0, axisb=0, axisc=0).T
+
+        return R
 
     '''
     @staticmethod

@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from datetime import date, time
+from datetime import date, time, timezone
 import unittest
 
 from geopandas.geodataframe import GeoDataFrame
@@ -46,7 +46,7 @@ class STSunMap2DTest(unittest.TestCase):
     def testRun(self):
         skymap = STGeoProcess(SkyMap2D(self.buildings, size=6.0), self.viewpoint).run()
         result = STSunMap2D(self.viewpoint, self.datetimes, size=6.0,
-                            projectionName='Stereographic', tz=None,
+                            projectionName='Stereographic', tz=timezone.utc,
                             model='pysolar').run()
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')

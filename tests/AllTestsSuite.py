@@ -32,6 +32,14 @@ class AllTestsSuite(unittest.TestCase):
         self.assertEqual(0, len(_errors), '*** errors = %d' % len(_errors))
         self.assertEqual(0, len(_failures), '*** failures = %d' % len(_failures))
 
+    def testComfort(self):
+        loader = unittest.TestLoader()
+        suite = loader.discover(start_dir='./comfort', pattern='*Test.py')
+        # initialize a runner, pass it your suite and run it
+        runner = unittest.TextTestRunner(verbosity=AllTestsSuite.VERBOSITY)
+        result = runner.run(suite)
+        self.__printResult(result)
+
     def testCommmons(self):
         loader = unittest.TestLoader()
         suite = loader.discover(start_dir='./commons', pattern='*Test.py')

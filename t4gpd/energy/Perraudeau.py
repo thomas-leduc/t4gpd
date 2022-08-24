@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import exp
+from numpy import exp, pi
 from t4gpd.commons.AngleLib import AngleLib
 
 
@@ -32,4 +32,6 @@ class Perraudeau(object):
 
     @staticmethod
     def directNormalIrradiance(solarAltitudeAngle):
+        assert (0 <= solarAltitudeAngle <= (pi / 2)), 'solarAltitudeAngle in radians!'
+
         return 1000.0 * (1.0 - exp(-0.055 * AngleLib.toDegrees(solarAltitudeAngle)))

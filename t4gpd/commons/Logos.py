@@ -23,12 +23,16 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 import geopandas
 from geopandas.geodataframe import GeoDataFrame
 from matplotlib.colors import ListedColormap
+from pyvista import global_theme, Plotter
 from shapely.affinity import scale, translate
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.ops import unary_union, triangulate
 from shapely.wkt import loads
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.morph.STPointsDensifier import STPointsDensifier
+from t4gpd.morph.geoProcesses.FootprintExtruder import FootprintExtruder
+from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
+from t4gpd.pyvista.ToUnstructuredGrid import ToUnstructuredGrid
 
 import matplotlib.pyplot as plt 
 
@@ -98,3 +102,39 @@ class Logos(object):
             plt.show()
         else:
             fig.savefig(filename, bbox_inches='tight')
+
+    @staticmethod
+    def logo3DAsPdf(filename=None, greyscaled=False):
+        _gdf = Logos.logoAsMesh()
+        _gdf = _gdf.explode(ignore_index=True)
+        _gdf['HAUTEUR'] = 15.0
+
+        op = FootprintExtruder(_gdf, elevationFieldname='HAUTEUR', forceZCoordToZero=True)
+        _gdf = STGeoProcess(op, _gdf).run()
+
+        global_theme.background = 'white'
+        global_theme.axes.show = False
+        global_theme.lighting = True
+        global_theme.camera = {
+            'position': [859.078, -4593.389, 6933.603],
+            'focal_point': [4287.524, 3160.188, 87.055],
+            'viewup': [0.254, 0.575, 0.778]
+            }
+        if filename is None:
+            plotter = Plotter(window_size=(1000, 800))
+        else:
+            plotter = Plotter(off_screen=True, window_size=(1000, 800))
+
+        if greyscaled:
+            _logo3D = ToUnstructuredGrid([_gdf], fieldname=None).run()
+            plotter.add_mesh(_logo3D, color='dimgrey',
+                             show_edges=False, show_scalar_bar=False)
+        else:
+            _logo3D = ToUnstructuredGrid([_gdf], fieldname='gid').run()
+            # my_colormap = ListedColormap(['red', 'cyan', 'yellow', 'dimgrey'])
+            my_colormap = 'Pastel1'
+            plotter.add_mesh(_logo3D, scalars='gid', cmap=my_colormap,
+                             show_edges=False, show_scalar_bar=False)
+        plotter.camera.zoom(1.4)
+        plotter.show(screenshot=filename)
+        return _gdf

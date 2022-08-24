@@ -25,7 +25,7 @@ from shapely.wkt import loads
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
-from t4gpd.commons.ShannonEntropy import ShannonEntropy
+from t4gpd.commons.Entropy import Entropy
 
 
 class StarShapedIndices(AbstractGeoprocess):
@@ -46,7 +46,7 @@ class StarShapedIndices(AbstractGeoprocess):
         lengths = GeomLib.fromMultiLineStringToLengths(geom)
 
         drift = loads(row['vect_drift']).length if ('vect_drift' in row) else None
-        h = ShannonEntropy.createFromDoubleValuesArray(lengths, self.precision).h(self.base)
+        h = Entropy.createFromDoubleValuesArray(lengths, self.precision).h(self.base)
 
         return {
             'min_raylen': min(lengths),

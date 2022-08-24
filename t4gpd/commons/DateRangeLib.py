@@ -31,9 +31,7 @@ class DateRangeLib(object):
     '''
 
     @staticmethod
-    def preprocess(date0, date1=None, period='hourly', tz=None):
-        tz = timezone.utc if (tz is None) else tz
-
+    def preprocess(date0, date1=None, period='hourly', tz=timezone.utc):
         if not isinstance(date0, date):
             raise IllegalArgumentTypeException(date0, 'date')
         date0 = datetime(*date0.timetuple()[:3], 0, tzinfo=tz)

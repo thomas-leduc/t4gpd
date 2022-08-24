@@ -22,6 +22,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
 from numpy import pi
+from pandas import isna
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
@@ -55,7 +56,7 @@ class HeightOfRoughness(AbstractGeoprocess):
 
         if (0.0 < zoneArea):
             _features = GeomLib.extractFeaturesWithin(zone, self.itemsGdf, self.spatialIndex)
-            _vol = sum([f['geometry'].area * f[self.elevationFieldName] for f in _features])
+            _vol = sum([f['geometry'].area * f[self.elevationFieldName] for f in _features if not isna(f[self.elevationFieldName])])
             return { 'hre': float(_vol / zoneArea) }
 
         return { 'hre': None }

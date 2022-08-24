@@ -25,6 +25,7 @@ from datetime import datetime
 from t4gpd.commons.AngleLib import AngleLib
 
 import matplotlib.pyplot as plt
+from numpy  import arange
 from t4gpd.energy.Dogniaux import Dogniaux
 from t4gpd.energy.Perez import Perez
 from t4gpd.energy.Perraudeau import Perraudeau
@@ -35,38 +36,51 @@ class PlotDirectNormalIrradiance(object):
     '''
     classdocs
     '''
+
     @staticmethod
-    def plot(dt=datetime(2020, 3, 21)):
+    def plot(dt=datetime(2020, 3, 21), ofile=None):
         # PEREZ MODEL PARAMETERS:
         delta = 0.12
         epsilon = 6.3
         dayInYear = dt.timetuple().tm_yday
 
-        mainFig = plt.figure(1)
-        mainFig.clear()
+        xDeg = arange(0, 91, 1)
+        xRad = AngleLib.toRadians(xDeg)
 
-        x = list(range(0, 91, 1))
+        y1 = [Dogniaux.directNormalIrradiance(x) for x in xRad]
+        y2 = [Perez.directSolarIrradiance(x, dayInYear, delta, epsilon) for x in xRad]
+        y3 = [Perraudeau.directNormalIrradiance(x) for x in xRad]
+        y4 = [PerrinDeBrichambaut.directNormalIrradiance(x, skyType=PerrinDeBrichambaut.PURE_SKY) for x in xRad]
+        y5 = [PerrinDeBrichambaut.directNormalIrradiance(x, skyType=PerrinDeBrichambaut.STANDARD_SKY) for x in xRad]
+        y6 = [PerrinDeBrichambaut.directNormalIrradiance(x, skyType=PerrinDeBrichambaut.POLLUTED_SKY) for x in xRad]
+        y7 = [Perez.diffuseSolarIrradiance(x, dayInYear, delta) for x in xRad]
+        y8 = [PerrinDeBrichambaut.diffuseSolarIrradiance(x, skyType=PerrinDeBrichambaut.PURE_SKY) for x in xRad]
+        y9 = [PerrinDeBrichambaut.diffuseSolarIrradiance(x, skyType=PerrinDeBrichambaut.STANDARD_SKY) for x in xRad]
+        ya = [PerrinDeBrichambaut.diffuseSolarIrradiance(x, skyType=PerrinDeBrichambaut.POLLUTED_SKY) for x in xRad]
 
-        y1 = [Dogniaux.directNormalIrradiance(AngleLib.toRadians(_x)) for _x in x]
-        y2 = [Perez.directSolarIrradiance(AngleLib.toRadians(_x), dayInYear, delta, epsilon) for _x in x]
-        y3 = [Perraudeau.directNormalIrradiance(AngleLib.toRadians(_x)) for _x in x]
-        y4 = [PerrinDeBrichambaut.directNormalIrradiance(AngleLib.toRadians(_x), skyType=PerrinDeBrichambaut.PURE_SKY) for _x in x]
-        y5 = [PerrinDeBrichambaut.directNormalIrradiance(AngleLib.toRadians(_x), skyType=PerrinDeBrichambaut.STANDARD_SKY) for _x in x]
-        y6 = [PerrinDeBrichambaut.directNormalIrradiance(AngleLib.toRadians(_x), skyType=PerrinDeBrichambaut.POLLUTED_SKY) for _x in x]
+        fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
+        ax.set_title('Direct Normal Irradiance (DNI) + Diffuse Solar Irradiance', fontsize=16)
+        ax.set_xlabel('Solar Altitude Angle', fontsize=16)
+        ax.set_ylabel('Solar Irradiance [W.m$^{-2}$]', fontsize=16)
+        ax.set_ylim(0, 1200)
+        ax.grid(True)
+        _lines = ax.plot(xDeg, y1, 'b-', xDeg, y2, 'r-', xDeg, y3, 'k-', xDeg, y4, 'm-.',
+                         xDeg, y5, 'g-.', xDeg, y6, 'c-.', xDeg, y7, 'r--', xDeg, y8, 'm--',
+                         xDeg, y9, 'g--', xDeg, ya, 'c--')
+        ax.legend(_lines, ["Dogniaux's DNI", "Perez's DNI", "Perraudeau's DNI",
+                           "Perrin de Br.'s DNI (Pure sky)",
+                           "Perrin de Br.'s DNI (Standard sky)",
+                           "Perrin de Br.'s DNI (Polluted sky)",
+                           "Perez's diffuse model",
+                           "Perrin de Br.'s diffuse model (Pure sky)",
+                           "Perrin de Br.'s diffuse model (Standard sky)",
+                           "Perrin de Br.'s diffuse model (Polluted sky)"
+                           ], loc='upper center', ncol=2, fontsize=12)
+        if ofile is None:
+            plt.show()
+        else:
+            plt.savefig(ofile, bbox_inches='tight')
+        plt.close(fig)
 
-        plt.title('Direct Normal Irradiance')
-        plt.xlabel('Solar Altitude Angle')
-        plt.ylabel('Direct Normal Irradiance (W/m2)')
-        plt.grid(True)
-        _d, _p1, _p2, _pdb_c, _pdb_s, _pdb_p = plt.plot(x, y1, 'b-', x, y2, 'c-', x, y3, 'k-', x, y4, 'm--', x, y5, 'g--', x, y6, 'r--')
-        plt.legend((_d, _p1, _p2, _pdb_c, _pdb_s, _pdb_p), (
-            'Dogniaux\'s model',
-            'Perez\'s model',
-            'Perraudeau\'s model',
-            'Perrin de Brichambaut\'s model (Pure sky)',
-            'Perrin de Brichambaut\'s model (Standard sky)',
-            'Perrin de Brichambaut\'s model (Polluted sky)',
-        ))
-        plt.show()
 
-# PlotDirectNormalIrradiance.plot()
+# PlotDirectNormalIrradiance.plot(ofile='/tmp/irrad.pdf')

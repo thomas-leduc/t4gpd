@@ -62,7 +62,7 @@ class SkyViewFactorTest(unittest.TestCase):
         self.viewpoints.plot(ax=basemap, color='black')
         result.plot(ax=basemap, column='svf', legend=True, cmap='plasma')
         result.apply(lambda x: basemap.annotate(
-            s='%.1f' % (x.svf), xy=x.geometry.centroid.coords[0],
+            text=f'{x.svf:.1f}', xy=x.geometry.centroid.coords[0],
             color='black', size=14, ha='center'), axis=1);
         plt.show()
         '''

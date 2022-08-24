@@ -57,6 +57,8 @@ class Perez(object):
     @staticmethod
     def diffuseSolarIrradiance(solarAltitudeAngle, dayInYear, delta):
         # ~ delta: sky's brightness (Perez et al., 1993)
+        assert (0 <= solarAltitudeAngle <= (pi / 2)), 'solarAltitudeAngle in radians!'
+
         airMass = Perez.__dogniauxOpticalAirMass(solarAltitudeAngle)
         eccentricity = Perez.__eccentricity(dayInYear)
         return ((delta * Perez.SOLAR_CONSTANT * eccentricity) / airMass)
@@ -65,6 +67,8 @@ class Perez(object):
     def directSolarIrradiance(solarAltitudeAngle, dayInYear, delta, epsilon):
         # ~ delta: sky's brightness (Perez et al., 1993)
         # ~ epsilon: sky's clearness (Perez et al., 1993)
+        assert (0 <= solarAltitudeAngle <= (pi / 2)), 'solarAltitudeAngle in radians!'
+
         de = Perez.diffuseSolarIrradiance(solarAltitudeAngle, dayInYear, delta)
         z = pi / 2.0 - solarAltitudeAngle
         return de * (epsilon - 1.0) * (1.0 + 1.041 * z ** 3)

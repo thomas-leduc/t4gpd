@@ -49,10 +49,11 @@ class SkyViewFactorOnTopOfRoofTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(6, len(result), 'Count rows')
-        self.assertEqual(4, len(result.columns), 'Count columns')
+        self.assertEqual(1 + len(self.buildings.columns), len(result.columns), 'Count columns')
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, Point, 'Is a GeoDataFrame of Point')
-            self.assertTrue(0.09 < row.svf_roof < 0.40, 'svf_roof attribute test')
+            self.assertLess(1e-3, row.svf_roof, 'svf_roof attribute test (1)')
+            self.assertGreater(0.92, row.svf_roof, 'svf_roof attribute test (2)')
 
         '''
         import matplotlib.pyplot as plt

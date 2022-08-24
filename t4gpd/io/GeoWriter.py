@@ -20,11 +20,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Point
+from _io import StringIO
 
+from geopandas.geodataframe import GeoDataFrame
+from pandas import read_csv
+from shapely.geometry import Point
+from shapely.wkt import loads
+from t4gpd.commons.Epsilon import Epsilon
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.GeomLib import GeomLib
+from t4gpd.commons.GeomLib3D import GeomLib3D
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.commons.MyEdge import MyEdge
 from t4gpd.commons.MyNode import MyNode
@@ -35,7 +40,8 @@ class GeoWriter(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, inputGdf, outputFile, characteristicLength=10.0, toLocalCrs=True):
+    def __init__(self, inputGdf, outputFile, characteristicLength=10.0,
+                 toLocalCrs=True, withPhysicalSurfaces=False):
         '''
         Constructor
         '''
@@ -46,6 +52,7 @@ class GeoWriter(GeoProcess):
         self.outputFile = outputFile
         self.lc = characteristicLength
         self.toLocalCrs = toLocalCrs
+        self.withPhysicalSurfaces = withPhysicalSurfaces
 
     def run(self):
         newOrigin = Point((0.0, 0.0, 0.0))
@@ -57,28 +64,55 @@ class GeoWriter(GeoProcess):
         mapOfEdges = {}
         arrayOfLineLoops = []
         arrayOfPlaneSurfaces = []
+        mapOfPhysicalSurfaces = {}
 
         for _, row in self.inputGdf.iterrows():
             geom = row.geometry
             if GeomLib.isMultipart(geom):
                 for g in geom.geoms:
-                    self.__dumpPolygon(g, mapOfNodes, mapOfEdges, arrayOfLineLoops, arrayOfPlaneSurfaces)
+                    self.__dumpPolygon(g, mapOfNodes, mapOfEdges, arrayOfLineLoops,
+                                       arrayOfPlaneSurfaces, mapOfPhysicalSurfaces)
             else:
-                self.__dumpPolygon(geom, mapOfNodes, mapOfEdges, arrayOfLineLoops, arrayOfPlaneSurfaces)
+                self.__dumpPolygon(geom, mapOfNodes, mapOfEdges, arrayOfLineLoops,
+                                   arrayOfPlaneSurfaces, mapOfPhysicalSurfaces)
  
         with open(self.outputFile, 'w') as output: 
             self.__dumpNodes(output, mapOfNodes, newOrigin)
             self.__dumpEdges(output, mapOfEdges, mapOfNodes)
             self.__dumpLineLoops(output, arrayOfLineLoops)
             self.__dumpPlaneSurfaces(output, arrayOfPlaneSurfaces)
+            if self.withPhysicalSurfaces:
+                self.__dumpPhysicalSurfaces(output, mapOfPhysicalSurfaces)
 
-    def __dumpPolygon(self, polygon, mapOfNodes, mapOfEdges, arrayOfLineLoops, arrayOfPlaneSurfaces):
+    def __dumpPolygon(self, polygon, mapOfNodes, mapOfEdges, arrayOfLineLoops,
+                      arrayOfPlaneSurfaces, mapOfPhysicalSurfaces):
         tmp = list()
         tmp.append(self.__fulfillWith(mapOfNodes, mapOfEdges, arrayOfLineLoops, polygon.exterior))
         for hole in polygon.interiors:
             tmp.append(self.__fulfillWith(mapOfNodes, mapOfEdges, arrayOfLineLoops, hole))
         arrayOfPlaneSurfaces.append(tmp)
-        
+
+        if self.withPhysicalSurfaces:
+            # Handle Physical Surfaces
+            currPlaneSurfaceIdx = len(arrayOfPlaneSurfaces)
+            _, _, nz = GeomLib3D.getFaceNormalVector(polygon)
+
+            if Epsilon.isZero(nz):
+                if 'Mur' in mapOfPhysicalSurfaces:
+                    mapOfPhysicalSurfaces['Mur'].append(currPlaneSurfaceIdx)
+                else:
+                    mapOfPhysicalSurfaces['Mur'] = [currPlaneSurfaceIdx]
+            elif Epsilon.equals(1.0, nz):
+                if 'Toit' in mapOfPhysicalSurfaces:
+                    mapOfPhysicalSurfaces['Toit'].append(currPlaneSurfaceIdx)
+                else:
+                    mapOfPhysicalSurfaces['Toit'] = [currPlaneSurfaceIdx]
+            elif Epsilon.equals(-1.0, nz):
+                if 'Sol' in mapOfPhysicalSurfaces:
+                    mapOfPhysicalSurfaces['Sol'].append(currPlaneSurfaceIdx)
+                else:
+                    mapOfPhysicalSurfaces['Sol'] = [currPlaneSurfaceIdx]
+
     def __fulfillWith(self, mapOfNodes, mapOfEdges, arrayOfLineLoops, ring):
         nodes, tmp = list(ring.coords)[:-1], list()
 
@@ -129,3 +163,9 @@ class GeoWriter(GeoProcess):
         output.write('\n// =====> %d PLANE SURFACE(S)\n' % len(arrayOfPlaneSurfaces))
         for i in range(len(arrayOfPlaneSurfaces)):
             output.write('Plane Surface(%d) = {%s};\n' % (i + 1, ', '.join([str(x) for x in arrayOfPlaneSurfaces[i]])))
+
+    def __dumpPhysicalSurfaces(self, output, mapOfPhysicalSurfaces):
+        output.write('\n// =====> %d PHYSICAL SURFACE(S)\n' % len(mapOfPhysicalSurfaces))
+        for k, v in mapOfPhysicalSurfaces.items():
+            output.write("Physical Surface('%s') = {%s};\n" % (
+                k, ', '.join([str(x) for x in v])))

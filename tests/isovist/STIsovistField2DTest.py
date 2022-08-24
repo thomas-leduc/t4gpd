@@ -5,14 +5,14 @@ Created on 17 juin 2020
 '''
 import unittest
 
+from geopandas import GeoDataFrame
 from numpy import pi
 from shapely.geometry import LineString, MultiLineString, Point, Polygon
 from shapely.wkt import loads
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.isovist.STIsovistField2D import STIsovistField2D
 from t4gpd.morph.STGrid import STGrid
-
-import geopandas as gpd
+from t4gpd.morph.STPointsDensifier2 import STPointsDensifier2
 
 
 class STIsovistField2DTest(unittest.TestCase):
@@ -25,15 +25,15 @@ class STIsovistField2DTest(unittest.TestCase):
         self.buildings = None
         self.viewpoints = None
 
-    def testRun(self):
+    def testRun1(self):
         nRays, rayLength = 64, 20.0
         isovRaysField, isovField = STIsovistField2D(self.buildings, self.viewpoints, nRays, rayLength).run()
 
         for result in [isovRaysField, isovField]:
-            self.assertIsInstance(result, gpd.GeoDataFrame, "Is a GeoDataFrame")
+            self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
             self.assertEqual(result.crs, self.buildings.crs, "Verify CRS")
             self.assertEqual(15, len(result), "Count rows")
-            self.assertEqual(7, len(result.columns), 'Count columns')
+            self.assertEqual(2 + len(self.viewpoints.columns), len(result.columns), 'Count columns')
 
         approxRayLength = rayLength + 1e-6            
         for _, row in isovRaysField.iterrows():
@@ -62,8 +62,63 @@ class STIsovistField2DTest(unittest.TestCase):
         isovField.boundary.plot(ax=basemap, color='red')
         plt.show()
         '''
-
         # isovField.to_file('/tmp/xxx.shp')
+
+    def testRun2(self):
+        nlines, ncols = 2, 2
+        bdx, bdy = 50, 50  # building size
+        sdx, sdy = 10, 20  # street widths
+        buildings = GeoDataFrameDemos.regularGridOfPlots2(nlines, ncols, bdx, bdy, sdx, sdy)
+
+        sensors = STPointsDensifier2(buildings, curvAbsc=[0.5], pathidFieldname=None).run()
+
+        nRays, rayLength = 64, 20.0
+        isovRaysField, isovField = STIsovistField2D(buildings, sensors, nRays, rayLength).run()
+
+        for result in [isovRaysField, isovField]:
+            self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+            self.assertEqual(result.crs, buildings.crs, "Verify CRS")
+            self.assertEqual(16, len(result), "Count rows")
+            self.assertEqual(2 + len(sensors.columns), len(result.columns), 'Count columns')
+
+        '''
+        import matplotlib.pyplot as plt
+        fig, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
+        buildings.boundary.plot(ax=basemap, color='grey', edgecolor='grey', hatch='/')
+        sensors.plot(ax=basemap, color='black')
+        isovField.plot(ax=basemap, color='yellow', alpha=0.4)
+        isovRaysField.plot(ax=basemap, color='black', linewidth=1)
+        plt.show()
+        plt.close(fig)
+        '''
+
+    def testRun3(self):
+        buildings = GeoDataFrame([
+            { 'geometry': loads('POLYGON ((50 80, 60 80, 60 70, 50 70, 50 80))') },
+            { 'geometry': loads('POLYGON ((0 100, 10 100, 10 10, 90 10, 90 30, 60 30, 60 60, 70 60, 70 40, 90 40, 90 90, 80 90, 80 80, 70 80, 70 90, 30 90, 30 50, 20 50, 20 100, 100 100, 100 0, 0 0, 0 100))') },
+            ])
+        for x, y in [(30, 80), (40, 70), (60, 70)]:
+            sensors = GeoDataFrame([
+                { 'geometry': loads(f'POINT ({x} {y})') },
+                ])
+    
+            nRays, rayLength = 64, 100.0
+            isovRaysField, isovField = STIsovistField2D(buildings, sensors, nRays, rayLength).run()
+    
+            for result in [isovRaysField, isovField]:
+                self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+                self.assertEqual(result.crs, buildings.crs, "Verify CRS")
+                self.assertEqual(1, len(result), "Count rows")
+                self.assertEqual(3, len(result.columns), 'Count columns')
+    
+            import matplotlib.pyplot as plt
+            fig, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
+            buildings.boundary.plot(ax=basemap, color='grey', edgecolor='grey', hatch='/')
+            sensors.plot(ax=basemap, color='black')
+            isovField.plot(ax=basemap, color='yellow', alpha=0.4)
+            isovRaysField.plot(ax=basemap, color='black', linewidth=1)
+            plt.show()
+            plt.close(fig)
 
 
 if __name__ == "__main__":

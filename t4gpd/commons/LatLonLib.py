@@ -38,6 +38,7 @@ class LatLonLib(object):
     LAGOS = GeoDataFrame([{'geometry': Point((3.379206, 6.524379))}], crs='epsg:4326')
     # outside the polar circles ; latitude must be between -66.56 and +66.56
     # LONGYEARBYEN = GeoDataFrame([{'geometry': Point((-15.6258907, 78.2253594))}], crs='epsg:4326')
+    MONTPELLIER = GeoDataFrame([{'geometry': Point((3.87723, 43.61092))}], crs='epsg:4326')
     NANTES = GeoDataFrame([{'geometry': Point((-1.55, 47.2))}], crs='epsg:4326')
     NIAMEY = GeoDataFrame([{'geometry': Point((2.1098, 13.51366))}], crs='epsg:4326')
     QUITO = GeoDataFrame([{'geometry': Point((-78.52495, -0.22985))}], crs='epsg:4326')

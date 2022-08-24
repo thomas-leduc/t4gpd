@@ -31,7 +31,8 @@ class STPointsDensifier(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, gdf, distance, pathidFieldname=None, adjustableDist=True, removeDuplicate=True):
+    def __init__(self, gdf, distance, pathidFieldname=None, adjustableDist=True,
+                 removeDuplicate=True, distToTheSubstrate=None):
         '''
         Constructor
         '''
@@ -45,6 +46,7 @@ class STPointsDensifier(GeoProcess):
         self.distance = distance
         self.adjustableDist = adjustableDist
         self.removeDuplicate = removeDuplicate
+        self.distToTheSubstrate = distToTheSubstrate
 
     def run(self):
         rows = []
@@ -58,7 +60,8 @@ class STPointsDensifier(GeoProcess):
 
                 result = PointsDensifierLib.densifyByDistance(
                     geom, self.distance, rowId, contourid=0,
-                    adjustableDist=self.adjustableDist)
+                    adjustableDist=self.adjustableDist,
+                    distToTheSubstrate=self.distToTheSubstrate)
 
                 for _row in result:
                     tmp = str(_row['geometry'])
@@ -74,7 +77,8 @@ class STPointsDensifier(GeoProcess):
 
                 result = PointsDensifierLib.densifyByDistance(
                     geom, self.distance, rowId, contourid=0,
-                    adjustableDist=self.adjustableDist)
+                    adjustableDist=self.adjustableDist,
+                    distToTheSubstrate=self.distToTheSubstrate)
 
                 for _row in result:
                     rows.append(self.updateOrAppend(row, _row))

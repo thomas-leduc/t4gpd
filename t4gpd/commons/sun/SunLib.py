@@ -89,7 +89,7 @@ class SunLib(object):
         elif (isinstance(self.model, PySolarSunLib)):
             _title = 'PySolar implementation'
 
-        plt.title('%s: days lengths - Year %d\nLatitude: %.1f°, Longitude: %.1f°' % (
+        plt.title('%s: days lengths - Year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$' % (
             _title, year, self.lat, self.lon))
         plt.xlabel('Day of year')
         plt.ylabel('Day length (min.)')
@@ -135,7 +135,7 @@ class SunLib(object):
         elif (isinstance(self.model, PySolarSunLib)):
             _title = 'PySolar implementation'
 
-        plt.title('%s: days lengths - Year %d\nLatitude: %.1f°, Longitude: %.1f°' % (
+        plt.title('%s: days lengths - Year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$' % (
             _title, _year, self.lat, self.lon))
         plt.xlabel('Day of year')
         plt.ylabel('Solar altitude at noon (in degrees)')
@@ -164,7 +164,7 @@ class SunLib(object):
         elif (isinstance(self.model, PySolarSunLib)):
             _title = 'PySolar implementation'
 
-        plt.title('%s: sunrise/sunset - Year %d\nLatitude: %.1f°, Longitude: %.1f°' % (
+        plt.title('%s: sunrise/sunset - Year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$' % (
             _title, year, self.lat, self.lon))
         plt.xlabel('Day of year')
         plt.ylabel('UTC Time (hr.)')
@@ -180,7 +180,7 @@ class SunLib(object):
             _title = 'Solene model'
         elif (isinstance(self.model, PySolarSunLib)):
             _title = 'PySolar implementation'
-        plt.title('%s: solar panorama - year %d\nLatitude: %.1f°, Longitude: %.1f°' % (
+        plt.title('%s: solar panorama - year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$' % (
             _title, year, self.lat, self.lon))
         plt.xlabel('Azim. [$^0$]')
         plt.ylabel('Alti. [$^0$]')

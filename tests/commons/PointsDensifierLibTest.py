@@ -54,6 +54,23 @@ class PointsDensifierLibTest(unittest.TestCase):
             self.geom2, distance=10.0, blockid=0, adjustableDist=True)
         self.assertEqual([], result, 'Test result emptiness')
 
+    def testDensifyByCurvilinearAbscissa1(self):
+        result = PointsDensifierLib.densifyByCurvilinearAbscissa(
+            self.geom1, curvAbsc=[0, 0.25, 0.5, 0.75], blockid=0)
+
+        self.assertIsInstance(result, list, 'Is a list')
+        for i, _dict in enumerate(result):
+            self.assertIsInstance(_dict, dict, 'Is a list of dict')
+
+            self.assertEqual([0, 0, i], ArrayCoding.decode(_dict['node_id']), 'Test node_id value')
+            self.assertEqual([1, 0], ArrayCoding.decode(_dict['motion_dir']), 'Test motion_dir value')
+            self.assertEqual(Point((25 * i, 0)), _dict['geometry'], f'Test geometry value ({i})')
+
+
+    def testDensifyByCurvilinearAbscissa2(self):
+        result = PointsDensifierLib.densifyByCurvilinearAbscissa(
+            self.geom2, curvAbsc=[0, 0.25, 0.5, 0.75], blockid=0)
+        self.assertEqual([], result, 'Test result emptiness')
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

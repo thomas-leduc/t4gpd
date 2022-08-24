@@ -21,6 +21,8 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
+from datetime import timezone
+
 from geopandas.geodataframe import GeoDataFrame
 from shapely.geometry import MultiPoint, MultiPolygon, Point
 from t4gpd.commons.DatetimeLib import DatetimeLib
@@ -36,7 +38,7 @@ class STTreeHardShadow(AbstractHardShadow):
     '''
 
     def __init__(self, treesGdf, datetimes, treeHeightFieldname, treeCrownRadiusFieldname,
-                 altitudeOfShadowPlane=0, aggregate=False, tz=None, model='pysolar',
+                 altitudeOfShadowPlane=0, aggregate=False, tz=timezone.utc, model='pysolar',
                  npoints=32):
         '''
         Constructor

@@ -77,8 +77,9 @@ class AddMemoryLayer(GeoProcess):
             qgsFeature.setAttributes([row[_f] for _f in fieldnames])
             qgsFeatures.append(qgsFeature)
         provider.addFeatures(qgsFeatures)
-        
-        qgsVectorLayer.setCrs(QgsCoordinateReferenceSystem(gdf.crs.to_epsg()))
+
+        # qgsVectorLayer.setCrs(QgsCoordinateReferenceSystem(gdf.crs.to_epsg()))
+        qgsVectorLayer.setCrs(QgsCoordinateReferenceSystem.fromEpsgId(gdf.crs.to_epsg()))
         qgsVectorLayer.commitChanges()
         qgsVectorLayer.updateExtents()
         return qgsVectorLayer
@@ -87,62 +88,3 @@ class AddMemoryLayer(GeoProcess):
         qgsVectorLayer = self.__fromGeoDataFrameToQgsVectorLayer(self.gdf, self.layername)
         QgsProject.instance().addMapLayer(qgsVectorLayer)
         return qgsVectorLayer
-
-'''
-from shapely.wkt import loads
-
-from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
-from t4gpd.future.morph.geoProcesses.CrossroadRecognition import CrossroadRecognition
-from t4gpd.future.STCrossroadsGeneration import STCrossroadsGeneration
-from t4gpd.graph.STToRoadsSectionsNodes import STToRoadsSectionsNodes
-from t4gpd.isovist.STIsovistField2D import STIsovistField2D
-from t4gpd.morph.geoProcesses.AngularAbscissa import AngularAbscissa
-from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
-from t4gpd.pyqgis.AddMemoryLayer import AddMemoryLayer
-from t4gpd.pyqgis.PdfMapWriter import PdfMapWriter
-from t4gpd.pyqgis.SetSymbolLib import SetSymbolLib
-from t4gpd.pyqgis.ShowFeatureCount import ShowFeatureCount
-
-QgsProject.instance().clear()
-
-t = GeoDataFrameDemos.ensaNantesTrees()
-layer = AddMemoryLayer(t, 'trees').run()
-SetSymbolLib.setHeatMap(layer)
-
-b = GeoDataFrameDemos.ensaNantesBuildings()
-layer = AddMemoryLayer(b, 'buildings').run()
-SetSymbolLib.setFillSymbol(layer)
-SetSymbolLib.setAlternateFillSymbol(layer)
-SetSymbolLib.setAlternateFillSymbol2(layer)
-SetSymbolLib.setAlternateFillSymbol3(layer)
-SetSymbolLib.setSimpleOutlineFillSymbol(layer)
-
-r = GeoDataFrameDemos.ensaNantesRoads()
-layer = AddMemoryLayer(r, 'roads').run()
-SetSymbolLib.setLineSymbol(layer)
-SetSymbolLib.setArrowSymbol(layer)
-
-n = STToRoadsSectionsNodes(r).run()
-n = n[n.gid.isin([30, 77])]
-layer = AddMemoryLayer(n, 'nodes').run()
-# SetSymbolLib.setMarkerSymbol(layer)
-# SetSymbolLib.setLabelSymbol(layer, 'gid')
-
-isovRays, _ = STIsovistField2D(b, n, nRays=64, rayLength=100.0).run()
-patterns = STCrossroadsGeneration(nbranchs=8, length=100.0, width=10.0,
-    mirror=False, withBranchs=True, withSectors=True,
-    crs='EPSG:2154', magnitude=2.5).run()
-pattRays = STGeoProcess(AngularAbscissa(patterns, 'vpoint_x',
-    'vpoint_y', nRays=64), patterns).run()
-
-op = CrossroadRecognition('FWT', pattRays, 'gid', nRays=64, maxRayLength=100.0)
-result = STGeoProcess(op, isovRays).run()
-result.geometry = result.viewpoint.apply(lambda p: loads(p))
-
-layer = AddMemoryLayer(result, 'result').run()
-SetSymbolLib.setSvgSymbol(layer, 'recId_fwt', 'c:/Users/tleduc/t4gs/papers/2021_crossroads_patterns/dev/icons_08')
-SetSymbolLib.setLabelSymbol(layer, 'gid')
-
-ShowFeatureCount(['buildings', 'roads', 'nodes', 'trees', 'result']).run()
-PdfMapWriter('123.pdf', layer.extent()).run()
-'''

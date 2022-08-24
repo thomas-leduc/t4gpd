@@ -20,6 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from datetime import timezone
+
 from geopandas.geodataframe import GeoDataFrame
 from numpy import isnan
 from shapely.geometry import MultiPolygon, Polygon
@@ -36,7 +38,7 @@ class STHardShadow(AbstractHardShadow):
     '''
 
     def __init__(self, occludersGdf, datetimes, occludersElevationFieldname='HAUTEUR',
-                 altitudeOfShadowPlane=0, aggregate=False, tz=None, model='pysolar'):
+                 altitudeOfShadowPlane=0, aggregate=False, tz=timezone.utc, model='pysolar'):
         '''
         Constructor
         '''
