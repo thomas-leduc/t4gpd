@@ -94,7 +94,7 @@ class DirectSolarIrradianceLib(object):
         return 0.0
 
     @staticmethod
-    def plot(label, normal, ofile=None):
+    def plot(label, normal, ofile=None, locale='en_US.utf8'):
         magn = 0.5
 
         lat, _ = LatLonLib.fromGeoDataFrameToLatLon(LatLonLib.NANTES)
@@ -109,7 +109,7 @@ class DirectSolarIrradianceLib(object):
                     X.append(hour + minutes / 60)
                     Y.append(DirectSolarIrradianceLib.noMaskDI(normal, dt))
                     Z.append(DirectSolarIrradianceLib.noMaskDNI(dt))
-            setlocale(LC_ALL, 'en_US.utf8')
+            setlocale(LC_ALL, locale)
             ax[i].set_title(f'{label} - {dt.strftime("%b %d")}st')
             ax[i].plot(X, Y, linestyle='-', color='black', linewidth=1)
             ax[i].plot(X, Z, linestyle=':', color='grey', linewidth=2, label='DNI')
@@ -125,7 +125,7 @@ class DirectSolarIrradianceLib(object):
         plt.close(fig)
 
     @staticmethod
-    def plotFelixMarboutin(ofile=None):
+    def plotFelixMarboutin(ofile=None, locale='en_US.utf8'):
         t = 1.0 / sqrt(2.0)
         PAIRS = [
             # ('Roof', (0, 0, 1)),
@@ -157,7 +157,7 @@ class DirectSolarIrradianceLib(object):
                 ax[i].plot(X, Y, linestyle=linestyle, linewidth=1.5,
                            label=f'{label} {sum(Y) / (1e3 * len(MINS)):.1f} kWh/m$^2$')
 
-            setlocale(LC_ALL, 'en_US.utf8')
+            setlocale(LC_ALL, locale)
             ax[i].set_title(f'{dt.strftime("%b %d")}st')
             ax[i].set_xlabel('Hour')
             if (0 == i):
