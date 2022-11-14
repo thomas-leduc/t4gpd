@@ -67,7 +67,7 @@ class RayCastingIn3DLib(object):
         '''
         Excerpt from https://www.kitware.com/ray-casting-ray-tracing-with-vtk/
 
-        the vtkOBBTree class, which generates an oriented bounding-box (OBB) ‘tree’
+        the vtkOBBTree class, which generates an oriented bounding-box (OBB) 'tree'
         for a given geometry under a vtkPolyData object. Upon generation of this OBB 
         tree, the vtkOBBTree class allows us to perform intersection tests between
         the mesh and the lines of finite length, as well as intersection tests between

@@ -20,10 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from numpy import isnan
 from pandas.core.frame import DataFrame
-from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class HI(AbstractThermalComfortIndice):
@@ -57,16 +57,16 @@ class HI(AbstractThermalComfortIndice):
         # HI: Heat Index stated in Coccolo et al. (2016) [C]
         # (Grosdemouge 2020, pp. 109-110)
         HI = None
-
-        if (20 < AirTC):
-            HI = (-8.784695
-                  +1.61139411 * AirTC
-                  +2.338549 * RH
-                  -0.14611605 * AirTC * RH 
-                  -1.2308094e-2 * AirTC ** 2
-                  -1.6424828e-2 * RH ** 2 
-                  +2.211732e-3 * AirTC ** 2 * RH
-                  +7.2546e-4 * AirTC * RH ** 2 
-                  -3.582e-6 * AirTC ** 2 * RH ** 2)
+        if not (isnan(AirTC) or isnan(RH)):
+            if (20 < AirTC):
+                HI = (-8.784695
+                      +1.61139411 * AirTC
+                      +2.338549 * RH
+                      -0.14611605 * AirTC * RH 
+                      -1.2308094e-2 * AirTC ** 2
+                      -1.6424828e-2 * RH ** 2 
+                      +2.211732e-3 * AirTC ** 2 * RH
+                      +7.2546e-4 * AirTC * RH ** 2 
+                      -3.582e-6 * AirTC ** 2 * RH ** 2)
 
         return { 'HI': HI }

@@ -33,7 +33,8 @@ class WindSpeedExtrapolationLib(object):
         '''
         Ws_ms: wind speed recorded at pedestrian level (at height 1.1 m) [m.s-1]
 
-        Calculation of wind speed in h=10 m - extrapolation of wind speed in 1.1 m after Lam et al.(2018)
+        Calculation of wind speed in h=10 m - extrapolation of wind speed in 1.1 m 
+        after Lam et al.(2018)
         '''
         # Ws_ms_10 Wind speed in h=10 m [m.s-1]
         WS_ms_10 = WS_ms * ((log(h / 0.01)) / (log(1.1 / 0.01)))

@@ -253,7 +253,7 @@ class GeomLib(object):
         if isinstance(obj, Point):
             return [obj]
         elif isinstance(obj, LineString):
-            if withoutClosingLoops and (obj.is_closed):
+            if withoutClosingLoops and (obj.coords[0] == obj.coords[-1]):
                 return [Point(p) for p in obj.coords[:-1]]
             return [Point(p) for p in obj.coords]
         elif isinstance(obj, Polygon):

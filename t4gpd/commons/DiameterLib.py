@@ -37,10 +37,13 @@ class DiameterLib(object):
             raise IllegalArgumentTypeException(obj, 'Shapely geometry')
 
         vertices = [Point(c) for c in obj.convex_hull.exterior.coords]
+        nVertices = len(vertices)
 
         maxDist, pairOfVertices = -1.0, None
-        for v1 in vertices:
-            for v2 in vertices:
+        for i in range(nVertices):
+            v1 = vertices[i]
+            for j in range(i + 1, nVertices):
+                v2 = vertices[j]
                 currDist = v1.distance(v2)
                 if maxDist < currDist:
                     maxDist = currDist

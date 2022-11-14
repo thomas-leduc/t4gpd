@@ -37,8 +37,8 @@ class UniversalThermalIndices(AbstractThermalComfortIndice):
     '''
 
     def __init__(self, sensorsGdf, AirTC='AirTC_Avg', RH='RH_Avg', WS_ms='WS_ms_Avg', T_mrt='T_mrt',
-                 N='N', Albedo='Albedo_1_Avg', SRUp='SR01Up_1_Avg', SRDn='SR01Dn_1_Avg',
-                 IRUp='IR01UpCo_1_Avg', IRDn='IR01DnCo_1_Avg'):
+                 N='N', Albedo='Albedo_3_Avg', SRUp='SR01Up_3_Avg', SRDn='SR01Dn_3_Avg',
+                 IRUp='IR01UpCo_3_Avg', IRDn='IR01DnCo_3_Avg'):
         '''
         Constructor
 

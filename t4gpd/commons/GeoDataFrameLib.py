@@ -21,6 +21,8 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame
+from pandas import read_csv
+from shapely.wkt import loads
 
 
 class GeoDataFrameLib(object):
@@ -29,9 +31,15 @@ class GeoDataFrameLib(object):
     '''
 
     @staticmethod
-    def shareTheSameCrs(gdf1, gdf2):
-        return (
-            isinstance(gdf1, GeoDataFrame) and 
-            isinstance(gdf2, GeoDataFrame) and 
-            (gdf1.crs == gdf2.crs) 
-            )
+    def read_csv(inputFile, decimal='.', sep=';', crs='epsg:2154'):
+        df = read_csv(inputFile, decimal=decimal, sep=sep)
+        df.geometry = df.geometry.apply(lambda g: loads(g))
+        return GeoDataFrame(df, crs=crs)
+
+    @staticmethod
+    def shareTheSameCrs(*gdfs):
+        return ((0 == len(gdfs)) or
+                all([
+                    (isinstance(gdf, GeoDataFrame) and (gdfs[0].crs == gdf.crs))
+                    for gdf in gdfs
+                    ]))

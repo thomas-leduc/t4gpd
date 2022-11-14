@@ -20,10 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from numpy import isnan
 from pandas.core.frame import DataFrame
-from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class THI(AbstractThermalComfortIndice):
@@ -58,7 +58,9 @@ class THI(AbstractThermalComfortIndice):
         AirTC = row[self.AirTC]
         RH = row[self.RH]
 
-        # THI: Temperature-Humidity Index
-        THI = 0.8 * AirTC + (AirTC * RH) / 500
+        THI = None
+        if not (isnan(AirTC) or isnan(RH)):
+            # THI: Temperature-Humidity Index
+            THI = 0.8 * AirTC + (AirTC * RH) / 500
 
         return { 'THI': THI }

@@ -1,5 +1,52 @@
 # Package t4gpd history
 
+## Version 0.5.0 - rev. 12961 - 14 Nov. 2022
+* Add new tests.io.{GpkgLoaderTest,GpkgWriterTest} classes
+* Add new io.{GpkgLoader,GpkgWriter} classes
+* Add new tests.morph.geoProcesses.RectifyByFWTTest class
+* Add new tests.morph.geoProcesses.RectifyByFFTTest class
+* Add new tests.morph.geoProcesses.CrossroadsStarDomainTest class
+* Add new tests.morph.geoProcesses.CrossroadsAngularityTest class
+* Add new morph.geoProcesses.RectifyByFWT class
+* Add new morph.geoProcesses.RectifyByFFT class
+* Add new morph.geoProcesses.CrossroadsStarDomain class
+* Add new morph.geoProcesses.CrossroadsAngularity class
+* Add new tests.commons.KernelLibTest class
+* Add new commons.KernelLib class
+* Add new tests.morph.geoProcesses.CrossroadRecognitionTest class
+* Add new morph.geoProcesses.CrossroadRecognition class
+* Add new commons.crossroads_identification.CrossroadRecognitionLib class
+* Add new commons.crossroads_identification.FFTMethod class
+* Add new commons.crossroads_identification.FWTMethod class
+* Add new commons.crossroads_identification.MeanAngularityMethod class
+* Add new commons.crossroads_identification.MeanVectorMethod class
+* Add new commons.crossroads_identification.AbstractMethod
+* Add new tests.morph.STCrossroadsGenerationTest class
+* Add new morph.STCrossroadsGeneration class
+* Add new tests.commons.crossroads_generation.SequenceRadiiTest class
+* Add new tests.commons.crossroads_generation.SequencesGenerationTest class
+* Add new tests.commons.crossroads_generation.SequenceTest class
+* Add new commons.crossroads_generation.SequenceRadii class
+* Add new commons.crossroads_generation.SequencesGeneration class
+* Add new commons.crossroads_generation.Sequence class
+* Add new demos.GeoDataFrameDemos{6,7,8} classes
+* Add new tests.commons.DataFrameLibTest class
+* Add new commons.DataFrameLib class
+* Add new picoclim.MeteoFranceReader class
+* Add new picoclim.MetrologicalCampaignPlottings class
+* Add new morph.STSquaredBBox class
+* Add new picoclim.SnapImuOnTrackUsingWaypoints class
+* Add new picoclim.TracksWaypointsReader class
+* Add new tests.commons.SphericalProjectionLibTest class
+* Add new commons.SphericalProjectionLib class
+* Add new tests.commons.PointsDensifierLib3DTest class
+* Add new commons.PointsDensifierLib3D class
+* Add new picoclim.MetrologicalCampaignReader class
+* Add new picoclim.InertialMeasureReader class
+* Add new picoclim.CampbellSciReader class
+* Add new picoclim.KestrelReader class
+* Add new picoclim.SensirionReader class
+
 ## Version 0.4.1 - rev. 12508 - 24 Aug. 2022
 * Third release on PyPI
 * Add new pyqgis.Emphasizer class

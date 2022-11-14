@@ -20,10 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from numpy import isnan
 from pandas.core.frame import DataFrame
-from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class ASV(AbstractThermalComfortIndice):
@@ -32,7 +32,7 @@ class ASV(AbstractThermalComfortIndice):
     '''
 
     def __init__(self, sensorsGdf, AirTC='AirTC_Avg', RH='RH_Avg', WS_ms='WS_ms_Avg',
-                 SRUp='SR01Up_1_Avg'):
+                 SRUp='SR01Up_3_Avg'):
         '''
         Constructor
 
@@ -61,10 +61,13 @@ class ASV(AbstractThermalComfortIndice):
         WS_ms = row[self.WS_ms]
         SRUp = row[self.SRUp]
 
-        # ASV: Actual Sensetion Vote after (Grosdemouge, 2020, p.105)
-        # https://tel.archives-ouvertes.fr/tel-03123710
-        ASV = 0.049 * AirTC + 0.001 * SRUp - 0.051 * WS_ms + 0.014 * RH - 2.079
+        ASV = None
+        if not (isnan(AirTC) or isnan(RH) or isnan(WS_ms) or isnan(SRUp)):
+            # ASV: Actual Sensetion Vote after (Grosdemouge, 2020, p.105)
+            # https://tel.archives-ouvertes.fr/tel-03123710
+            ASV = 0.049 * AirTC + 0.001 * SRUp - 0.051 * WS_ms + 0.014 * RH - 2.079
+    
+            # ASV: Actual Sensetion Vote after Nikolopoulou (2004) stated in Coccolo et al. (2016) [-]
+            # ASV = 0.068 * AirTC + 0.0006 * SRUp - 0.107 * WS_ms - 0.002 * RH - 0.69
 
-        # ASV: Actual Sensetion Vote after Nikolopoulou (2004) stated in Coccolo et al. (2016) [-]
-        # ASV = 0.068 * AirTC + 0.0006 * SRUp - 0.107 * WS_ms - 0.002 * RH - 0.69
         return { 'ASV': ASV }

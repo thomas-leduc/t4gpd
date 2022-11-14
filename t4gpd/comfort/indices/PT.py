@@ -20,11 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from numpy import isnan
 from pandas.core.frame import DataFrame
 from t4gpd.comfort.algo.PTLib import PTLib
-from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class PT(AbstractThermalComfortIndice):
@@ -62,7 +62,9 @@ class PT(AbstractThermalComfortIndice):
         WS_ms = row[self.WS_ms]
         T_mrt = row[self.T_mrt]
 
-        # PT: Perceived Temperature
-        PT = PTLib.assess_pt(AirTC, RH, WS_ms, T_mrt)
+        PT = None
+        if not (isnan(AirTC) or isnan(RH) or isnan(WS_ms) or isnan(T_mrt)):
+            # PT: Perceived Temperature
+            PT = PTLib.assess_pt(AirTC, RH, WS_ms, T_mrt)
 
         return { 'PT': PT }

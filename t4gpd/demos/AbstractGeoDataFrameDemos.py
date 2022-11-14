@@ -21,10 +21,6 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from geopandas import GeoDataFrame
-from pandas import read_csv
-from shapely.wkt import loads
-
 
 class AbstractGeoDataFrameDemos(object):
     '''
@@ -33,15 +29,4 @@ class AbstractGeoDataFrameDemos(object):
 
     @staticmethod
     def postprocess(sio, crs='epsg:2154'):
-        _df = read_csv(sio, sep=';')
-        _df.rename(columns={'Unnamed: 0': ''}, inplace=True)
-        _df.set_index('', inplace=True)
-        _df.reset_index(drop=True, inplace=True)
-        _df.geometry = _df.geometry.apply(lambda g: loads(g))
-        return GeoDataFrame(_df, crs=crs)
-
-    @staticmethod
-    def postprocess2(sio, crs='epsg:2154'):
-        _df = read_csv(sio, sep=';')
-        _df.geometry = _df.geometry.apply(lambda g: loads(g))
-        return GeoDataFrame(_df, crs=crs)
+        raise Exception('Deprecated!')

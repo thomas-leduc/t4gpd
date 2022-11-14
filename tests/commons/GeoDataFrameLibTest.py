@@ -35,17 +35,21 @@ class GeoDataFrameLibTest(unittest.TestCase):
         self.gdf2 = GeoDataFrameDemos.districtGraslinInNantesTrees()
         self.gdf3 = GeoDataFrameDemos.regularGridOfPlots(3, 3, dw=5.0)
         self.gdf4 = GeoDataFrameDemos.regularGridOfPlots2(4, 5, bdx=25, bdy=8, sdx=10, sdy=10)
-        self.gdf5 = GeoDataFrame([])
+        self.gdf5 = GeoDataFrame([{'geometry': None}])
 
     def tearDown(self):
         pass
 
     def testShareTheSameCrs(self):
-        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf1, self.gdf2), 'Test shareTheSameCrs (1)')
-        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf3, self.gdf4), 'Test shareTheSameCrs (2)')
-        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf3, self.gdf5), 'Test shareTheSameCrs (3)')
-
-        self.assertFalse(GeoDataFrameLib.shareTheSameCrs(self.gdf1, self.gdf5), 'Test shareTheSameCrs (4)')
+        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf1), 'Test shareTheSameCrs (1)')
+        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf1, self.gdf2), 'Test shareTheSameCrs (2)')
+        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf3, self.gdf4), 'Test shareTheSameCrs (3)')
+        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf3, self.gdf5), 'Test shareTheSameCrs (4)')
+        self.assertTrue(GeoDataFrameLib.shareTheSameCrs(self.gdf3, self.gdf4, self.gdf5),
+                        'Test shareTheSameCrs (5)')
+        self.assertFalse(GeoDataFrameLib.shareTheSameCrs(self.gdf1, self.gdf5), 'Test shareTheSameCrs (6)')
+        self.assertFalse(GeoDataFrameLib.shareTheSameCrs(self.gdf1, self.gdf2, self.gdf5),
+                         'Test shareTheSameCrs (7)')
 
 
 if __name__ == "__main__":

@@ -32,8 +32,8 @@ class TmrtOut(AbstractThermalComfortIndice):
     classdocs
     '''
 
-    def __init__(self, sensorsGdf, N='N', SRUp='SR01Up_1_Avg', SRDn='SR01Dn_1_Avg',
-                 IRUp='IR01UpCo_1_Avg', IRDn='IR01DnCo_1_Avg'):
+    def __init__(self, sensorsGdf, N='N', SRUp='SR01Up_3_Avg', SRDn='SR01Dn_3_Avg',
+                 IRUp='IR01UpCo_3_Avg', IRDn='IR01DnCo_3_Avg'):
         '''
         Constructor
 

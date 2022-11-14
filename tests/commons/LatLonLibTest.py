@@ -53,7 +53,7 @@ class LatLonLibTest(unittest.TestCase):
         self.assertAlmostEqual(-1.55, result[1], 1, 'Test return value (default longitude)')
 
     def testFromGeoDataFrameToLatLon3(self):
-        gdf = GeoDataFrame([])
+        gdf = GeoDataFrame([{'geometry': None}])
         result = LatLonLib.fromGeoDataFrameToLatLon(gdf)
         self.assertIsInstance(result, tuple, 'Test return type')
         self.assertEqual(2, len(result), 'Test return length')

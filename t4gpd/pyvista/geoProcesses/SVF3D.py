@@ -1,5 +1,5 @@
 '''
-Created on 22 août 2022
+Created on 22 Aug. 2022
 
 @author: tleduc
 
@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame
-from numpy import asarray, dot, where
+from numpy import asarray, dot, ones, where
 from shapely.geometry import MultiLineString, Point
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
@@ -50,15 +50,24 @@ class SVF3D(AbstractGeoprocess):
         self.main_direction = asarray([0, 0, 1])
         self.method = method
 
-        self.shootingDirs = None
+        self.shootingDirs, self.weights = None, None
         if not ('MonteCarlo' == self.method):
-            rays = RayCasting3DLib.preparePanopticRays(2 * nrays, method)
-            self.shootingDirs = self.maxRayLen * self.__selectUpwardFacingRays(rays)
+            # rays = RayCasting3DLib.preparePanopticRays(2 * nrays, method)
+            # self.shootingDirs = self.maxRayLen * self.__selectUpwardFacingRays(rays)
+            rays, weights = RayCasting3DLib.preparePanopticRaysAndWeights(2 * nrays, method)
+            rays, weights = self.__selectUpwardFacingRaysAndWeights(rays, weights)
+            self.shootingDirs = self.maxRayLen * rays
+            self.weights = 2 * weights
 
-    def __selectUpwardFacingRays(self, rays):
+    # def __selectUpwardFacingRays(self, rays):
+    #     dotProducts = dot(rays, self.main_direction)
+    #     indices = where(dotProducts >= 0)[0]
+    #     return rays[indices,:]
+
+    def __selectUpwardFacingRaysAndWeights(self, rays, weights):
         dotProducts = dot(rays, self.main_direction)
         indices = where(dotProducts >= 0)[0]
-        return rays[indices,:]
+        return rays[indices,:], weights[indices]
 
     def runWithArgs(self, row):
         geom = row.geometry
@@ -69,8 +78,9 @@ class SVF3D(AbstractGeoprocess):
             rays = RayCasting3DLib.prepareOrientedRandomRays(
                 self.nrays, self.main_direction, openness=90, method='MonteCarlo')
             shootingDirs = self.maxRayLen * rays
+            weights = ones(shape=len(shootingDirs)) / len(shootingDirs)
         else:
-            shootingDirs = self.shootingDirs
+            shootingDirs, weights = self.shootingDirs, self.weights
 
         srcPt = asarray(geom.coords[0])
         dstPts = srcPt + shootingDirs
@@ -78,7 +88,13 @@ class SVF3D(AbstractGeoprocess):
 
         rays, _, hitDists, _ = RayCastingIn3DLib.mraycastObbTree(self.obbTree, srcPts, dstPts)
 
+        svf = 0
+        for i, d in enumerate(hitDists):
+            if (d == RayCastingIn3DLib.INFINITY):
+                svf += weights[i]
+
         return {
             # 'geometry': MultiLineString(rays),
-            'svf': len([d for d in hitDists if (d == RayCastingIn3DLib.INFINITY)]) / len(hitDists)
+            'svf_old': len([d for d in hitDists if (d == RayCastingIn3DLib.INFINITY)]) / len(hitDists),
+            'svf': svf
             }

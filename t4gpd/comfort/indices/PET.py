@@ -20,11 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from pandas.core.frame import DataFrame
+from numpy import isnan
+from pandas import DataFrame
 from t4gpd.comfort.algo.PETLib import PETLib
-from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class PET(AbstractThermalComfortIndice):
@@ -56,13 +56,30 @@ class PET(AbstractThermalComfortIndice):
         self.WS_ms = WS_ms
         self.T_mrt = T_mrt
 
+    @staticmethod
+    def thermalPerceptionRanges():
+        # Excerpt from https://doi.org/10.1016/j.wace.2018.01.004
+        return {
+            'Extreme cold': { 'min':-float('inf'), 'max':4, 'color': '#003075' },
+            'Strong cold': { 'min':4, 'max':8, 'color': '#00c2f7' },
+            'Moderate cold': { 'min':8, 'max': 13, 'color': '#91c1e1' },
+            'Slight cold': { 'min': 13, 'max': 18, 'color': '#dbebf5' },
+            'Comfortable': { 'min': 18, 'max': 23, 'color': '#ffffff' },
+            'Slight heat': { 'min': 23, 'max': 29, 'color': '#ffdabd' },
+            'Moderate heat': { 'min': 29, 'max': 35, 'color': '#fffa00' },
+            'Strong heat': { 'min': 35, 'max': 41, 'color': '#ff7900' },
+            'Extreme heat': { 'min': 41, 'max': float('inf'), 'color': '#ff0000' }
+            }
+
     def runWithArgs(self, row):
         AirTC = row[self.AirTC]
         RH = row[self.RH]
         WS_ms = row[self.WS_ms]
         T_mrt = row[self.T_mrt]
 
-        # PET: Physiologically Equivalent Temperature
-        _, _, _, PET = PETLib.assess_pet(AirTC, RH, WS_ms, T_mrt) 
+        PET = None
+        if not (isnan(AirTC) or isnan(RH) or isnan(WS_ms) or isnan(T_mrt)):
+            # PET: Physiologically Equivalent Temperature
+            _, _, _, PET = PETLib.assess_pet(AirTC, RH, WS_ms, T_mrt) 
 
         return { 'PET': PET }

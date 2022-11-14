@@ -21,6 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame
+from numpy import sum 
 from shapely.affinity import scale 
 from t4gpd.commons.GeoProcess import GeoProcess
 
@@ -80,18 +81,26 @@ class GeodeCiel(GeoProcess):
         return (8, 32, 128, 512, 2048, 8192, 32768, 131072, 524288)
 
     def getRays(self):
-        rows = self.__divide(self.listOfTriangles, self.norecursions)
-        return [row.centroid() for row in rows]
+        listOfTriangles = self.__divide(self.listOfTriangles, self.norecursions)
+        return [tri.centroid() for tri in listOfTriangles]
+
+    def getRaysAndWeights(self):
+        listOfTriangles = self.__divide(self.listOfTriangles, self.norecursions)
+        rays = [tri.centroid() for tri in listOfTriangles]
+        _areas = [tri.sphericalArea() for tri in listOfTriangles]
+        _sumOfAreas = sum(_areas)
+        weights = [_area / _sumOfAreas for _area in _areas]
+        return rays, weights
 
     def run(self):
-        rows = self.__divide(self.listOfTriangles, self.norecursions)
+        listOfTriangles = self.__divide(self.listOfTriangles, self.norecursions)
         if (self.radius is None) or (1 == self.radius):
-            rows = [{'geometry': row.toPolygon()} for row in rows]
+            rows = [{'geometry': tri.toPolygon()} for tri in listOfTriangles]
         else:
             rows = [{'geometry': scale(
-                row.toPolygon(),
+                tri.toPolygon(),
                 xfact=self.radius,
                 yfact=self.radius,
                 zfact=self.radius,
-                origin=(0, 0, 0))} for row in rows]
+                origin=(0, 0, 0))} for tri in listOfTriangles]
         return GeoDataFrame(rows)

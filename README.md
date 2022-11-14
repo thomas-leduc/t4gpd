@@ -20,7 +20,7 @@ As **t4gpd** is now on [PyPI](https://pypi.org/project/t4gpd/), the easiest way 
 > pip install t4gpd
 
 Alternatively, you can download the **t4gpd** latest version from the [SourceSup website](https://sourcesup.renater.fr/projects/t4gs). Then, install the Python3 plugin you downloaded:
-> pip install t4gpd-0.4.1.tar.gz
+> pip install t4gpd-0.5.0.tar.gz
 
 ## Read the documentation
 Go to [https://t4gpd-docs.readthedocs.io](https://t4gpd-docs.readthedocs.io) to consult the documentation.

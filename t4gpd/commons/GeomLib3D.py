@@ -20,8 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import mean, sqrt
-from shapely.geometry import LinearRing, Point, Polygon
+from numpy import mean, sqrt, zeros
+from shapely.geometry import LinearRing, LineString, Point, Polygon
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -56,29 +56,25 @@ class GeomLib3D(object):
         return ((u[0] * v[0]) + (u[1] * v[1]) + (u[2] * v[2]))
 
     @staticmethod
-    def __getArea(ring):
+    def __shoelaceFormula(ring):
+        # https://en.wikipedia.org/wiki/Shoelace_formula
         # ring is a 3D contour
+        assert isinstance(ring, LinearRing), 'ring is expected to be a Shapely LinearRing!'
         coords = ring.coords
-        _first = coords[0]
 
-        _sum = [0, 0, 0]
+        _first = coords[0]
+        _sum = zeros(shape=3)
         for i in range(1, len(coords) - 1):
             _curr, _next = coords[i], coords[i + 1]
-            _product = GeomLib3D.crossProduct(
+            _sum += GeomLib3D.crossProduct(
                 GeomLib3D.vector_to(_first, _curr),
                 GeomLib3D.vector_to(_first, _next))
-            for j in range(3):
-                _sum[j] += _product[j]
 
-        _normal = GeomLib3D.getFaceNormalVector(ring)
-
-        return 0.5 * GeomLib3D.dotProduct(_sum, _normal)
+        return 0.5 * GeomLib3D.norm3D(_sum)
 
     @staticmethod
     def getArea(geom):
-        if not GeomLib.isPolygonal(geom):
-            raise IllegalArgumentTypeException(geom, 'Polygon or MultiPolygon')
-
+        assert GeomLib.isPolygonal(geom), 'geom is expected to be a Shapely Polygon or MultiPolygon!'
         if (not GeomLib.is3D(geom)):
             return geom.area
 
@@ -86,13 +82,13 @@ class GeomLib3D(object):
 
         result = 0
         for polygon in polygons:
-            result += GeomLib3D.__getArea(polygon.exterior)
+            result += GeomLib3D.__shoelaceFormula(polygon.exterior)
             for hole in polygon.interiors:
-                result += GeomLib3D.__getArea(hole)
+                result -= GeomLib3D.__shoelaceFormula(hole)
         return result
 
     @staticmethod
-    def getFaceNormalVector(geom):
+    def getFaceNormalVector(geom, anchored=False):
         if (not isinstance(geom, (LinearRing, Polygon))):
             raise IllegalArgumentTypeException(geom, 'LinearRing or Polygon')
 
@@ -125,7 +121,13 @@ class GeomLib3D(object):
                 if (abs(_maxNorm) < abs(_currNorm)):
                     _maxNorm, _maxCrossProduct, _secondRadius = _currNorm, _currCrossProduct, _currRadius
 
-        return GeomLib3D.unitVector(_maxCrossProduct)
+        uv = GeomLib3D.unitVector(_maxCrossProduct)
+        if not anchored:
+            return uv
+        else:
+            c = GeomLib3D.centroid(geom)
+            target = Point([ c.x + uv[0], c.y + uv[1], c.z + uv[2]]) 
+            return LineString([c, target])
 
     @staticmethod
     def norm3D(u):

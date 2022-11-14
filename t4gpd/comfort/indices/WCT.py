@@ -20,11 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from numpy import isnan
 from pandas.core.frame import DataFrame
 from t4gpd.comfort.algo.WindSpeedExtrapolationLib import WindSpeedExtrapolationLib
-from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class WCT(AbstractThermalComfortIndice):
@@ -58,12 +58,14 @@ class WCT(AbstractThermalComfortIndice):
         AirTC = row[self.AirTC]
         WS_ms = row[self.WS_ms]
 
-        # Calculation of wind speed in 10 m - extrapolation of wind speed in 1.1 m 
-        # after Lam et al. (2018)
-        WS_ms_10 = WindSpeedExtrapolationLib.windSpeedExtrapolation(WS_ms)
-        _ws_tmp = WS_ms_10 ** 0.16
-
-        # Wind Chill Temperature (WCT) stated in Coccolo et al. (2016) [C]
-        WCT = 13.12 + 0.6215 * AirTC - 11.37 * _ws_tmp + 0.3965 * AirTC * _ws_tmp
+        WCT = None
+        if not (isnan(AirTC) or isnan(WS_ms)):
+            # Calculation of wind speed in 10 m - extrapolation of wind speed in 1.1 m 
+            # after Lam et al. (2018)
+            WS_ms_10 = WindSpeedExtrapolationLib.windSpeedExtrapolation(WS_ms)
+            _ws_tmp = WS_ms_10 ** 0.16
+    
+            # Wind Chill Temperature (WCT) stated in Coccolo et al. (2016) [C]
+            WCT = 13.12 + 0.6215 * AirTC - 11.37 * _ws_tmp + 0.3965 * AirTC * _ws_tmp
 
         return { 'WCT': WCT }

@@ -287,11 +287,17 @@ class UTCILib(object):
         # convert hPa to kPa
         PA = ehPa / 10.0  # use vapour pressure in kPa for UTCI_approx
 
+        '''
+        Deriving the operational procedure for the Universal Thermal Climate Index (UTCI)
+        DOI: 10.1007/s00484-011-0454-1
+        '''
         UTCI = None
-        if ((-50 <= AirTC <= 50) and 
-            (-30 <= D_Tmrt <= 70) and 
-            (0.5 <= WS_ms_10 <= 17) and 
-            (0 <= ehPa <= 50) and 
+        if ((-50 <= AirTC <= 50) and
+            (-30 <= D_Tmrt <= 70) and
+            # Comment added on 24.10.2022
+            # (0.5 <= WS_ms_10 <= 17) and
+            (0.0 <= WS_ms_10 <= 17) and
+            (0 <= ehPa <= 50) and
             (0 <= RH <= 100)):
             UTCI = UTCILib.__approximateUtci(AirTC, PA, D_Tmrt, WS_ms_10)
 

@@ -24,6 +24,7 @@ from pandas.core.frame import DataFrame
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from numpy import isnan
 
 
 class PE(AbstractThermalComfortIndice):
@@ -55,7 +56,9 @@ class PE(AbstractThermalComfortIndice):
         AirTC = row[self.AirTC]
         WS_ms = row[self.WS_ms]
 
-        # PE: Cooling Power Index stated in Coccolo et al. (2016) [kcal.m2.h]
-        PE = 20.52 * WS_ms ** 0.42 * (36.5 - AirTC)
+        PE = None
+        if not (isnan(AirTC) or isnan(WS_ms)):
+            # PE: Cooling Power Index stated in Coccolo et al. (2016) [kcal.m2.h]
+            PE = 20.52 * WS_ms ** 0.42 * (36.5 - AirTC)
 
         return { 'PE': PE }

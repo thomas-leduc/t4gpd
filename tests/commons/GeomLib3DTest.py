@@ -34,6 +34,18 @@ class GeomLib3DTest(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def testGetArea(self):
+        WKTs = [
+            (0.0, 'POLYGON ((0 0, 1 0, 1 1, 2 1, 2 2, 2 1, 1 1, 1 0, 0 0))'),
+            (0.0, 'POLYGON ((19 0 0, 19 1 0, 19 1 1, 19 2 1, 19 2 2, 19 2 1, 19 1 1, 19 1 0, 19 0 0))'),
+            (3.0, 'POLYGON ((0 0, 1 0, 1 1, 2 1, 2 2, 0 2, 0 0))'),
+            (3.0, 'POLYGON Z ((0 0 0, 1 0 0, 1 1 0, 2 1 0, 2 2 0, 0 2 0, 0 0 0))'),
+            (3.0, 'POLYGON Z ((19 0 0, 19 1 0, 19 1 1, 19 2 1, 19 2 2, 19 0 2, 19 0 0))'),
+            ]
+        for expected, wkt in WKTs:
+            geom = loads(wkt)
+            self.assertEqual(expected, GeomLib3D.getArea(geom), f'Test area of {wkt}')
+
     def testGetFaceNormalVector1(self):
         expected = [0, 0, 1]
         WKTs = [

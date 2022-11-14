@@ -30,7 +30,7 @@ class EmpiricalThermalIndices(AbstractThermalComfortIndice):
     '''
 
     def __init__(self, sensorsGdf, AirTC='AirTC_Avg', RH='RH_Avg', WS_ms='WS_ms_Avg',
-                 SRUp='SR01Up_1_Avg'):
+                 SRUp='SR01Up_3_Avg'):
         '''
         Constructor
 

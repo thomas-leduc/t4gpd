@@ -62,10 +62,9 @@ class OUTSET(AbstractThermalComfortIndice):
         WS_ms = row[self.WS_ms]
         Tmrt_OUT = row[self.Tmrt_OUT]
 
-        if Tmrt_OUT is None:
-            return { 'OUT_SET': None }
-
-        # OUT_SET: Outdoor Standard Effective Temperature 
-        OUT_SET = SETLib.assess_set(AirTC, RH, WS_ms, Tmrt_OUT)
+        OUT_SET = None
+        if not (isnan(AirTC) or isnan(RH) or isnan(WS_ms) or isnan(Tmrt_OUT)):
+            # OUT_SET: Outdoor Standard Effective Temperature 
+            OUT_SET = SETLib.assess_set(AirTC, RH, WS_ms, Tmrt_OUT)
 
         return { 'OUT_SET': OUT_SET }

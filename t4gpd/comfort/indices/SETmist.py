@@ -20,13 +20,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import exp
+from numpy import exp, isnan
 from pandas.core.frame import DataFrame
 from t4gpd.comfort.algo.ConstantsLib import ConstantsLib
 from t4gpd.comfort.algo.SET_mist import set_mist_optimized
-from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-
 from t4gpd.comfort.indices.AbstractThermalComfortIndice import AbstractThermalComfortIndice
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class SETmist(AbstractThermalComfortIndice):
@@ -64,17 +63,19 @@ class SETmist(AbstractThermalComfortIndice):
         WS_ms = row[self.WS_ms]
         T_mrt = row[self.T_mrt]
 
-        # saturated water pressure
-        P_s = exp(16.6536 - (4030.183 / (AirTC + 235)))  # 1 torr = 101 325/760 Pascal
-        vapor_pressure = RH * P_s / 100  # Pa
-
-        # SETmist: Standard Effective Temperature, SET** for misting environment
-        SETmist = set_mist_optimized(AirTC, T_mrt, WS_ms, RH, ConstantsLib.M_met,
-                                     ConstantsLib.Clo, vapor_pressure,
-                                     ConstantsLib.W_met,
-                                     ConstantsLib.body_surface_area,
-                                     ConstantsLib.patm,
-                                     ConstantsLib.fa_eff,
-                                     ConstantsLib.p_mist)
+        SETmist = None
+        if not (isnan(AirTC) or isnan(RH) or isnan(WS_ms) or isnan(T_mrt)):
+            # saturated water pressure
+            P_s = exp(16.6536 - (4030.183 / (AirTC + 235)))  # 1 torr = 101 325/760 Pascal
+            vapor_pressure = RH * P_s / 100  # Pa
+    
+            # SETmist: Standard Effective Temperature, SET** for misting environment
+            SETmist = set_mist_optimized(AirTC, T_mrt, WS_ms, RH, ConstantsLib.M_met,
+                                         ConstantsLib.Clo, vapor_pressure,
+                                         ConstantsLib.W_met,
+                                         ConstantsLib.body_surface_area,
+                                         ConstantsLib.patm,
+                                         ConstantsLib.fa_eff,
+                                         ConstantsLib.p_mist)
 
         return { 'SETmist': SETmist }

@@ -23,6 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 
 from numpy import arange, array, ndarray
 from pyvista import MultiBlock, UnstructuredGrid
+from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -41,6 +42,7 @@ class ToUnstructuredGrid(GeoProcess):
         '''
         if not isinstance(gdfs, (list, tuple, ndarray)):
             raise IllegalArgumentTypeException(gdfs, 'list or tuple of GeoDataFrames')
+        assert GeoDataFrameLib.shareTheSameCrs(*gdfs), 'gdfs are expected to share the same crs!'
         self.gdfs = gdfs
         self.fieldname = fieldname
 

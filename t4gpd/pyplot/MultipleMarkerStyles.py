@@ -27,9 +27,9 @@ from shapely.affinity import rotate
 from shapely.geometry import Polygon
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.future.STCrossroadsGeneration import STCrossroadsGeneration
 
 import matplotlib.pyplot as plt
+from t4gpd.morph.STCrossroadsGeneration import STCrossroadsGeneration
 
 
 class MultipleMarkerStyles(GeoProcess):

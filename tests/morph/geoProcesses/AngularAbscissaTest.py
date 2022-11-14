@@ -5,12 +5,12 @@ Created on 18 juin 2020
 '''
 import unittest
 
+from geopandas import GeoDataFrame
 from shapely.geometry import MultiLineString
 from t4gpd.morph.geoProcesses.AngularAbscissa import AngularAbscissa
 from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
 
-import geopandas as gpd
-from t4gpd.future.STCrossroadsGeneration import STCrossroadsGeneration
+from t4gpd.morph.STCrossroadsGeneration import STCrossroadsGeneration
 
 
 class AngularAbscissaTest(unittest.TestCase):
@@ -28,7 +28,7 @@ class AngularAbscissaTest(unittest.TestCase):
         nRays = 16
         result = STGeoProcess(AngularAbscissa(self.inputGdf, 'vpoint_x', 'vpoint_y', nRays), self.inputGdf).run()
 
-        self.assertIsInstance(result, gpd.GeoDataFrame, 'Is a GeoDataFrame')
+        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(13, len(result), 'Count rows')
         self.assertEqual(6, len(result.columns), 'Count columns')
 

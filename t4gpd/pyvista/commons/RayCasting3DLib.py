@@ -24,7 +24,7 @@ from warnings import warn
 
 from geopandas.geodataframe import GeoDataFrame
 from numpy import arcsin, array_equal, asarray, ceil, cos, dot, linspace, \
-    meshgrid, multiply, pi, resize, sin, sqrt, vstack, where
+    meshgrid, multiply, ones, pi, resize, sin, sqrt, sum, vstack, where
 from numpy.linalg import norm
 from numpy.random import uniform
 from pyvista import Sphere
@@ -87,6 +87,51 @@ class RayCasting3DLib(object):
             raise IllegalArgumentTypeException(method, "'geodeciel', 'icosahedron', 'pyvista', 'MonteCarlo' or 'basic'")
         print(f"{method}:: Let's prepare {len(shootingDirs)} rays!")
         return shootingDirs
+
+    @staticmethod
+    def preparePanopticRaysAndWeights(nrays, method='geodeciel'):
+        if ('pyvista' == method):
+            theta, phi, _ = RayCasting3DLib.fromNCellsToThetaPhi(nrays)
+            sphere = Sphere(radius=1.0, center=(0, 0, 0), direction=(0, 0, 1),
+                            theta_resolution=theta, phi_resolution=phi)
+            shootingDirs = asarray(sphere.cell_centers().points)
+            _areas = sphere.compute_cell_sizes(length=False, area=True, volume=False)
+            _areas = _areas.cell_data.get_array('Area').tolist()
+            _sumOfAreas = sum(_areas)
+            weights = [_area / _sumOfAreas for _area in _areas]
+
+        elif ('geodeciel' == method):
+            norecursions = GeodeCiel.fromNRaysToNRecursions(nrays)
+            shootingDirs, weights = GeodeCiel(norecursions).getRaysAndWeights()
+
+        elif ('icosahedron' == method):
+            norecursions = Icosahedron.fromNRaysToNRecursions(nrays)
+            shootingDirs, weights = Icosahedron(norecursions).getRaysAndWeights()
+
+        elif ('basic' == method):
+            angles = linspace(0, pi / 2, ceil(sqrt(nrays)).astype(int))
+            lat, lon = meshgrid(angles, angles)
+            lat, lon = lat.reshape(-1), lon.reshape(-1)
+            cosLat = cos(lat) 
+            x, y, z = cosLat * cos(lon), cosLat * sin(lon), sin(lat)
+            xyz = vstack([x, y, z]).T
+            shootingDirs = vstack([
+                multiply(sign, xyz)
+                for sign in [
+                    (1, 1, 1), (-1, 1, 1), (1, -1, 1), (-1, -1, 1),
+                    (1, 1, -1), (-1, 1, -1), (1, -1, -1), (-1, -1, -1)
+                    ]
+                ])
+            weights = ones(shape=len(shootingDirs)) / len(shootingDirs)
+
+        elif ('MonteCarlo' == method):
+            shootingDirs = RayCasting3DLib.preparePanopticRandomRays(nrays)
+            weights = ones(shape=len(shootingDirs)) / len(shootingDirs)
+
+        else:
+            raise IllegalArgumentTypeException(method, "'geodeciel', 'icosahedron', 'pyvista', 'MonteCarlo' or 'basic'")
+        print(f"{method}:: Let's prepare {len(shootingDirs)} rays and weights!")
+        return asarray(shootingDirs), asarray(weights)
 
     @staticmethod
     def prepareOrientedRandomRays2(nrays, main_direction, openness=20):

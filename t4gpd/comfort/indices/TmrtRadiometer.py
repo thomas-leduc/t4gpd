@@ -32,12 +32,12 @@ class TmrtRadiometer(AbstractThermalComfortIndice):
     classdocs
     '''
 
-    def __init__(self, sensorsGdf, SRUp='SR01Up_1_Avg', SRDn='SR01Dn_1_Avg',
+    def __init__(self, sensorsGdf, SRUp='SR01Up_3_Avg', SRDn='SR01Dn_3_Avg',
                  SRright='SR01Up_2_Avg', SRleft='SR01Dn_2_Avg',
-                 SRfront='SR01Up_3_Avg', SRback='SR01Dn_3_Avg',
-                 IRUp='IR01UpCo_1_Avg', IRDn='IR01DnCo_1_Avg',
+                 SRfront='SR01Up_1_Avg', SRback='SR01Dn_1_Avg',
+                 IRUp='IR01UpCo_3_Avg', IRDn='IR01DnCo_3_Avg',
                  IRright='IR01UpCo_2_Avg', IRleft='IR01DnCo_2_Avg',
-                 IRfront='IR01UpCo_3_Avg', IRback='IR01DnCo_3_Avg'):
+                 IRfront='IR01UpCo_1_Avg', IRback='IR01DnCo_1_Avg'):
         '''
         Constructor
         '''
