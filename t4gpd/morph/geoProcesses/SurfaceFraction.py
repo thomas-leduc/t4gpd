@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
 from numpy import pi
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -39,7 +39,6 @@ class SurfaceFraction(AbstractGeoprocess):
         if not isinstance(itemsGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(itemsGdf, 'GeoDataFrame')
         self.itemsGdf = itemsGdf
-        self.spatialIndex = itemsGdf.sindex
 
         self.buffDist = buffDist
 
@@ -49,11 +48,11 @@ class SurfaceFraction(AbstractGeoprocess):
         if (self.buffDist is None) and (GeomLib.isPolygonal(rowGeom)):
             zone, zoneArea = rowGeom, rowGeom.area
 
-        elif isinstance(self.buffDist, (int, float)):
+        elif isinstance(self.buffDist, (float, int)):
             zone, zoneArea = rowGeom.centroid.buffer(self.buffDist), pi * self.buffDist ** 2
 
         if (0.0 < zoneArea):
-            _items = GeomLib.extractGeometriesWithin(zone, self.itemsGdf, self.spatialIndex)
+            _items = GeomLib.extractGeometriesWithin(zone, self.itemsGdf.geometry)
             return { 'surf_ratio': float(_items.area / zoneArea) }
 
         return { 'surf_ratio': None }

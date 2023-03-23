@@ -128,6 +128,12 @@ class RayCasting3Lib(object):
         return shootingDirs
 
     @staticmethod
+    def prepareOrientedRays(masks, viewPoint):
+        _, nearestPoint, _ = GeomLib.getNearestFeature3(masks, viewPoint, buffDist=40.0)
+        u = GeomLib.unitVector([viewPoint.x, viewPoint.y], [nearestPoint.x, nearestPoint.y])
+        return [u, [-u[0], -u[1]]]
+
+    @staticmethod
     def outdoorSingleRayCast2D(masks, viewPoint, shootingDir, rayLength=100.0):
         isAnInsidePoint = lambda point, polygon: ('0FFFFF212' == point.relate(polygon))
 
@@ -156,7 +162,8 @@ class RayCasting3Lib(object):
                     if (0.0 == _dist):
                         return LineString([viewPoint, viewPoint]), viewPoint, 0.0
                     elif (_dist < hitDist):
-                        hitPoint, hitDist = rp, _dist
+                        # To avoid: "Inconsistent coordinate dimensionality"
+                        hitPoint, hitDist = Point((rp.x, rp.y)), _dist
 
         return LineString([viewPoint, hitPoint]), hitPoint, hitDist
 
@@ -177,3 +184,125 @@ class RayCasting3Lib(object):
                 hitDists.append(hitDist)
 
         return MultiLineString(rays), hitPoints, hitDists
+
+    @staticmethod
+    def outdoorSingleRayCast25D(masks, viewPoint, shootingDir, rayLength,
+                                elevationFieldName, background, h0=0.0):
+        # DEFAULT ALTITUDE OF THE VIEWPOINT
+        if not viewPoint.has_z:
+            viewPoint = Point([viewPoint.x, viewPoint.y, h0])
+
+        remotePoint = Point((viewPoint.x + shootingDir[0] * rayLength, viewPoint.y + shootingDir[1] * rayLength, h0))
+        ray = LineString([viewPoint, remotePoint])
+        pray = prep(ray)
+
+        anchorId = GeomLib.getAnchoringBuildingId3(viewPoint, masks)
+
+        if anchorId is None:
+            # ======================================================================
+            # OUTDOOR VIEWPOINT
+            hitPoint, hitDist, hitMask, hitHW = None, rayLength, None, 0.0
+
+            # _masks = masks[pray.intersects(masks.geometry)].copy(deep=True)
+            _masks = masks.loc[ masks.geometry.apply(lambda g: pray.intersects(g))]
+            for _, mask in _masks.iterrows():
+                maskGeom = mask.geometry
+
+                # if (ray.touches(maskGeom) or ray.crosses(maskGeom)):
+                if (ray.crosses(maskGeom)):
+                    # THE RAY HITS OR CROSSES THE BUILDING
+                    _tmp = maskGeom.intersection(ray)
+                    _, rp = nearest_points(viewPoint, _tmp)
+                    height, dist = mask[elevationFieldName], viewPoint.distance(rp)
+                    hw = (height - h0) / dist
+                    if background and (hitHW < hw):
+                        hitPoint, hitDist, hitMask, hitHW = rp, dist, mask, hw
+                    elif (not background) and (dist < hitDist):
+                        hitPoint, hitDist, hitMask, hitHW = rp, dist, mask, hw
+
+            if hitPoint is not None:
+                if not hitPoint.has_z:
+                    hitPoint = Point([hitPoint.x, hitPoint.y, h0])
+                ray = LineString([viewPoint, hitPoint])
+            else:
+                hitPoint = remotePoint
+
+        else:
+            anchor = masks.loc[anchorId]
+            if GeomLib.isAnIndoorPoint(viewPoint, masks):
+                # ======================================================================
+                # INDOOR VIEWPOINT
+                ray, hitPoint, hitDist, hitMask, hitHW = None, None, 0.0, anchor, None
+
+            elif GeomLib.isABorderPoint(viewPoint, masks):
+                # ======================================================================
+                # VIEWPOINT ON A WALL
+                buildingGeom = anchor.geometry
+                _relate = ray.relate(buildingGeom)
+
+                if (_relate in ['1FF00F212', 'F1FF0F212', 'F1FF0F212', 'F11F00212', '101F00212']):
+                    # THE RAY GOES ALONG OR INTO THE "ANCHORING" BUILDING
+                    ray, hitPoint, hitDist, hitMask, hitHW = None, None, 0.0, anchor, None
+
+                elif ('FF1F00212' == _relate):
+                    # THE RAY MOVES AWAY FROM THE "ANCHORING" BUILDING
+                    hitPoint, hitDist, hitMask, hitHW = None, rayLength, None, 0.0
+
+                    # _masks = masks[pray.intersects(masks.geometry)].copy(deep=True)
+                    _masks = masks.loc[ masks.geometry.apply(lambda g: pray.intersects(g))].copy(deep=True)
+                    _masks.drop(index=anchorId, inplace=True)
+                    for _, mask in _masks.iterrows():
+                        maskGeom = mask.geometry
+
+                        if (ray.touches(maskGeom) or ray.crosses(maskGeom)):
+                            # THE RAY HITS OR CROSSES THE "NON-ANCHORING" BUILDING
+                            _tmp = maskGeom.intersection(ray)
+                            _, rp = nearest_points(viewPoint, _tmp)
+                            height, dist = mask[elevationFieldName], viewPoint.distance(rp)
+                            hw = (height - h0) / dist
+                            if background and (hitHW < hw):
+                                hitPoint, hitDist, hitMask, hitHW = rp, dist, mask, hw
+                            elif (not background) and (dist < hitDist):
+                                hitPoint, hitDist, hitMask, hitHW = rp, dist, mask, hw
+
+                    if hitPoint is not None:
+                        if not hitPoint.has_z:
+                            hitPoint = Point([hitPoint.x, hitPoint.y, h0])
+                        ray = LineString([viewPoint, hitPoint])
+                    else:
+                        hitPoint = remotePoint
+
+                else:
+                    raise Exception('Unreachable instruction!')
+
+            else:
+                raise Exception('Unreachable instruction!')
+        return [ray, hitPoint, hitDist, hitMask, hitHW]
+
+    @staticmethod
+    def outdoorMultipleRayCast25D(masks, viewPoint, shootingDirs, rayLength,
+                                  elevationFieldName, background, h0=0.0):
+        if not isinstance(masks, GeoDataFrame):
+            raise IllegalArgumentTypeException(masks, 'GeoDataFrame')
+        if not isinstance(viewPoint, Point):
+            raise IllegalArgumentTypeException(viewPoint, 'Point')
+        if elevationFieldName not in masks:
+            raise Exception('%s is not a relevant field name!' % (elevationFieldName))
+
+        # DEFAULT ALTITUDE OF THE VIEWPOINT
+        if not viewPoint.has_z:
+            viewPoint = Point([viewPoint.x, viewPoint.y, h0])
+
+        rays, hitPoints, hitDists, hitMasks, hitHWs = [[], [], [], [], []]
+
+        for shootingDir in shootingDirs:
+            ray, hitPoint, hitDist, hitMask, hitHW = RayCasting3Lib.outdoorSingleRayCast25D(
+                masks, viewPoint, shootingDir, rayLength, elevationFieldName, background, h0)
+            if not ray is None:
+                rays.append(ray)
+                hitPoints.append(hitPoint)
+            hitDists.append(hitDist)
+            hitMasks.append(hitMask)
+            hitHWs.append(hitHW)
+
+        return MultiLineString(rays), hitPoints, hitDists, hitMasks, hitHWs

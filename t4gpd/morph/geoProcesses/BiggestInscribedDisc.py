@@ -33,7 +33,7 @@ class BiggestInscribedDisc(AbstractGeoprocess):
     classdocs
     '''
 
-    def __init__(self, masksGdf, nsegm=-1):
+    def __init__(self, masksGdf, nsegm=8):
         '''
         Constructor
         '''

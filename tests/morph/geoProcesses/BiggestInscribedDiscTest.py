@@ -29,14 +29,14 @@ class BiggestInscribedDiscTest(unittest.TestCase):
         result = STGeoProcess(disc, self.sensors).run()
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(15, len(result), 'Count rows')
-        self.assertEqual(6, len(result.columns), 'Count columns')
+        self.assertEqual(8, len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygons')
 
             expectedSurf = pi * (row['insc_diam'] / 2.0) ** 2
             ratioToTest = (expectedSurf - row.geometry.area) / expectedSurf
-            self.assertTrue(0.01 > ratioToTest, 'Areas test')
+            self.assertGreater(0.01, ratioToTest, 'Areas test')
 
         '''
         import matplotlib.pyplot as plt

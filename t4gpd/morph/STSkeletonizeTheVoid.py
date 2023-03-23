@@ -21,15 +21,14 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import LineString
-from t4gpd.commons.BoundingBox import BoundingBox
+from shapely.geometry import box
+from shapely.ops import  linemerge, unary_union
+from shapely.prepared import prep
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.graph.UrbanGraphLibOld import UrbanGraphLibOld
-from t4gpd.morph.STVoronoiPartition import STVoronoiPartition
-
 from t4gpd.morph.STPointsDensifier import STPointsDensifier
+from t4gpd.morph.STVoronoiPartition import STVoronoiPartition
 
 
 class STSkeletonizeTheVoid(GeoProcess):
@@ -49,7 +48,7 @@ class STSkeletonizeTheVoid(GeoProcess):
         self.samplingDist = samplingDist
 
     def run(self):
-        roiGeom = BoundingBox(self.buildingsGdf).asPolygon()
+        roiGeom = box(*self.buildingsGdf.total_bounds)
 
         # Sample the building contours
         _nodesGdf = STPointsDensifier(self.buildingsGdf, self.samplingDist).run()
@@ -57,25 +56,10 @@ class STSkeletonizeTheVoid(GeoProcess):
         # Voronoi Diagram
         _voronoiGdf = STVoronoiPartition(_nodesGdf).run()
 
-        # Remove useless edges
-        _ug = UrbanGraphLibOld()
-        for _, row in _voronoiGdf.iterrows():
-            _edges = GeomLib.toListOfLineStrings(row.geometry)
-            for _edge in _edges:
-                _prev = None
-                for _curr in _edge.coords:
-                    if _prev is not None:
-                        keep = True
-                        _currGeom = LineString((_prev, _curr))
-                        _buildingsIds = self.spatialIdx.intersection(_currGeom.bounds)
-                        for _buildingId in _buildingsIds:
-                            _buildingGeom = self.buildingsGdf.loc[_buildingId].geometry
-                            if _currGeom.intersects(_buildingGeom):
-                                keep = False
-                                break
-                        if keep:
-                            _ug.add(_currGeom.intersection(roiGeom))
-                    _prev = _curr
+        pgeom = prep(unary_union(self.buildingsGdf.geometry))
+        lls = []
+        for geom in _voronoiGdf.geometry:
+            lls.extend(filter(pgeom.disjoint, GeomLib.toListOfBipointsAsLineStrings(geom)))
+        lls = linemerge(lls).intersection(roiGeom)
 
-        rows = _ug.getUniqueRoadsSections()
-        return GeoDataFrame(rows, crs=self.buildingsGdf.crs)
+        return GeoDataFrame([{'gid': 1, 'geometry': lls}], crs=self.buildingsGdf.crs)

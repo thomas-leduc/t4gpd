@@ -55,8 +55,8 @@ class HeightOfRoughness(AbstractGeoprocess):
             zone, zoneArea = rowGeom.centroid.buffer(self.buffDist), pi * self.buffDist ** 2
 
         if (0.0 < zoneArea):
-            _features = GeomLib.extractFeaturesWithin(zone, self.itemsGdf, self.spatialIndex)
-            _vol = sum([f['geometry'].area * f[self.elevationFieldName] for f in _features if not isna(f[self.elevationFieldName])])
+            _features = GeomLib.extractFeaturesWithin(zone, self.itemsGdf)
+            _vol = sum([f.geometry.area * f[self.elevationFieldName] for _, f in _features.iterrows() if not isna(f[self.elevationFieldName])])
             return { 'hre': float(_vol / zoneArea) }
 
         return { 'hre': None }

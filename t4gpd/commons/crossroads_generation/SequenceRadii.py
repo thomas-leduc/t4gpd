@@ -58,7 +58,7 @@ class SequenceRadii(object):
         i, j = sector
 
         if ((0 == i) and (self.nbranchs == j)):
-            result = Point(centre).buffer(self.length, -1)
+            result = Point(centre).buffer(self.length)
         else:
             angle0, angle1 = self.angles[i], self.angles[j]
             angle1 = angle1 + 2.0 * pi if (angle0 > angle1) else angle1
@@ -78,6 +78,6 @@ class SequenceRadii(object):
             polygons = [br1, br2, Polygon(result)]
 
             # Use a buffer to avoid slivers
-            result = unary_union(polygons).buffer(0.001, -1)
+            result = unary_union(polygons).buffer(0.001)
 
         return result

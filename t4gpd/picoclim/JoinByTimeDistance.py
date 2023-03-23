@@ -88,8 +88,10 @@ from t4gpd.picoclim.SnapImuOnTrackUsingWaypoints import SnapImuOnTrackUsingWaypo
 
 # dirName = '/home/tleduc/prj/nm-ilots-frais/terrain/220711'
 dirName = '/home/tleduc/prj/nm-ilots-frais/terrain/220713'
-tracks, waypoints, dfImu, dfMob, dfStat1, dfStat2 = MetrologicalCampaignReader(dirName).run()
 
+static, tracks, waypoints, dfImu, dfMob, dfStat1, dfStat2, dfMeteoFr = \
+    MetrologicalCampaignReader(dirName).run()
+dfImu = dfImu.to_crs(tracks.crs)
 imu = SnapImuOnTrackUsingWaypoints(dfImu, tracks, waypoints).run()
 
 dfImuMob = JoinByTimeDistance(imu, dfMob, left_on='timestamp', right_on='timestamp').run()

@@ -20,8 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-from numpy import dtype
+from pandas import DataFrame
 from scipy.cluster.hierarchy import dendrogram, linkage
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -33,37 +32,35 @@ class STDendrogram(GeoProcess):
     '''
     classdocs
     '''
+    NUMERICS = ["int16", "int32", "int64", "float16", "float32", "float64"]
 
-    def __init__(self, inputGdf, orientation='top', no_plot=False, verbose=True):
+    def __init__(self, inputGdf, orientation="top", no_plot=False, verbose=True):
         '''
         Constructor
         '''
-        if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
-        self.inputGdf = inputGdf
+        if not isinstance(inputGdf, DataFrame):
+            raise IllegalArgumentTypeException(inputGdf, "DataFrame")
 
-        _fieldnames = []
-        for _fieldname, _fieldtype in zip(self.inputGdf.columns, self.inputGdf.dtypes):
-            if (_fieldtype == dtype(float)):
-                _fieldnames.append(_fieldname)
+        self.data = inputGdf.select_dtypes(include=self.NUMERICS)
+
+        _fieldnames = list(self.data.columns)
         if (0 == len(_fieldnames)):
-            raise Exception('There are no numeric (float) fields in the GeoDataFrame!')
+            raise Exception("There are no numeric (float) fields in the GeoDataFrame!")
         if verbose:
-            print('The following fields are taken into account when processing: %s' % _fieldnames)
-        self.data = self.inputGdf[_fieldnames]
+            print(f"The following fields are taken into account when processing: {_fieldnames}")
 
-        if not orientation in ('bottom', 'left', 'right', 'top'):
+        if not orientation in ("bottom", "left", "right", "top"):
             raise IllegalArgumentTypeException(orientation, '("bottom", "left", "right", "top")')
         self.orientation = orientation
 
         if not isinstance(no_plot, bool):
-            raise IllegalArgumentTypeException(no_plot, 'bool')
+            raise IllegalArgumentTypeException(no_plot, "bool")
         self.noPlot = no_plot
 
     def run(self):
-        Z = linkage(self.data, method='ward', metric='euclidean')
+        Z = linkage(self.data, method="ward", metric="euclidean")
         d = dendrogram(Z, orientation=self.orientation, show_contracted=True, no_plot=self.noPlot)
         plt.show()
 
-        nClusters = len(set(d['color_list'])) - 1
+        nClusters = len(set(d["color_list"])) - 1
         return nClusters

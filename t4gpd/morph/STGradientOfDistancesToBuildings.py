@@ -175,7 +175,8 @@ class STGradientOfDistancesToBuildings(GeoProcess):
                     _currStatus = self.__getType(_currRow)
 
                     if (_prevStatus != _currStatus) or (_nSegm == i):
-                        _subls = substring(_line, _prevRow['curv_absc'], _currRow['curv_absc'])
+                        _line2d = GeomLib.removeZCoordinate(_line)
+                        _subls = substring(_line2d, _prevRow['curv_absc'], _currRow['curv_absc'])
                         linesRows.append({
                             'pathid': _pathid,
                             'geometry': _subls,

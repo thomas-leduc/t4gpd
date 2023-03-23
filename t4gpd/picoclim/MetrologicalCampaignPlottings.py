@@ -317,6 +317,7 @@ dirName2 = '/home/tleduc/prj/nm-ilots-frais/information'
 #~ -----
 static, tracks, waypoints, dfImu, dfMob, dfStat1, dfStat2, dfMeteoFr = \
     MetrologicalCampaignReader(dirName1, dirName2).run()
+dfImu = dfImu.to_crs(tracks.crs)
 imu = SnapImuOnTrackUsingWaypoints(dfImu, tracks, waypoints).run()
 dfImuMob = JoinByTimeDistance(imu, dfMob, left_on='timestamp', right_on='timestamp').run()
 

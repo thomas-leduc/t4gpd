@@ -52,12 +52,11 @@ class AbstractGridLib(object):
 
     def indoorOutdoorGrid(self):
         _grid = self.grid()
-        sidx = self.gdf.sindex
         rows = []
         for _, row in _grid.iterrows():
             _row = dict(row)
             _centroid = row['geometry'].centroid
-            _indoor = 1 if (GeomLib.isAnIndoorPoint(_centroid, self.gdf, sidx)) else 0
+            _indoor = 1 if (GeomLib.isAnIndoorPoint(_centroid, self.gdf)) else 0
             _row['indoor'] = _indoor
             rows.append(_row)
         _grid = GeoDataFrame(rows, crs=self.gdf.crs)

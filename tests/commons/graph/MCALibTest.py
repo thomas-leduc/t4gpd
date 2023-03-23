@@ -90,6 +90,9 @@ class MCALibTest(unittest.TestCase):
         plt.show()
         '''
 
+    def testMinimum_spanning_tree(self):
+        result = MCALib(self.roads).minimum_spanning_tree()
+        
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

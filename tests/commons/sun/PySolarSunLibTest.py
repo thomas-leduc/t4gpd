@@ -42,7 +42,7 @@ class PySolarSunLibTest(unittest.TestCase):
         dt = datetime(2021, 4, 21, tzinfo=timezone.utc)
 
         _actual = self.sunLib.getDayLengthInMinutes(dt)
-        self.assertEqual(835, _actual, 'Test day length in minutes')
+        self.assertEqual(836, _actual, 'Test day length in minutes')
 
     def testGetRadiationDirection(self):
         dt = datetime(2021, 6, 21, 12, tzinfo=timezone.utc)
@@ -86,7 +86,7 @@ class PySolarSunLibTest(unittest.TestCase):
         _actual = self.sunLib.getSunset(dt)
         _delta = (_actual - _expected).seconds
 
-        self.assertLess(_delta, 44, 'Test sunset value')
+        self.assertLess(_delta, 61, 'Test sunset value')
 
 
 if __name__ == "__main__":

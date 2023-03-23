@@ -1,5 +1,20 @@
 # Package t4gpd history
 
+## Version 0.6.0 - rev. 13549 - 23 Mar. 2023
+* Add new Docker image (see https://github.com/thomas-leduc/t4gpd-docker)
+* Add new tests.misc.OptimalNumberOfClustersTest class
+* Add new misc.OptimalNumberOfClusters class
+* Add new demos.GeoDataFrameDemos9 class
+* Add new tests.morph.STBBoxTest class
+* Add new morph.STBBox class
+* Add new morph.STVariableWidthBuffer class
+* Add new misc.RoseMappingTool class
+* Add new tests.commons.random.RandomPointPickingTest class
+* Add new commons.random.RandomPointPicking class
+* Add new misc.TimelineTool class
+* Add new commons.sun.DaylightLib class
+* Add new picoclim.ExtraProcessing class
+
 ## Version 0.5.0 - rev. 12961 - 14 Nov. 2022
 * Add new tests.io.{GpkgLoaderTest,GpkgWriterTest} classes
 * Add new io.{GpkgLoader,GpkgWriter} classes

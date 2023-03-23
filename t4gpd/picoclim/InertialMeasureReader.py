@@ -3,7 +3,7 @@ Created on 15 sept. 2022
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -35,8 +35,8 @@ class InertialMeasureReader(GeoProcess):
     classdocs
     '''
     FIELD_NAMES = [
-        'timestamp', 'step_count', 'X', 'Y', 'Z', 'Distance', 'degree',
-        'latitude', 'longitude', 'GpsAccuracy', 'indoor_outdoor_flag', 'TagName'
+        "timestamp", "step_count", "X", "Y", "Z", "Distance", "degree",
+        "latitude", "longitude", "GpsAccuracy", "indoor_outdoor_flag", "TagName"
     ]
 
     def __init__(self, inputFile, outputCrs=None):
@@ -52,28 +52,27 @@ class InertialMeasureReader(GeoProcess):
         return year, month, day
 
     def __getRndSubtrackId(self):
-        return ''.join(choice([str(i) for i in range(10)], size=10))
+        return "".join(choice([str(i) for i in range(10)], size=10))
 
     def run(self):
-        df = read_csv(self.inputFile, decimal=',', header=None,
-                      names=self.FIELD_NAMES, sep='\s+',
+        df = read_csv(self.inputFile, decimal=",", header=None,
+                      names=self.FIELD_NAMES, sep="\s+",
                       skip_blank_lines=True, skiprows=2)
 
         year, month, day = self.__extract_YYYYMMDD_from_filename()
-        df.timestamp = df.timestamp.apply(lambda t: parse(f'{year}-{month}-{day}T{t}'))
+        df.timestamp = df.timestamp.apply(lambda t: parse(f"{year}-{month}-{day}T{t}"))
 
-        df['subtrack'] = self.__getRndSubtrackId()
+        df["subtrack"] = self.__getRndSubtrackId()
 
-        df['geometry'] = list(zip(df.longitude, df.latitude))
-        df.geometry = df.geometry.apply(lambda t: Point(t))
-        df = GeoDataFrame(df, crs='epsg:4326')
+        df["geometry"] = df.apply(lambda row: Point(row.longitude, row.latitude), axis=1)
+        df = GeoDataFrame(df, geometry="geometry", crs="epsg:4326")
 
         if self.outputCrs is None:
             return df
         return df.to_crs(self.outputCrs)
 
 '''
-inputFile = '/home/tleduc/prj/nm-ilots-frais/terrain/220711/LOG_FILE_20220711_172000.txt'
-df = InertialMeasureReader(inputFile, outputCrs='epsg:2154').run()
+inputFile = "/home/tleduc/prj/nm-ilots-frais/terrain/220711/LOG_FILE_20220711_172000.txt"
+df = InertialMeasureReader(inputFile, outputCrs="epsg:2154").run()
 print(df.head(5))
 '''

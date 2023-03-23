@@ -56,7 +56,7 @@ class SunshineDurationTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(35, len(result), 'Count rows')
-        self.assertEqual(7, len(result.columns), 'Count columns')
+        self.assertEqual(9, len(result.columns), 'Count columns')
 
         nMaxSunHits = len(self.givenDatetime)
         for _, row in result.iterrows():

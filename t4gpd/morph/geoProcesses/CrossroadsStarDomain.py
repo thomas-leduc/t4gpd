@@ -20,15 +20,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from geopandas import GeoDataFrame
 from geopandas import clip
-from geopandas.geodataframe import GeoDataFrame
 from shapely.geometry import box, MultiPolygon
 from shapely.ops import unary_union
 from t4gpd.commons.ArrayCoding import ArrayCoding
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.RayCasting3Lib import RayCasting3Lib
 from t4gpd.commons.KernelLib import KernelLib
+from t4gpd.commons.RayCasting3Lib import RayCasting3Lib
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
 
@@ -46,7 +46,7 @@ class CrossroadsStarDomain(AbstractGeoprocess):
         self.buildings = buildings
         # CLEAN GEOMETRIES
         self.buildings.geometry = self.buildings.geometry.apply(lambda g: g.buffer(0))
-        self.buildingsIdx = buildings.sindex
+        # self.buildingsIdx = buildings.sindex
 
         # self.shootingDirs = RayCastingLib.preparePanopticRays(nRays)
         self.shootingDirs = RayCasting3Lib.preparePanopticRays(nRays)
@@ -69,7 +69,7 @@ class CrossroadsStarDomain(AbstractGeoprocess):
         _buildings = GeoDataFrame([{'geometry': unary_union(_buildings.geometry)}],
                                   crs=self.buildings.crs)
         _buildings = _buildings.explode(ignore_index=True)
-        _buildings = _buildings[ ~_buildings.geometry.isna() ]
+        _buildings = _buildings[ ~_buildings.geometry.isna() ].copy(deep=True)
         _buildings.geometry = _buildings.geometry.apply(lambda g: g.convex_hull)
         _buildings = unary_union(_buildings.geometry)
 
@@ -106,8 +106,10 @@ class CrossroadsStarDomain(AbstractGeoprocess):
             self.debugRayLens = []
 
         buffDist = 40.0
-        self.minRayLength, _, _ = GeomLib.getNearestFeature(
-            self.buildings, self.buildingsIdx, geom, buffDist)
+        # self.minRayLength, _, _ = GeomLib.getNearestFeature(
+        #     self.buildings, self.buildingsIdx, geom, buffDist)
+        self.minRayLength, _, _ = GeomLib.getNearestFeature3(
+            self.buildings, geom, buffDist)
 
         # _, _, hitDists, _ = RayCastingLib.multipleRayCast2D(
         #     self.buildings, self.buildingsIdx, geom, self.shootingDirs, self.maxRayLength)

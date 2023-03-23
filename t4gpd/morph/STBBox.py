@@ -1,9 +1,9 @@
 '''
-Created on 21 juin 2021
+Created on 17 fev. 2023
 
 @author: tleduc
 
-Copyright 2020-2021 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,30 +20,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-from t4gpd.commons.GeomLib import GeomLib
+from geopandas import GeoDataFrame
+from shapely.geometry import box, JOIN_STYLE
+from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
 
-class IsAnIndoorPoint(AbstractGeoprocess):
+class STBBox(GeoProcess):
     '''
     classdocs
     '''
 
-    def __init__(self, buildings):
+    def __init__(self, gdf, buffDist=0):
         '''
         Constructor
         '''
-        if not isinstance(buildings, GeoDataFrame):
-            raise IllegalArgumentTypeException(buildings, 'GeoDataFrame')
-        self.buildings = buildings
-        self.spatialIdx = buildings.sindex
+        if not isinstance(gdf, GeoDataFrame):
+            raise IllegalArgumentTypeException(gdf, 'GeoDataFrame')
+        self.gdf = gdf
+        self.buffDist = buffDist
 
-    def runWithArgs(self, row):
-        geom = row.geometry
-
-        if 'Point' == geom.geom_type:
-            indoor = GeomLib.isAnIndoorPoint(geom, self.buildings)
-            return { 'indoor': 1 if indoor else 0 }
-        return {'indoor': None}
+    def run(self):
+        bbox = box(*self.gdf.total_bounds).buffer(self.buffDist, join_style=JOIN_STYLE.mitre)
+        return GeoDataFrame([{'geometry': bbox}], crs=self.gdf.crs)

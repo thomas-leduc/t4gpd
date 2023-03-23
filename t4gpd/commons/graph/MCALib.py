@@ -21,6 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
+from scipy.sparse.csgraph import minimum_spanning_tree
 from shapely.geometry import LineString, MultiLineString
 from shapely.geometry import Point
 from t4gpd.commons.GeomLib import GeomLib
@@ -55,7 +56,7 @@ class MCALib(object):
 
     @staticmethod
     def __addCoupleOfVertices(graph, first, last, linestring):
-        graph.add_edge(first, last, object={
+        graph.add_edge(first, last, weight=linestring.length, object={
             'geometry': linestring, 'weight':linestring.length})
 
     @staticmethod
@@ -118,3 +119,11 @@ class MCALib(object):
     def degree_centrality(self):
         centralities = nx.degree_centrality(self.graph)
         return self.__fromGraphToGeoDataFrame(centralities, 'degree_c')
+
+    def minimum_spanning_tree(self):
+        matrix = nx.to_scipy_sparse_array(self.graph, weight='weight')
+        # print(nx.to_pandas_adjacency(self.graph, weight='weight'))
+        mst = minimum_spanning_tree(matrix)
+        mst = mst.todense()
+        raise Exception('TODO: MUST BE IMPLEMENTED!')
+        return mst

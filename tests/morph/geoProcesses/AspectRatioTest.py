@@ -50,7 +50,7 @@ class AspectRatioTest(unittest.TestCase):
     
             self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
             self.assertEqual(15, len(result), 'Count rows')
-            self.assertEqual(6, len(result.columns), 'Count columns')
+            self.assertEqual(8, len(result.columns), 'Count columns')
 
             for _, row in result.iterrows():
                 self.assertIsInstance(row.geometry, Point, 'Is a GeoDataFrame of Points')
@@ -64,7 +64,7 @@ class AspectRatioTest(unittest.TestCase):
         self.viewpoints.plot(ax=basemap, color='black')
         result.plot(ax=basemap, column='h_over_w', legend=True, cmap='plasma')
         result.apply(lambda x: basemap.annotate(
-            s='%.1f' % (x.h_over_w), xy=x.geometry.centroid.coords[0],
+            text='%.1f' % (x.h_over_w), xy=x.geometry.centroid.coords[0],
             color='black', size=14, ha='center'), axis=1);
         plt.show()
         '''

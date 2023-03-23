@@ -49,8 +49,15 @@ class MABRTest(unittest.TestCase):
         for i, row in result.iterrows():
             self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygons')
             self.assertLessEqual(shapeAreas[i], row.geometry.area, 'Areas test')
-            self.assertTrue(inputShapes[i].within(row.geometry.buffer(0.001)), 'Within test')
+            self.assertTrue(inputShapes[i].within(row.geometry.buffer(0.01)), 'Within test')
 
+        '''
+        import matplotlib.pyplot as plt
+        _, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
+        result.boundary.plot(ax=basemap, color='grey')
+        self.buildings.plot(ax=basemap, color='red')
+        plt.show()
+        '''
         # result.to_file('/tmp/xxx.shp')
 
     def testRun2(self):

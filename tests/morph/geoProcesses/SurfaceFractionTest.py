@@ -67,7 +67,7 @@ class SurfaceFractionTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(15, len(result), 'Count rows')
-        self.assertEqual(6, len(result.columns), 'Count columns')
+        self.assertEqual(8, len(result.columns), 'Count columns')
         for _, row in result.iterrows():
             self.assertTrue(0.0 <= row['surf_ratio'] <= 1.0, 'Test "surf_ratio" attribute value')
         '''

@@ -59,7 +59,7 @@ class IsAnIndoorPointTest(unittest.TestCase):
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
         self.assertEqual(54, len(result), 'Count rows')
-        self.assertEqual(5, len(result.columns), 'Count columns')
+        self.assertEqual(7, len(result.columns), 'Count columns')
 
         for _, row in result.iterrows():
             self.assertIsInstance(row.geometry, Point, 'Is a GeoDataFrame of Points')

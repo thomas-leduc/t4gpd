@@ -21,10 +21,9 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from itertools import combinations
+
+from geopandas import GeoDataFrame
 from shapely.ops import unary_union
-
-from geopandas.geodataframe import GeoDataFrame
-
 from t4gpd.commons.ArrayCoding import ArrayCoding
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.GeomLib import GeomLib
@@ -75,7 +74,7 @@ class STMultipleOverlaps2(GeoProcess):
                         allIntersections[1][keyRight])
 
             for n in sorted(allIntersections.keys()):
-                row = { 'geometry': unary_union(allIntersections[n].values()), 'nOverlap': n }
+                row = { 'geometry': unary_union(list(allIntersections[n].values())), 'nOverlap': n }
                 rows.append(row)
 
             for n in range(len(rows) - 1):
@@ -115,6 +114,6 @@ class STMultipleOverlaps2(GeoProcess):
                         row = { 'geometry': _geom, 'nOverlap': n,
                                'matched_id': ArrayCoding.encode(combin) }
                         rows.append(row)
-                uog = unary_union(allIntersections[n].values())
+                uog = unary_union(list(allIntersections[n].values()))
 
         return GeoDataFrame(rows, crs=self.inputGdf.crs)

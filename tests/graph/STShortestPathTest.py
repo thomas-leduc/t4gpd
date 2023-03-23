@@ -23,6 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 import unittest
 
 from geopandas.geodataframe import GeoDataFrame
+from pandas import concat
 from shapely.geometry import Point
 from t4gpd.commons.Epsilon import Epsilon
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
@@ -92,7 +93,7 @@ class STShortestPathTest(unittest.TestCase):
         self.assertTrue(Epsilon.equals(340.85, result.geometry.length.squeeze(), 1e-2), msg='Test path length (2)')
 
     def testRun5(self):
-        fromToPoints = self.fromPoints.append(self.toPoints)
+        fromToPoints = concat([self.fromPoints, self.toPoints])
 
         result = STShortestPath(self.roads, fromToPoints, fromToPoints).run()
 
@@ -109,6 +110,8 @@ class STShortestPathTest(unittest.TestCase):
                 self.assertTrue(Epsilon.equals(340.85, row.geometry.length, 1e-2), msg='Test path length (2)')
 
         '''
+        result = result[~(result.geometry.is_empty | result.geometry.isna())]
+
         import matplotlib.pyplot as plt
         basemap = self.roads.plot(color='grey', linewidth=4.2)
         result.plot(ax=basemap, color='red', linewidth=1.2)

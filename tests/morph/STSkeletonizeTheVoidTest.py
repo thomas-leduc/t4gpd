@@ -23,7 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 import unittest
 
 from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import LineString
+from shapely.geometry import MultiLineString
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.morph.STSkeletonizeTheVoid import STSkeletonizeTheVoid
 
@@ -40,14 +40,12 @@ class STSkeletonizeTheVoidTest(unittest.TestCase):
         result = STSkeletonizeTheVoid(self.buildings, samplingDist=10.0).run()
 
         self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(89, len(result), 'Count rows')
-        self.assertEqual(3, len(result.columns), 'Count columns')
-
+        self.assertEqual(1, len(result), 'Count rows')
+        self.assertEqual(2, len(result.columns), 'Count columns')
+        
         for _, row in result.iterrows():
-            self.assertIsInstance(row.geometry, LineString, 'Is a GeoDataFrame of LineString')
-            self.assertTrue(0 <= row['gid'] <= 89, 'Test gid attribute')
-            self.assertTrue(0 < row['distance'], 'Test distance attribute')
-            self.assertTrue(row.geometry.length == row['distance'], 'Test distance attribute')
+            self.assertIsInstance(row.geometry, MultiLineString, 'Is a GeoDataFrame of LineString')
+            self.assertEqual(1, row.gid, 'Test gid attribute')
 
         '''
         import matplotlib.pyplot as plt

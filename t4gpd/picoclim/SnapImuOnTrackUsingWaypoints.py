@@ -48,6 +48,7 @@ class SnapImuOnTrackUsingWaypoints(GeoProcess):
             raise IllegalArgumentTypeException(waypoints, 'GeoDataFrame')
         self.waypoints = waypoints
 
+        assert GeoDataFrameLib.shareTheSameCrs(dfImu, tracks), 'dfImu and tracks must share the same crs!'
         assert GeoDataFrameLib.shareTheSameCrs(tracks, waypoints), 'tracks and waypoints must share the same crs!'
 
     def run(self):
@@ -136,15 +137,21 @@ class SnapImuOnTrackUsingWaypoints(GeoProcess):
         return imu
 
 '''
+import matplotlib.pyplot as plt
 from t4gpd.picoclim.MetrologicalCampaignReader import MetrologicalCampaignReader
 
 # dirName = '/home/tleduc/prj/nm-ilots-frais/terrain/220711'
 dirName = '/home/tleduc/prj/nm-ilots-frais/terrain/220713'
-tracks, waypoints, dfImu, dfMob, dfStat1, dfStat2 = MetrologicalCampaignReader(dirName).run()
+static, tracks, waypoints, dfImu, dfMob, dfStat1, dfStat2, dfMeteoFr = MetrologicalCampaignReader(dirName).run()
+dfImu.to_crs(crs=tracks.crs, inplace=True)
 
 imu = SnapImuOnTrackUsingWaypoints(dfImu, tracks, waypoints).run()
+
 # imu.drop(columns=['timestamp', 'X', 'Y', 'Z', 'Distance', 'degree', 'latitude',
 #                   'longitude', 'GpsAccuracy', 'indoor_outdoor_flag'], inplace=True)
 # imu.to_csv('/home/tleduc/prj/nm-ilots-frais/a.csv', index=False)
 # imu.to_file('/tmp/imu.gpkg')
+imu.plot()
+plt.show()
+
 '''

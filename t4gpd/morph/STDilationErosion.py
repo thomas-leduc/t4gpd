@@ -55,7 +55,7 @@ class STDilationErosion(GeoProcess):
 
         ##### SQUARES IDENTIFICATION ####################
         uoSquares = fullRegion.difference(
-            unionOfSBuilding.buffer(self.buffDist, -1)).buffer(self.buffDist, -1)
+            unionOfSBuilding.buffer(self.buffDist)).buffer(self.buffDist)
         
         rowsOfSquares = list()
         if GeomLib.isMultipart(uoSquares):

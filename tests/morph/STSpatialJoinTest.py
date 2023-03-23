@@ -28,7 +28,7 @@ class STSpatialJoinTest(unittest.TestCase):
 
             self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
             self.assertEqual(10, len(result), 'Count rows')
-            self.assertEqual(7, len(result.columns), 'Count columns')
+            self.assertEqual(9, len(result.columns), 'Count columns')
 
             for _, row in result.iterrows():
                 self.assertIsInstance(row.geometry, Point, 'Is a GeoDataFrame of Points')
@@ -39,7 +39,7 @@ class STSpatialJoinTest(unittest.TestCase):
 
             self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
             self.assertEqual(10, len(result), 'Count rows')
-            self.assertEqual(7, len(result.columns), 'Count columns')
+            self.assertEqual(9, len(result.columns), 'Count columns')
     
             for _, row in result.iterrows():
                 self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygon')

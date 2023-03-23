@@ -20,8 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-from numpy import dtype
+from pandas import DataFrame
 from sklearn.cluster import KMeans
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -31,32 +30,30 @@ class STKMeans(GeoProcess):
     '''
     classdocs
     '''
+    NUMERICS = ["int16", "int32", "int64", "float16", "float32", "float64"]
 
     def __init__(self, inputGdf, nclusters, verbose=True):
         '''
         Constructor
         '''
-        if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
+        if not isinstance(inputGdf, DataFrame):
+            raise IllegalArgumentTypeException(inputGdf, "DataFrame")
         self.inputGdf = inputGdf
+        self.data = inputGdf.select_dtypes(include=self.NUMERICS)
 
         if not isinstance(nclusters, int):
-            raise IllegalArgumentTypeException(nclusters, 'int')
-        self.kmeans = KMeans(n_clusters=nclusters, init='k-means++', n_init=10, max_iter=300)
+            raise IllegalArgumentTypeException(nclusters, "int")
+        self.kmeans = KMeans(n_clusters=nclusters, init="k-means++", n_init=10, max_iter=300)
 
-        _fieldnames = []
-        for _fieldname, _fieldtype in zip(self.inputGdf.columns, self.inputGdf.dtypes):
-            if (_fieldtype == dtype(float)):
-                _fieldnames.append(_fieldname)
+        _fieldnames = list(self.data.columns)
         if (0 == len(_fieldnames)):
-            raise Exception('There are no numeric (float) fields in the GeoDataFrame!')
+            raise Exception("There are no numeric (float) fields in the DataFrame!")
         if verbose:
-            print('The following fields are taken into account when processing KMeans: %s' % _fieldnames)
-        self.data = self.inputGdf[_fieldnames]
+            print(f"The following fields are taken into account when processing KMeans: {_fieldnames}")
 
     def run(self):
         _kmeans = self.kmeans.fit(self.data)
 
-        result = GeoDataFrame.copy(self.inputGdf)
-        result['kmeans_lbl'] = _kmeans.predict(self.data)
+        result = self.inputGdf.copy(deep=True)
+        result["kmeans_lbl"] = _kmeans.predict(self.data)
         return result

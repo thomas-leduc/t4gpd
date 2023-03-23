@@ -24,8 +24,9 @@ from functools import reduce
 
 from numpy import cos, sin, sqrt, pi
 from pandas.core.common import flatten
-from shapely.geometry import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
+from shapely.geometry import CAP_STYLE, GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
 from shapely.ops import nearest_points, transform, unary_union
+from shapely.prepared import prep
 from t4gpd.commons.AngleLib import AngleLib
 from t4gpd.commons.Epsilon import Epsilon
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -91,27 +92,26 @@ class GeomLib(object):
         return u[0] * v[0] + u[1] * v[1]
 
     @staticmethod
-    def extractFeaturesWithin(zone, inputGdf, inputSpatialIndex):
-        ids = list(inputSpatialIndex.intersection(zone.bounds))
+    def extractFeaturesWithin(zone, inputGdf):
+        pzone = prep(zone)
 
-        features = []
-        for _id in ids:
-            row = dict(inputGdf.loc[_id])
-            rowGeom = row['geometry']
-            if zone.intersects(rowGeom):
-                # Use a buffer to avoid slivers
-                row['geometry'] = rowGeom.intersection(zone).buffer(0.001)
-                features.append(row)
+        # outputGdf = inputGdf[pzone.intersects(inputGdf.geometry)].copy(deep=True)
+        outputGdf = inputGdf.loc[inputGdf.geometry.apply(lambda g: pzone.intersects(g))].copy(deep=True)
+        outputGdf.reset_index(drop=True, inplace=True)
+        # Use buffers to avoid slivers
+        outputGdf.geometry = outputGdf.geometry.apply(
+            lambda geom: geom.intersection(zone).buffer(0.001))
 
-        return features
+        return outputGdf
 
     @staticmethod
-    def extractGeometriesWithin(zone, inputGdf, inputSpatialIndex):
-        features = GeomLib.extractFeaturesWithin(zone, inputGdf, inputSpatialIndex)
-        geoms = [feature['geometry'] for feature in features]
-
-        if (0 < len(geoms)):
-            result = unary_union(geoms)
+    def extractGeometriesWithin(zone, geometries):
+        pzone = prep(zone)
+        candidates = list(filter(pzone.intersects, geometries))
+        if (0 < len(candidates)):
+            result = unary_union(candidates)
+            result = result.buffer(0.0)
+            result = result.intersection(zone)
             # Use a buffer to avoid slivers
             return result.buffer(0.001)
         return Polygon()
@@ -293,6 +293,30 @@ class GeomLib(object):
         return [minDist, nearestPoint, nearestRow]
 
     @staticmethod
+    def getNearestFeature3(gdf, point, buffDist, incScale=sqrt(2)):
+        if not isinstance(point, Point):
+            raise IllegalArgumentTypeException(point, 'Point')
+
+        minDist, nearestPoint, nearestRow = float('inf'), None, None
+
+        candidates = []
+        while (0 == len(candidates)):
+            pzone = prep(point.buffer(buffDist, cap_style=CAP_STYLE.square))
+            # candidates = gdf[pzone.intersects(gdf.geometry)].copy(deep=True)
+            candidates = gdf.loc[gdf.geometry.apply(lambda g: pzone.intersects(g))].copy(deep=True)
+            buffDist *= incScale
+
+        for _, row in candidates.iterrows():
+            rowGeom = row.geometry
+            dist = point.distance(rowGeom)
+            if (dist < minDist):
+                minDist = dist
+                _, nearestPoint = nearest_points(point, rowGeom)
+                nearestRow = row
+
+        return [minDist, nearestPoint, nearestRow]
+
+    @staticmethod
     def getStraightLineEquation(line):
         # The input line is represented by a point and a vector
         # The output result is [a, b, c] 
@@ -338,32 +362,45 @@ class GeomLib(object):
         return None
 
     @staticmethod
-    def isABorderPoint(point, buildings, spatialIndex):
+    def getAnchoringBuildingId3(point, buildings):
+        # isAnAnchoringPolygon = isABorderPoint OR isAnInsidePoint
+        isAnAnchoringPolygon = lambda point, polygon: (
+            point.relate(polygon) in ['F0FFFF212', '0FFFFF212'])
+
+        pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
+        # gdf = buildings[pgeom.intersects(buildings.geometry)]
+        gdf = buildings.loc[buildings.geometry.apply(lambda g: pgeom.intersects(g))]
+        gdf = gdf.loc[gdf.geometry.apply(lambda g: isAnAnchoringPolygon(point, g))]
+
+        return gdf.index[0] if (0 < len(gdf)) else None
+
+    @staticmethod
+    def isABorderPoint(point, buildings):
         isAPointOnTheBorder = lambda point, polygon: ('F0FFFF212' == point.relate(polygon))
-        buildingsIds = list(spatialIndex.intersection(point.bounds))
-        for buildingId in buildingsIds:
-            buildingGeom = buildings.loc[buildingId].geometry
-            if isAPointOnTheBorder(point, buildingGeom):
+        pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
+        candidates = filter(pgeom.intersects, buildings.geometry)
+        for candidate in candidates:
+            if isAPointOnTheBorder(point, candidate):
                 return True
         return False
 
     @staticmethod
-    def isAnIndoorPoint(point, buildings, spatialIndex):
+    def isAnIndoorPoint(point, buildings):
         isAnInsidePoint = lambda point, polygon: ('0FFFFF212' == point.relate(polygon))
-        buildingsIds = list(spatialIndex.intersection(point.bounds))
-        for buildingId in buildingsIds:
-            buildingGeom = buildings.loc[buildingId].geometry
-            if isAnInsidePoint(point, buildingGeom):
+        pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
+        candidates = filter(pgeom.intersects, buildings.geometry)
+        for candidate in candidates:
+            if isAnInsidePoint(point, candidate):
                 return True
         return False
 
     @staticmethod
-    def isAnOutdoorPoint(point, buildings, spatialIndex):
+    def isAnOutdoorPoint(point, buildings):
         isAnOutsidePoint = lambda point, polygon: ('FF0FFF212' == point.relate(polygon))
-        buildingsIds = list(spatialIndex.intersection(point.bounds))
-        for buildingId in buildingsIds:
-            buildingGeom = buildings.loc[buildingId].geometry
-            if not isAnOutsidePoint(point, buildingGeom):
+        pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
+        candidates = filter(pgeom.intersects, buildings.geometry)
+        for candidate in candidates:
+            if not isAnOutsidePoint(point, candidate):
                 return False
         return True
 
@@ -379,10 +416,9 @@ class GeomLib(object):
     @staticmethod
     def isConvex(obj):
         if isinstance(obj, Polygon) and not GeomLib.isHoled(obj):
-            coords = list(obj.exterior.coords)
-            if 4 >= len(coords):
+            coords = list(obj.exterior.coords)[:-1]
+            if 3 >= len(coords):
                 return True
-            coords.pop()
             signs = [GeomLib.zCrossProduct(a, b, c) > 0 for a, b, c in zip(ListUtilities.rotate(coords, 2), ListUtilities.rotate(coords, 1), coords)]
             return all(signs) or not any(signs)
         return False

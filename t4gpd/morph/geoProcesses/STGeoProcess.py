@@ -22,7 +22,8 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from inspect import isclass
 
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
+from pandas import concat, DataFrame
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
@@ -41,8 +42,8 @@ class STGeoProcess(GeoProcess):
                 self.__is_a_collection_of_geoprocesses(geoprocessToApply)):
             raise IllegalArgumentTypeException(geoprocessToApply, '(list of) AbstractGeoprocess')
 
-        if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
+        if not isinstance(inputGdf, DataFrame):
+            raise IllegalArgumentTypeException(inputGdf, 'DataFrame')
 
         if (self.__is_a_geoprocess(geoprocessToApply)):
             self.geoprocessToApply = [geoprocessToApply]
@@ -64,9 +65,22 @@ class STGeoProcess(GeoProcess):
             for op in self.geoprocessToApply:
                 result.update(op.runWithArgs(row))
             rows.append(self.updateOrAppend(row, result))
-        return GeoDataFrame(rows, crs=self.inputGdf.crs)
 
+        if isinstance(self.inputGdf, GeoDataFrame):
+            return GeoDataFrame(rows, crs=self.inputGdf.crs)
+        return DataFrame(rows)
     '''
+    def srun(self):
+        fieldnames = [op.ofieldname() for op in self.geoprocessToApply]
+        df2 = DataFrame(self.inputGdf.apply(
+            lambda row: [op.srunWithArgs(row) for op in self.geoprocessToApply],
+            axis=1).to_list(),
+            columns=fieldnames)
+        df1 = self.inputGdf.copy(deep=True)
+        df1.drop(columns=fieldnames, inplace=True)
+        df2 = concat([df1, df2], axis=1)
+        return GeoDataFrame(df2)
+
     def _run(self, inputGdf):
         rows = []
         for _, row in inputGdf.iterrows():

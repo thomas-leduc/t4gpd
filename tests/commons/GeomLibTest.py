@@ -5,29 +5,27 @@ Created on 18 juin 2020
 '''
 import unittest
 
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
 from numpy import pi
 from shapely.geometry import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
+from shapely.ops import unary_union
+from shapely.wkt import loads
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
-from shapely.wkt import loads
 
 
 class GeomLibTest(unittest.TestCase):
 
     def setUp(self):
-        a = Point((0, 0))
-        b = Point((0, 9))
-        c = Point((9, 9))
-        d = Point((9, 0))
+        a, b, c, d = (0, 0), (0, 9), (9, 9), (9, 0)
 
         self.linearring = LinearRing([(100, 0), (100, 100), (0, 100)])
 
-        self.point = a
+        self.point = Point(a)
         self.multipoint = MultiPoint((a, b, c, d))
         self.linestring = LineString((a, b, c))
         self.multilinestring = MultiLineString([ ((0, 0), (0, 9), (9, 9)), ((3, 3), (6, 3), (6, 6)) ])
-        self.polygon = Polygon((a, b, c, d), [[(3, 3), (3, 6), (6, 6), (6, 3)]])
+        self.polygon = Polygon([a, b, c, d], [[(3, 3), (3, 6), (6, 6), (6, 3)]])
         self.polygon2 = Polygon(((0, 0), (10, 0), (10, 90), (100, 90), (100, 100), (0, 100), (0, 0)))
         self.multipolygon = MultiPolygon((self.polygon, Polygon(self.linearring)))
 
@@ -58,6 +56,34 @@ class GeomLibTest(unittest.TestCase):
         self.assertEqual(len(result), 2, 'Is a list of LineStrings (4)')
         self.assertEqual(result[0].wkt, 'LINESTRING (0 0, 0 4.5)', 'Equality test (2)')
         self.assertEqual(result[1].wkt, 'LINESTRING (0 4.5, 0 9, 9 9)', 'Equality test (3)')
+
+    def testExtractFeaturesWithin(self):
+        buildings = GeoDataFrameDemos.districtGraslinInNantesBuildings()
+        zone = GeoDataFrameDemos.coursCambronneInNantes().geometry.squeeze().buffer(50.0)
+
+        resultat = GeomLib.extractFeaturesWithin(zone, buildings)
+        self.assertIsInstance(resultat, GeoDataFrame, 'Is a GeoDataFrame')
+        self.assertEqual(96, len(resultat), 'Check GeoDataFrame length')
+        self.assertAlmostEqual(17351.1, unary_union(resultat.geometry).area, None,
+                               'Tests the resulting area', 0.1)
+        """
+        import matplotlib.pyplot as plt
+        resultat.plot()
+        plt.show()
+        """
+
+    def testExtractGeometriesWithin(self):
+        buildings = GeoDataFrameDemos.districtGraslinInNantesBuildings()
+        zone = GeoDataFrameDemos.coursCambronneInNantes().geometry.squeeze().buffer(50.0)
+
+        resultat = GeomLib.extractGeometriesWithin(zone, buildings.geometry)
+        self.assertIsInstance(resultat, (MultiPolygon, Polygon), 'Is a single MultiPolygon or Polygon')
+        self.assertAlmostEqual(17351.1, resultat.area, None, 'Tests the resulting area', 0.1)
+        """
+        import matplotlib.pyplot as plt
+        GeoDataFrame([{'geometry': resultat}], crs='epsg:2154').plot()
+        plt.show()
+        """
 
     def testForceZCoordinateToZ0(self):
         for geom in [self.point, self.linearring, self.linestring, self.polygon,
@@ -123,27 +149,27 @@ class GeomLibTest(unittest.TestCase):
         buildings = GeoDataFrame([{ 'geometry': p }])
 
         for pt in [Point((0, 0)), Point((3, 3)), Point((6, 6)), Point((10, 0)), Point((14.5, 4.5))]:
-            self.assertTrue(GeomLib.isABorderPoint(pt, buildings, buildings.sindex), 'Is a border point (1)')
+            self.assertTrue(GeomLib.isABorderPoint(pt, buildings), 'Is a border point (1)')
 
         for pt in [Point((1, 1)), Point((4.5, 4.5)), Point((12, 1))]:
-            self.assertFalse(GeomLib.isABorderPoint(pt, buildings, buildings.sindex), 'Is a border point (2)')
+            self.assertFalse(GeomLib.isABorderPoint(pt, buildings), 'Is a border point (2)')
 
     def testIsAnIndoorPoint(self):
         p1 = Point((0, 0))
         p2 = Point((10, 0))
         buildings = GeoDataFrame([{ 'geometry': p1.buffer(5.0)}])
-        self.assertTrue(GeomLib.isAnIndoorPoint(p1, buildings, buildings.sindex), 'Is an indoor point (1)')
-        self.assertFalse(GeomLib.isAnIndoorPoint(p2, buildings, buildings.sindex), 'Is an indoor point (2)')
+        self.assertTrue(GeomLib.isAnIndoorPoint(p1, buildings), 'Is an indoor point (1)')
+        self.assertFalse(GeomLib.isAnIndoorPoint(p2, buildings), 'Is an indoor point (2)')
 
     def testIsAnOutdoorPoint(self):
         p = loads('MULTIPOLYGON (((0 0, 0 9, 9 9, 9 0, 0 0), (3 3, 3 6, 6 6, 6 3, 3 3)), ((10 0, 19 0, 19 9, 10 0)))')
         buildings = GeoDataFrame([{ 'geometry': p }])
 
         for pt in [Point((0, 0)), Point((1, 1)), Point((3, 3)), Point((6, 6)), Point((10, 0)), Point((14.5, 4.5))]:
-            self.assertFalse(GeomLib.isAnOutdoorPoint(pt, buildings, buildings.sindex), 'Is an outdoor point (1)')
+            self.assertFalse(GeomLib.isAnOutdoorPoint(pt, buildings), 'Is an outdoor point (1)')
 
         for pt in [Point((4.5, 4.5)), Point((100, 100))]:
-            self.assertTrue(GeomLib.isAnOutdoorPoint(pt, buildings, buildings.sindex), 'Is an outdoor point (2)')
+            self.assertTrue(GeomLib.isAnOutdoorPoint(pt, buildings), 'Is an outdoor point (2)')
 
     def testIsAShapelyGeometry(self):
         for geom in [self.point, self.linearring, self.linestring, self.polygon,

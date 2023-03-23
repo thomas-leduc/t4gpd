@@ -65,7 +65,7 @@ class SkyMap2D(AbstractGeoprocess):
     def runWithArgs(self, row):
         viewPoint = row.geometry.centroid
 
-        if GeomLib.isAnIndoorPoint(viewPoint, self.buildingsGdf, self.spatialIndex):
+        if GeomLib.isAnIndoorPoint(viewPoint, self.buildingsGdf):
             return Polygon()
 
         _, _, _, _, hws = RayCastingLib.multipleRayCast25D(self.buildingsGdf, self.spatialIndex, viewPoint,

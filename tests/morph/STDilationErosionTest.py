@@ -29,7 +29,7 @@ class STDilationErosionTest(unittest.TestCase):
             self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygon')
 
         self.assertIsInstance(streets, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(16, len(streets), 'Count rows')
+        self.assertEqual(28, len(streets), 'Count rows')
         self.assertEqual(2, len(streets.columns), 'Count columns')
         for _, row in streets.iterrows():
             self.assertIsInstance(row.geometry, Polygon, 'Is a GeoDataFrame of Polygon')

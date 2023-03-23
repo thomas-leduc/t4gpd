@@ -23,7 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 from geopandas.geodataframe import GeoDataFrame
 from numpy import mean
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.RayCastingLib import RayCastingLib
+from t4gpd.commons.RayCasting3Lib import RayCasting3Lib
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
 
@@ -39,16 +39,15 @@ class WMean(AbstractGeoprocess):
         if not isinstance(buildingsGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(buildingsGdf, 'GeoDataFrame')
         self.buildingsGdf = buildingsGdf
-        self.spatialIndex = buildingsGdf.sindex
 
-        self.shootingDirs = RayCastingLib.preparePanopticRays(nRays)
+        self.shootingDirs = RayCasting3Lib.preparePanopticRays(nRays)
         self.maxRayLen = maxRayLen
 
     def runWithArgs(self, row):
         viewPoint = row.geometry.centroid
 
-        _, _, hitDists, _ = RayCastingLib.multipleRayCast2D(
-            self.buildingsGdf, self.spatialIndex, viewPoint, self.shootingDirs, self.maxRayLen)
+        _, _, hitDists = RayCasting3Lib.outdoorMultipleRayCast2D(
+            self.buildingsGdf, viewPoint, self.shootingDirs, self.maxRayLen)
 
         return {
             # 'hit_dists': ArrayCoding.encode(hitDists),

@@ -20,11 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
 from numpy import mean
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.RayCastingLib import RayCastingLib
+from t4gpd.commons.RayCasting3Lib import RayCasting3Lib
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
 
@@ -37,7 +37,7 @@ class AspectRatio(AbstractGeoprocess):
     MIXED = 'Mixed'
 
     def __init__(self, sensorsGdf, buildingsGdf, nRays=64, maxRayLen=100.0, modality='Panoptic',
-                 elevationFieldname='HAUTEUR', canyonFieldName=None):
+                 elevationFieldname='HAUTEUR', canyonFieldName=None, h0=0.0):
         '''
         Constructor
         '''
@@ -48,11 +48,10 @@ class AspectRatio(AbstractGeoprocess):
             if not isinstance(buildingsGdf, GeoDataFrame):
                 raise IllegalArgumentTypeException(buildingsGdf, 'GeoDataFrame')
             self.buildingsGdf = buildingsGdf
-            self.spatialIndex = buildingsGdf.sindex
     
             if (2 > nRays):
                 raise IllegalArgumentTypeException(nRays, 'nRays must be greater than 2!')
-            self.shootingDirs = RayCastingLib.preparePanopticRays(nRays)
+            self.shootingDirs = RayCasting3Lib.preparePanopticRays(nRays)
             self.maxRayLen = maxRayLen
 
             self.modality = modality
@@ -65,6 +64,7 @@ class AspectRatio(AbstractGeoprocess):
             self.elevationFieldname = elevationFieldname
 
             self.canyonFieldName = canyonFieldName
+            self.h0 = h0
         else:
             raise Exception('Illegal argument: modality must be chosen in {%s, %s, %s}!' % 
                             (self.DIRECTIONAL, self.PANOPTIC, self.MIXED))
@@ -72,22 +72,22 @@ class AspectRatio(AbstractGeoprocess):
     def runWithArgs(self, row):
         viewPoint = row.geometry.centroid
 
-        if GeomLib.isAnIndoorPoint(viewPoint, self.buildingsGdf, self.spatialIndex):
-            return { 'svf': 0.0 }
+        if GeomLib.isAnIndoorPoint(viewPoint, self.buildingsGdf):
+            return { 'h_over_w': 0.0 }
 
         _shootingDirs = self.shootingDirs
 
         if (self.DIRECTIONAL == self.modality):
-            _shootingDirs = RayCastingLib.prepareOrientedRays(
-                self.buildingsGdf, self.spatialIndex, viewPoint)
+            _shootingDirs = RayCasting3Lib.prepareOrientedRays(
+                self.buildingsGdf, viewPoint)
         elif ((self.MIXED == self.modality) and
               ((1 == row[self.canyonFieldName]) or row[self.canyonFieldName])):
-            _shootingDirs = RayCastingLib.prepareOrientedRays(
-                self.buildingsGdf, self.spatialIndex, viewPoint)
+            _shootingDirs = RayCasting3Lib.prepareOrientedRays(
+                self.buildingsGdf, viewPoint)
 
-        _, _, hitDists, hitMasks, _ = RayCastingLib.multipleRayCast25D(
-            self.buildingsGdf, self.spatialIndex, viewPoint, _shootingDirs,
-            self.maxRayLen, self.elevationFieldname, background=False)
+        _, _, hitDists, hitMasks, _ = RayCasting3Lib.outdoorMultipleRayCast25D(
+            self.buildingsGdf, viewPoint, _shootingDirs, self.maxRayLen,
+            self.elevationFieldname, background=False, h0=self.h0)
 
         hitHeights = [0.0 if f is None else f[self.elevationFieldname] for f in hitMasks]
 

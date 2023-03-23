@@ -20,10 +20,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import cos, pi, sin
-
 from geopandas.geodataframe import GeoDataFrame
-from geopandas.sindex import SpatialIndex
+from geopandas.sindex import PyGEOSSTRTreeIndex, SpatialIndex
+from numpy import cos, pi, sin
 from rtree.index import Index 
 from shapely.geometry import LineString, MultiLineString, Point
 from shapely.ops import nearest_points, linemerge
@@ -53,8 +52,8 @@ class RayCastingLib(object):
     def singleRayCast2D(masksGdf, masksSIdx, viewPoint, shootingDir, rayLength=100.0):
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
 
@@ -62,7 +61,7 @@ class RayCastingLib(object):
         # To avoid: "Inconsistent coordinate dimensionality"
         viewPoint = Point((viewPoint.x, viewPoint.y))
         remotePoint = Point((viewPoint.x + shootingDir[0] * rayLength, viewPoint.y + shootingDir[1] * rayLength))
-        ray = LineString([viewPoint, remotePoint])
+        ray = LineString([(viewPoint.x, viewPoint.y), (remotePoint.x, remotePoint.y)])
 
         hitPoint, hitDist, hitMask = [None, rayLength, None]
 
@@ -78,7 +77,7 @@ class RayCastingLib(object):
                     hitPoint, hitDist, hitMask = rp, dist, mask
 
         if hitPoint is not None:
-            ray = LineString([viewPoint, hitPoint])
+            ray = LineString([(viewPoint.x, viewPoint.y), (hitPoint.x, hitPoint.y)])
         else:
             hitPoint = remotePoint
 
@@ -86,11 +85,11 @@ class RayCastingLib(object):
 
     @staticmethod
     def singleRayCast25D(masksGdf, masksSIdx, viewPoint, shootingDir, rayLength,
-                         elevationFieldName, background):
+                         elevationFieldName, background, h0=0.0):
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
         if elevationFieldName not in masksGdf:
@@ -98,9 +97,9 @@ class RayCastingLib(object):
 
         # TL. 23.02.2021
         # To avoid: "Inconsistent coordinate dimensionality"
-        viewPoint = Point((viewPoint.x, viewPoint.y))
-        remotePoint = Point((viewPoint.x + shootingDir[0] * rayLength, viewPoint.y + shootingDir[1] * rayLength))
-        ray = LineString([viewPoint, remotePoint])
+        viewPoint = Point((viewPoint.x, viewPoint.y, h0))
+        remotePoint = Point((viewPoint.x + shootingDir[0] * rayLength, viewPoint.y + shootingDir[1] * rayLength, h0))
+        ray = LineString([(viewPoint.x, viewPoint.y), (remotePoint.x, remotePoint.y)])
 
         hitPoint, hitDist, hitMask, hitHW = [None, rayLength, None, 0]
 
@@ -119,7 +118,7 @@ class RayCastingLib(object):
                     hitPoint, hitDist, hitMask, hitHW = rp, dist, mask, hw
 
         if hitPoint is not None:
-            ray = LineString([viewPoint, hitPoint])
+            ray = LineString([(viewPoint.x, viewPoint.y), (hitPoint.x, hitPoint.y)])
         else:
             hitPoint = remotePoint
 
@@ -131,8 +130,8 @@ class RayCastingLib(object):
         
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
         if elevationFieldName not in masksGdf:
@@ -142,7 +141,7 @@ class RayCastingLib(object):
         # To avoid: "Inconsistent coordinate dimensionality"
         viewPoint = Point((viewPoint.x, viewPoint.y))
         remotePoint = Point((viewPoint.x + shootingDir[0] * rayLength, viewPoint.y + shootingDir[1] * rayLength))
-        ray = LineString([viewPoint, remotePoint])
+        ray = LineString([(viewPoint.x, viewPoint.y), (remotePoint.x, remotePoint.y)])
 
         hitPoint, hitDist, hitMask, hitHW = [None, rayLength, None, 0]
 
@@ -161,7 +160,7 @@ class RayCastingLib(object):
                     hitPoint, hitDist, hitMask, hitHW = rp, dist, mask, hw
 
         if hitPoint is not None:
-            ray = LineString([viewPoint, hitPoint])
+            ray = LineString([(viewPoint.x, viewPoint.y), (hitPoint.x, hitPoint.y)])
         else:
             hitPoint = remotePoint
 
@@ -171,8 +170,8 @@ class RayCastingLib(object):
     def multipleRayCast2D(masksGdf, masksSIdx, viewPoint, shootingDirs, rayLength=100.0):
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
 
@@ -189,11 +188,11 @@ class RayCastingLib(object):
 
     @staticmethod
     def multipleRayCast25D(masksGdf, masksSIdx, viewPoint, shootingDirs, rayLength,
-                           elevationFieldName, background):
+                           elevationFieldName, background, h0=0.0):
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
         if elevationFieldName not in masksGdf:
@@ -204,7 +203,7 @@ class RayCastingLib(object):
         for shootingDir in shootingDirs:
             ray, hitPoint, hitDist, hitMask, hitHW = RayCastingLib.singleRayCast25D(
                 masksGdf, masksSIdx, viewPoint, shootingDir, rayLength,
-                elevationFieldName, background)
+                elevationFieldName, background, h0)
             rays.append(ray)
             hitPoints.append(hitPoint)
             hitDists.append(hitDist)
@@ -219,8 +218,8 @@ class RayCastingLib(object):
                                    background):
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
         if elevationFieldName not in masksGdf:
@@ -243,7 +242,7 @@ class RayCastingLib(object):
 
     @staticmethod
     def assessStreetWidth(masksGdf, masksSIdx, viewPoint, rayLength=100.0):
-        if GeomLib.isAnIndoorPoint(viewPoint, masksGdf, masksSIdx):
+        if GeomLib.isAnIndoorPoint(viewPoint, masksGdf):
             return None, -1, [-1, -1]
 
         _shootingDirs = RayCastingLib.prepareOrientedRays(

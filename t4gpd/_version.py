@@ -3,7 +3,7 @@ Created on 20 nov. 2020
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,4 +21,4 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 # The following line *must* be the last in the module, exactly as formatted:
-__version__ = '0.5.0'
+__version__ = '0.6.0'

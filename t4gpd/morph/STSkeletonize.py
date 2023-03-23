@@ -27,10 +27,8 @@ from shapely.prepared import prep
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.graph.UrbanGraphLibOld import UrbanGraphLibOld
-from t4gpd.morph.STVoronoiPartition import STVoronoiPartition
-
 from t4gpd.morph.STPointsDensifier import STPointsDensifier
+from t4gpd.morph.STVoronoiPartition import STVoronoiPartition
 
 
 class STSkeletonize(GeoProcess):
@@ -60,20 +58,10 @@ class STSkeletonize(GeoProcess):
         if (5 < len(_nodesGdf)):
             # Voronoi Diagram
             _voronoiGdf = STVoronoiPartition(_nodesGdf).run()
-
-            # Remove useless edges
-            _ug = UrbanGraphLibOld()
-            for _, row in _voronoiGdf.iterrows():
-                _edges = GeomLib.toListOfLineStrings(row.geometry)
-                for _edge in _edges:
-                    _prev = None
-                    for _curr in _edge.coords:
-                        if _prev is not None:
-                            _currGeom = LineString((_prev, _curr))
-                            if prepShapeGeom.contains(_currGeom):
-                                _ug.add(_currGeom)
-                        _prev = _curr
-            return unary_union([rs['geometry'] for rs in _ug.getUniqueRoadsSections()])
+            lls = []
+            for geom in _voronoiGdf.geometry:
+                lls.extend(filter(prepShapeGeom.contains, GeomLib.toListOfBipointsAsLineStrings(geom)))
+            return unary_union(lls)
 
         return LineString()  # Empty geometry
 

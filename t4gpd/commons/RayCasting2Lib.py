@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame
-from geopandas.sindex import SpatialIndex
+from geopandas.sindex import PyGEOSSTRTreeIndex, SpatialIndex
 from numpy import arctan2, cos, pi, sin
 from rtree.index import Index 
 from shapely.geometry import LineString, MultiLineString, Point
@@ -110,12 +110,12 @@ class RayCasting2Lib(object):
                 hitPoint = remotePoint
 
         else:
-            if GeomLib.isAnIndoorPoint(viewPoint, masksGdf, masksSIdx):
+            if GeomLib.isAnIndoorPoint(viewPoint, masksGdf):
                 # ======================================================================
                 # INDOOR VIEWPOINT
                 ray, hitPoint, hitDist, hitMask = None, None, 0.0, anchorId
 
-            elif GeomLib.isABorderPoint(viewPoint, masksGdf, masksSIdx):
+            elif GeomLib.isABorderPoint(viewPoint, masksGdf):
                 # ======================================================================
                 # VIEWPOINT ON A WALL
                 buildingGeom = masksGdf.loc[anchorId].geometry
@@ -157,14 +157,14 @@ class RayCasting2Lib(object):
 
     @staticmethod
     def outdoorSingleRayCast25D(masksGdf, masksSIdx, viewPoint, shootingDir, rayLength,
-                                elevationFieldName, background):
+                                elevationFieldName, background, h0=0.0):
         # DEFAULT ALTITUDE OF THE VIEWPOINT
         h0 = viewPoint.z if (viewPoint.has_z) else 1.6
 
         # TL. 23.02.2021
         # To avoid: "Inconsistent coordinate dimensionality"
-        viewPoint = Point((viewPoint.x, viewPoint.y))
-        remotePoint = Point((viewPoint.x + shootingDir[0] * rayLength, viewPoint.y + shootingDir[1] * rayLength))
+        viewPoint = Point((viewPoint.x, viewPoint.y, h0))
+        remotePoint = Point((viewPoint.x + shootingDir[0] * rayLength, viewPoint.y + shootingDir[1] * rayLength, h0))
         ray = LineString([viewPoint, remotePoint])
 
         anchorId = GeomLib.getAnchoringBuildingId(viewPoint, masksGdf, masksSIdx)
@@ -198,12 +198,12 @@ class RayCasting2Lib(object):
 
         else:
             anchor = masksGdf.loc[anchorId]
-            if GeomLib.isAnIndoorPoint(viewPoint, masksGdf, masksSIdx):
+            if GeomLib.isAnIndoorPoint(viewPoint, masksGdf):
                 # ======================================================================
                 # INDOOR VIEWPOINT
                 ray, hitPoint, hitDist, hitMask, hitHW = None, None, 0.0, anchor, None
 
-            elif GeomLib.isABorderPoint(viewPoint, masksGdf, masksSIdx):
+            elif GeomLib.isABorderPoint(viewPoint, masksGdf):
                 # ======================================================================
                 # VIEWPOINT ON A WALL
                 buildingGeom = anchor.geometry
@@ -250,8 +250,8 @@ class RayCasting2Lib(object):
     def outdoorMultipleRayCast2D(masksGdf, masksSIdx, viewPoint, shootingDirs, rayLength=100.0):
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
 
@@ -270,11 +270,11 @@ class RayCasting2Lib(object):
 
     @staticmethod
     def outdoorMultipleRayCast25D(masksGdf, masksSIdx, viewPoint, shootingDirs, rayLength,
-                                  elevationFieldName, background):
+                                  elevationFieldName, background, h0=0.0):
         if not isinstance(masksGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
-        if not isinstance(masksSIdx, (SpatialIndex, Index)):
-            raise IllegalArgumentTypeException(masksSIdx, 'SpatialIndex or Index')
+        if not isinstance(masksSIdx, (Index, PyGEOSSTRTreeIndex, SpatialIndex)):
+            raise IllegalArgumentTypeException(masksSIdx, 'Index, PyGEOSSTRTreeIndex or SpatialIndex')
         if not isinstance(viewPoint, Point):
             raise IllegalArgumentTypeException(viewPoint, 'Point')
         if elevationFieldName not in masksGdf:
@@ -285,7 +285,7 @@ class RayCasting2Lib(object):
         for shootingDir in shootingDirs:
             ray, hitPoint, hitDist, hitMask, hitHW = RayCasting2Lib.outdoorSingleRayCast25D(
                 masksGdf, masksSIdx, viewPoint, shootingDir, rayLength,
-                elevationFieldName, background)
+                elevationFieldName, background, h0)
             if not ray is None:
                 rays.append(ray)
                 hitPoints.append(hitPoint)
