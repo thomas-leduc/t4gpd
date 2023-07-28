@@ -28,7 +28,7 @@ from qgis.core import (QgsArrowSymbolLayer, QgsCategorizedSymbolRenderer,
                        QgsRendererCategory, QgsSimpleFillSymbolLayer,
                        QgsSimpleLineSymbolLayer, QgsStyle,
                        QgsSvgMarkerSymbolLayer, QgsSymbol, QgsSymbolLayer,
-                       QgsTextFormat, QgsVectorLayerSimpleLabeling)
+                       QgsTextFormat, QgsUnitTypes, QgsVectorLayerSimpleLabeling)
 from qgis.PyQt.QtGui import QColor
 from qgis.utils import iface
 
@@ -60,10 +60,10 @@ class SetSymbolLib(object):
             layer.triggerRepaint()
 
     @staticmethod
-    def setAlternateFillSymbol(layer, color='black', patternDistance=1.0,
-                               lineAngle=45, penstyle='solid', width='0.35'):
+    def setAlternateFillSymbol(layer, color="black", patternDistance=1.0,
+                               lineAngle=45, penstyle="solid", width="0.35"):
         lineSymbol = QgsLineSymbol.createSimple({
-            'penstyle': penstyle, 'width': width, 'color': color})
+            "penstyle": penstyle, "width": width, "color": color})
         filled_pattern = QgsLinePatternFillSymbolLayer()
         filled_pattern.setLineAngle(lineAngle)
         filled_pattern.setDistance(patternDistance)
@@ -71,10 +71,10 @@ class SetSymbolLib(object):
         SetSymbolLib.__altSetSymbol(layer, filled_pattern)
 
     @staticmethod
-    def setAlternateFillSymbol2(layer, color='red', color_border='black',
-                                name='diamond', size='3.0'):
+    def setAlternateFillSymbol2(layer, color="red", color_border="black",
+                                name="diamond", size="3.0"):
         markerSymbol = QgsMarkerSymbol.createSimple({
-            'color':color, 'color_border':color_border, 'name':name, 'size':size})
+            "color":color, "color_border":color_border, "name":name, "size":size})
         filled_pattern = QgsPointPatternFillSymbolLayer()
         filled_pattern.setDistanceX(4.0)
         filled_pattern.setDistanceY(4.0)
@@ -82,14 +82,14 @@ class SetSymbolLib(object):
         SetSymbolLib.__altSetSymbol(layer, filled_pattern)
 
     @staticmethod
-    def setAlternateFillSymbol3(layer, color='black', style='b_diagonal'):
-        # style = ['cross', 'b_diagonal', 'diagonal_x', 'f_diagonal', 
-        # 'horizontal', 'solid', 'vertical']
-        symbol_layer = QgsSimpleFillSymbolLayer.create({'color':color, 'style': style})
+    def setAlternateFillSymbol3(layer, color="black", style="b_diagonal"):
+        # style = ["cross", "b_diagonal", "diagonal_x", "f_diagonal", 
+        # "horizontal", "solid", "vertical"]
+        symbol_layer = QgsSimpleFillSymbolLayer.create({"color":color, "style": style})
         SetSymbolLib.__altSetSymbol(layer, symbol_layer)
 
     @staticmethod
-    def setArrowSymbol(layer, color='black', headType=QgsArrowSymbolLayer.HeadSingle,
+    def setArrowSymbol(layer, color="black", headType=QgsArrowSymbolLayer.HeadSingle,
                        width=0.60, headLength=2.05, headThickness=1.55,
                        arrowType=QgsArrowSymbolLayer.ArrowPlain):
         # headType = {QgsArrowSymbolLayer.HeadDouble, QgsArrowSymbolLayer.HeadReversed, QgsArrowSymbolLayer.HeadSingle}
@@ -116,10 +116,10 @@ class SetSymbolLib(object):
     def setCategorizedSymbol(layer, fieldName, listOfValueColorLabels):
         '''
         listOfValueColorLabels = (
-            ('cat', 'red'),
-            ('dog', 'blue', 'Big dog'),
-            ('sheep', 'green'),
-            ('', 'yellow', 'Unknown')
+            ("cat", "red"),
+            ("dog", "blue", "Big dog"),
+            ("sheep", "green"),
+            ("", "yellow", "Unknown")
         )
         '''
         # CREATE A CATEGORY FOR EACH ITEM IN 'fieldLookupTable'
@@ -135,35 +135,48 @@ class SetSymbolLib(object):
         SetSymbolLib.__otherAltSetSymbol(layer, renderer)
 
     @staticmethod
-    def setFillSymbol(layer, color='lightgrey', outline_color='darkgrey',
-                      style_border='solid', width_border='0.75'):
+    def setFillSymbol(layer, color="lightgrey", outline_color="darkgrey",
+                      style_border="solid", width_border="0.75"):
         fillSymbol = QgsFillSymbol.createSimple({
-            'color': color,
-            'outline_color': outline_color,
-            'width_border': width_border,
-            'style_border': style_border})
+            "color": color,
+            "outline_color": outline_color,
+            "width_border": width_border,
+            "style_border": style_border})
         SetSymbolLib.__setSymbol(layer, fillSymbol)
 
     @staticmethod
-    def setHeatMap(layer, radius=20, rampName='Blues'):
+    def setHeatMap(layer, expr, radius=20, rampName="Blues", maxValue=0,
+                   color1=QColor(255, 255, 255, 0),
+                   unit=QgsUnitTypes.RenderUnit.MetersInMapUnits):
         # To get a list of available color ramp names, use:
         # QgsStyle().defaultStyle().colorRampNames()
+        # ["Blues", "BrBG", "BuGn", "BuPu", "GnBu", "Greens", "Greys", "Inferno", "Magma", 
+        # "OrRd", "Oranges", "PRGn", "PiYG", "Plasma", "PuBu", "PuBuGn", "PuOr", "PuRd", 
+        # "Purples", "RdBu", "RdGy", "RdPu", "RdYlBu", "RdYlGn", "Reds", "Spectral", 
+        # "Viridis", "YlGn", "YlGnBu", "YlOrBr", "YlOrRd"]
         ramp = QgsStyle().defaultStyle().colorRamp(rampName)
+        ramp.setColor1(color1)
+
         heatmap = QgsHeatmapRenderer()
-        heatmap.setRadius(radius)
         heatmap.setColorRamp(ramp)
+        heatmap.setMaximumValue(maxValue) # Set to 0 for automatic calculation of max value
+        heatmap.setRadius(radius)
+        heatmap.setRadiusUnit(unit)
+        heatmap.setRenderQuality(1) # A value of 1 indicates maximum quality
+        heatmap.setWeightExpression(expr) # expr: fieldname
+
         SetSymbolLib.__otherAltSetSymbol(layer, heatmap)
 
     @staticmethod
-    def setLabelSymbol(layer, fieldName, overPoint=True, size='14',
-                       color='black', positionX=None, positionY=None,
+    def setLabelSymbol(layer, fieldName, overPoint=True, size="14",
+                       color="black", positionX=None, positionY=None,
                        offsetX=None, offsetY=None):
         label = QgsPalLayerSettings()
         label.fieldName = fieldName
     
         textFormat = QgsTextFormat()
         # bgColor = QgsTextBackgroundSettings()
-        # bgColor.setFillColor(QColor('white'))
+        # bgColor.setFillColor(QColor("white"))
         # bgColor.setEnabled(True)
         # textFormat.setBackground(bgColor )
         textFormat.setColor(QColor(color))
@@ -177,29 +190,29 @@ class SetSymbolLib(object):
         layer.triggerRepaint()
 
     @staticmethod
-    def setLineSymbol(layer, color='black', penstyle='solid', width='0.55'):
+    def setLineSymbol(layer, color="black", penstyle="solid", width="0.55"):
         # dash, dash dot, dash dot dot, dot, solid
         lineSymbol = QgsLineSymbol.createSimple({
-            'color': color, 'penstyle': penstyle, 'width': width})
+            "color": color, "penstyle": penstyle, "width": width})
         SetSymbolLib.__setSymbol(layer, lineSymbol)
 
     @staticmethod
-    def setMarkerSymbol(layer, color='black', size='3.6', name='circle'):
+    def setMarkerSymbol(layer, color="black", size="3.6", name="circle"):
         # circle, square, rectangle, diamond, pentagon, triangle, 
         # equilateral_triangle, star, regular_star, arrow 
         nodesSymbol = QgsMarkerSymbol.createSimple({
-            'color': color, 'name': name, 'size': size, 'width_border': '0'})
+            "color": color, "name": name, "size": size, "width_border": "0"})
         SetSymbolLib.__setSymbol(layer, nodesSymbol)
 
     @staticmethod
-    def setSimpleOutlineFillSymbol(layer, color='red', width='1.1', penstyle='dot'):
+    def setSimpleOutlineFillSymbol(layer, color="red", width="1.1", penstyle="dot"):
         symbol_layer = QgsSimpleLineSymbolLayer.create(
-            {'color': color, 'width': width, 'penstyle': penstyle})
+            {"color": color, "width": width, "penstyle": penstyle})
         SetSymbolLib.__altSetSymbol(layer, symbol_layer)
 
     @staticmethod
     def setSvgSymbol(markerLayer, fieldName, svgSymbolDirname,
-                     size='6', rotationFieldName=None):
+                     size="6", rotationFieldName=None):
         if markerLayer is not None:
             fni = markerLayer.dataProvider().fieldNameIndex(fieldName)
             uniqValues = markerLayer.dataProvider().uniqueValues(fni)
@@ -208,7 +221,7 @@ class SetSymbolLib(object):
             for value in uniqValues:
                 mySymbol = QgsSymbol.defaultSymbol(markerLayer.geometryType())
 
-                svgStyle = { 'name': f'{svgSymbolDirname}/{value}.svg', 'size': size }
+                svgStyle = { "name": f"{svgSymbolDirname}/{value}.svg", "size": size }
                 svgSymbol = QgsSvgMarkerSymbolLayer.create(svgStyle)
                 if rotationFieldName is not None:
                     svgSymbol.dataDefinedProperties().setProperty(

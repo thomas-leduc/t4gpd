@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from _io import StringIO
+from io import StringIO
 
 from t4gpd.commons.GeoProcess import GeoProcess
 
@@ -33,6 +33,7 @@ class AbstractReader(GeoProcess):
     @staticmethod
     def opener(inputFile):
         if isinstance(inputFile, StringIO):
-            return inputFile
+            # There is no way to re-open a StringIO object, so let's duplicate it
+            return StringIO(inputFile.getvalue())
         else:
             return open(inputFile, 'r')

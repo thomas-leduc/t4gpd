@@ -25,6 +25,7 @@ import re
 from fiona import listlayers
 from geopandas import read_file
 from pandas import concat
+from t4gpd.commons.Epsilon import Epsilon
 from t4gpd.commons.GeoProcess import GeoProcess
 
 
@@ -65,17 +66,24 @@ class TracksWaypointsReader(GeoProcess):
                 df.sort_values(by='id', inplace=True)
                 waypoints.append(df)
 
-        assert len(tracks) == len(waypoints), 'The number of tracks does not equal the number of waypoints layers!'
+        if (len(tracks) != len(waypoints)):
+            raise Exception("The number of tracks does not equal the number of waypoints layers!")
 
         for i in range(len(tracks)):
             _trackId, _trackGeom, _waypoints = tracks[i].id.squeeze(), tracks[i].geometry.squeeze(), waypoints[i]
             _waypoints['curv_absc'] = _waypoints.geometry.apply(
                 lambda g: _trackGeom.project(g, normalized=True))
+
+            if not _waypoints.curv_absc.is_monotonic_increasing:
+                raise Exception(f"The abscissa of the \
+waypoints should be increasing. Check the direction of track #{_trackId}, which should \
+be consistent with the direction of the waypoints.")
+
             _waypoints['delta_curv_absc'] = _waypoints.curv_absc.diff(periods=1)
             _waypoints.delta_curv_absc = _waypoints.delta_curv_absc.shift(periods=-1)
 
-        assert 0.0 == _waypoints.curv_absc.min(), f'Track {_trackId}: The min. curv. absc. must be equal to 0'
-        assert 1.0 == _waypoints.curv_absc.max(), f'Track {_trackId}: The max. curv. absc. must be equal to 1'
+        assert Epsilon.isZero(_waypoints.curv_absc.min()), f'Track {_trackId}: The min. curv. absc. must be equal to 0'
+        assert Epsilon.equals(1.0, _waypoints.curv_absc.max()), f'Track {_trackId}: The max. curv. absc. must be equal to 1'
 
         tracks = concat(tracks, ignore_index=True)
         waypoints = concat(waypoints, ignore_index=True)

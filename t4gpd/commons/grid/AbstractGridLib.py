@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame, overlay
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -44,26 +44,28 @@ class AbstractGridLib(object):
     def grid(self):
         raise NotImplementedError('grid() must be overridden!')
 
+    def __overlayWithGrid(self, grid, how="difference"):
+        _result = grid.loc[:, ["gid", "geometry"]]
+        _result.geometry = _result.geometry.apply(lambda geom: geom.centroid)
+        _result = overlay(_result, self.gdf, how)
+        _result = set(_result.gid.to_list())
+        return _result
+
     def indoorGrid(self):
         _grid = self.indoorOutdoorGrid()
-        _grid = _grid.loc[ _grid[_grid.indoor == 1].index ]
+        _grid = _grid.loc[_grid[_grid.indoor == 1].index]
         _grid.reset_index(drop=True, inplace=True)
         return _grid
 
     def indoorOutdoorGrid(self):
         _grid = self.grid()
-        rows = []
-        for _, row in _grid.iterrows():
-            _row = dict(row)
-            _centroid = row['geometry'].centroid
-            _indoor = 1 if (GeomLib.isAnIndoorPoint(_centroid, self.gdf)) else 0
-            _row['indoor'] = _indoor
-            rows.append(_row)
-        _grid = GeoDataFrame(rows, crs=self.gdf.crs)
+        _gids = self.__overlayWithGrid(_grid, how="difference")
+        _grid["indoor"] = _grid.gid.apply(
+            lambda gid: 0 if (gid in _gids) else 1)
         return _grid
 
     def outdoorGrid(self):
         _grid = self.indoorOutdoorGrid()
-        _grid = _grid.loc[ _grid[_grid.indoor == 0].index ]
+        _grid = _grid.loc[_grid[_grid.indoor == 0].index]
         _grid.reset_index(drop=True, inplace=True)
         return _grid

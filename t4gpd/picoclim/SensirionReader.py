@@ -20,17 +20,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from _warnings import warn
-from datetime import datetime
 import re
+import warnings
+from zoneinfo import ZoneInfo
 
 from pandas import read_csv
-from t4gpd.commons.GeoProcess import GeoProcess
+from t4gpd.commons.WarnUtils import WarnUtils
+from t4gpd.io.AbstractReader import AbstractReader
 
 
-class SensirionReader(GeoProcess):
+class SensirionReader(AbstractReader):
     '''
     classdocs
+
+    https://sensirion.com/products/catalog/SHT40/
     '''
     FIELD_NAMES = ['local_datetime', 'Tair', 'RH'] 
 
@@ -38,14 +41,16 @@ class SensirionReader(GeoProcess):
     RE2 = re.compile(r'^# SensorFamily=(\w*).*$')
     RE3 = re.compile(r'^# SensorId=(.*)$')
 
-    def __init__(self, inputFile):
+    def __init__(self, inputFile, tzinfo="Europe/Paris"):
         '''
         Constructor
         '''
+        warnings.formatwarning = WarnUtils.format_Warning
         self.inputFile = inputFile
+        self.tzinfo = ZoneInfo(tzinfo)
 
     def __getEdfVersionAndSensorSpecs(self):
-        with open(self.inputFile, 'r') as f:
+        with SensirionReader.opener(self.inputFile) as f:
             for nline, line in enumerate(f, start=1):
                 line = line.strip()
                 if (1 == nline):
@@ -58,21 +63,25 @@ class SensirionReader(GeoProcess):
                     return version, sensorFamily, sensorId
 
     def run(self):
-        # https://sensirion.com/products/catalog/SHT40/
         version, sensorFamily, sensorId = self.__getEdfVersionAndSensorSpecs()
 
         if (4.0 != version):
-            warn('EdfVersion is expected to be equal to 4.0!')
+            warnings.warn('EdfVersion is expected to be equal to 4.0!')
 
         # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
-        df = read_csv(self.inputFile, header=None, names=self.FIELD_NAMES,
-                      parse_dates=['local_datetime'], sep='\s+',
-                      skiprows=10, usecols=range(1, 4))
+        df = read_csv(SensirionReader.opener(self.inputFile), header=None,
+                      names=self.FIELD_NAMES, parse_dates=['local_datetime'],
+                      sep='\s+', skiprows=10, usecols=range(1, 4))
         # df.Epoch_UTC = df.Epoch_UTC.apply(lambda v: datetime.fromtimestamp(v))
         df.rename(columns={'local_datetime': 'timestamp'}, inplace=True)
         df['sensorFamily'] = sensorFamily
         df['sensorId'] = sensorId
         df['station'] = f'{sensorFamily}-{sensorId}'
+
+        df.timestamp = df.timestamp.apply(lambda dt: dt.replace(tzinfo=self.tzinfo))
+        if not df.timestamp.is_monotonic_increasing:
+            msg = f"Timestamps in {self.inputFile} are not monotonically increasing"
+            warnings.warn(msg)
 
         return df
 

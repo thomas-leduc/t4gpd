@@ -20,8 +20,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from datetime import timezone
-
 from geopandas import GeoDataFrame
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -33,12 +31,12 @@ class ExtraProcessing(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, dfImuMob, inplace=False, tz=timezone.utc):
+    def __init__(self, dfImuMob, inplace=False):
         '''
         Constructor
         '''
         if not isinstance(dfImuMob, GeoDataFrame):
-            raise IllegalArgumentTypeException(dfImuMob, 'GeoDataFrame')
+            raise IllegalArgumentTypeException(dfImuMob, "GeoDataFrame")
         if inplace:
             self.dfImuMob = dfImuMob
         else:
@@ -46,27 +44,22 @@ class ExtraProcessing(GeoProcess):
         self.crs = dfImuMob.crs
 
         self.sunLib = PySolarSunLib(dfImuMob)
-        self.tz = tz
 
-        assert dfImuMob.timestamp.is_monotonic_increasing, f'dfImu.timestamp is not monotonic increasing!'
+        assert dfImuMob.timestamp.is_monotonic_increasing, f"dfImu.timestamp is not monotonic increasing!"
 
     def run(self):
-        self.dfImuMob.to_crs('epsg:4326', inplace=True)
-        self.dfImuMob['lat_cor'] = self.dfImuMob.geometry.apply(lambda geom: geom.y)
-        self.dfImuMob['lon_cor'] = self.dfImuMob.geometry.apply(lambda geom: geom.x)
+        self.dfImuMob.to_crs("epsg:4326", inplace=True)
+        self.dfImuMob["lat_cor"] = self.dfImuMob.geometry.apply(lambda geom: geom.y)
+        self.dfImuMob["lon_cor"] = self.dfImuMob.geometry.apply(lambda geom: geom.x)
         self.dfImuMob.to_crs(self.crs, inplace=True)
 
-        self.dfImuMob['epoch'] = self.dfImuMob.timestamp.apply(
+        self.dfImuMob["epoch"] = self.dfImuMob.timestamp.apply(
             lambda dt: dt.timestamp())
-            # lambda dt: int(dt.strftime('%s')))
+            # lambda dt: int(dt.strftime("%s")))
         self.dfImuMob.epoch = self.dfImuMob.epoch.astype(int)
 
-        self.dfImuMob['sun_alti'] = self.dfImuMob.timestamp.apply(
-            lambda dt: self.sunLib.getSolarAnglesInDegrees(
-                dt.to_pydatetime().replace(tzinfo=self.tz)))
-        self.dfImuMob['sun_azim'] = self.dfImuMob.sun_alti.apply(
-            lambda altiazim: altiazim[1]) 
-        self.dfImuMob['sun_alti'] = self.dfImuMob.sun_alti.apply(
-            lambda altiazim: altiazim[0]) 
+        self.dfImuMob["sun_alti"], self.dfImuMob["sun_azim"] = self.dfImuMob.apply(
+            lambda row: self.sunLib.getSolarAnglesInDegrees(row.timestamp.to_pydatetime()),
+            axis=1, result_type="expand").to_numpy().transpose()
 
         return self.dfImuMob

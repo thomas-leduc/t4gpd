@@ -20,7 +20,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from shapely.geometry import Point
 from shapely.ops import unary_union
 
 
@@ -78,7 +77,7 @@ class Sequence(object):
         return False
 
     def __isContinuousItem(self, item):
-        return (isinstance(item, list) or isinstance(item, tuple))
+        return isinstance(item, (list, tuple))
 
     def __isValidItem(self, item):
         if self.__isContinuousItem(item):
@@ -120,18 +119,16 @@ class Sequence(object):
         newseq = [self.__plus(item, offset) for item in self.seq]
         return Sequence(self.nbranchs, newseq, self.__mirror)
 
-    def asPolygon(self, sequenceRadii, width, centre=[0, 0]):
-        polygons = list()
-        polygon = Point(centre).buffer(0.5 * width, -1)
-        polygons.append(polygon)
+    def asPolygon(self, sequenceRadii, centre=[0, 0]):
+        geoms = []
 
         for item in self.seq:
             if self.__isContinuousItem(item):
-                polygon = sequenceRadii.getSector(item, centre)
+                geoms.append(sequenceRadii.getSector(item, centre))
             else:
-                polygon = sequenceRadii.getBranch(item, centre)
-            polygons.append(polygon)
-        result = unary_union(polygons)
+                geoms.append(sequenceRadii.getBranch(item, centre))
+
+        result = unary_union(geoms).buffer(sequenceRadii.getWidth())
         return result
 
     def getMinModel(self):

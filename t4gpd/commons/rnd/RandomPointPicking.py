@@ -21,8 +21,8 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas.geodataframe import GeoDataFrame
-from numpy import arcsin, asarray, cos, pi, sin, sqrt, vstack, where
-from numpy.random import uniform
+from numpy import arcsin, asarray, cos, pi, round, sin, sqrt, vstack, where
+from numpy.random import default_rng, uniform
 from shapely.geometry import Point, Polygon
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.GeomLib3D import GeomLib3D
@@ -44,6 +44,7 @@ class RandomPointPicking(object):
     
     @staticmethod
     def convexPolygonPointPicking(ngon, npts):
+        rng = default_rng()
         # INSPIRED BY:
         # https://blogs.sas.com/content/iml/2020/10/21/random-points-in-polygon.html
         assert isinstance(ngon, Polygon), 'ngon is expected to be a Shapely Polygon!'
@@ -52,7 +53,11 @@ class RandomPointPicking(object):
         # areas = [tri.area for tri in tris]
         areas = asarray([GeomLib3D.getArea(tri) for tri in tris])
         ratios = areas / areas.sum() 
-        listOfNpts = (npts * ratios).astype(int)
+        listOfNpts = round(npts * ratios).astype(int)
+
+        choices = [0] * len(tris) + [1] * npts
+        listOfNpts[listOfNpts == 0] = rng.choice(choices, size=len(listOfNpts[listOfNpts == 0]))
+
         resultat = []
         for tri, _npts in zip(tris, listOfNpts):
             resultat.append(RandomPointPicking.trianglePointPicking(tri, _npts))

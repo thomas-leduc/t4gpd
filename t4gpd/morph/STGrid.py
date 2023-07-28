@@ -3,7 +3,7 @@ Created on 11 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -36,15 +36,15 @@ class STGrid(GeoProcess):
         Constructor
         '''
         if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
+            raise IllegalArgumentTypeException(inputGdf, "GeoDataFrame")
 
         self.inputGdf = inputGdf
         self.dx = dx
         self.dy = dy
-        if indoor in [None, True, False, 'both']:
+        if indoor in [None, True, False, "both"]:
             self.indoor = indoor
         else:
-            raise Exception('Illegal argument: indoor must be chosen in [None, True, False, "both"]!')
+            raise Exception("Illegal argument: indoor must be chosen in [None, True, False, 'both']!")
         self.intoPoint = intoPoint
         self.encode = encode
 
@@ -53,7 +53,7 @@ class STGrid(GeoProcess):
 
         if self.indoor is None:
             grid = gridLib.grid()
-        elif ('both' == self.indoor):
+        elif ("both" == self.indoor):
             grid = gridLib.indoorOutdoorGrid()
         elif self.indoor:
             grid = gridLib.indoorGrid()

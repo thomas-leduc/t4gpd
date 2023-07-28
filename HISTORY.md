@@ -1,7 +1,31 @@
 # Package t4gpd history
 
+## Version 0.7.1 - rev. 13835 - 28 Jul. 2023
+* Add new morph.STSkyMap25D class
+* Add new tests.commons.RayCasting4LibTest
+* Add new isovist.STIsovistField2D_new class
+* Add new commons.RayCasting4Lib class
+* Add new pyvista.Plotter3D class
+* Add new tests.commons.ColorTemperatureTest class
+* Add new commons.ColorTemperature class
+* Add new picoclim.SnapUclimOnTrackUsingWaypoints class
+* Add new tests.picoclim.UClimTrackReaderTest class
+* Add new picoclim.UClimTrackReader class
+* Add new demos.GeoDataFrameDemosC class
+* Add new morph.STMakeGroundSurface class
+* Add new tests.picoclim.SnapImuOnTrackUsingWaypointsTest class
+* Add new picoclim.InertialMeasureReWriter class
+* Add new tests.picoclim.SensirionReaderTest class
+* Add new tests.picoclim.CampbellSciReaderTest class
+* Add new tests.picoclim.KestrelReaderTest class
+* Add new tests.io.AbstractReaderTest class
+* Add new tests.picoclim.UClimGuidingReaderTest class
+* Add new picoclim.UClimGuidingReader class
+* Add new demos.GeoDataFrameDemosB class
+
 ## Version 0.6.0 - rev. 13549 - 23 Mar. 2023
 * Add new Docker image (see https://github.com/thomas-leduc/t4gpd-docker)
+* Add new demos.GeoDataFrameDemosA class
 * Add new tests.misc.OptimalNumberOfClustersTest class
 * Add new misc.OptimalNumberOfClusters class
 * Add new demos.GeoDataFrameDemos9 class

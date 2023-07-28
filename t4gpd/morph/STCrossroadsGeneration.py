@@ -23,7 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 from geopandas.geodataframe import GeoDataFrame
 from numpy import sqrt
 from t4gpd.commons.GeoProcess import GeoProcess
-
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.commons.crossroads_generation.SequenceRadii import SequenceRadii
 from t4gpd.commons.crossroads_generation.SequencesGeneration import SequencesGeneration
 
@@ -34,12 +34,15 @@ class STCrossroadsGeneration(GeoProcess):
     '''
 
     def __init__(self, nbranchs, length, width, mirror=False, withBranchs=True, withSectors=True,
-                 crs='EPSG:2154', magnitude=2.5):
+                 crs='EPSG:2154', magnitude=2.5, varLength=None):
         '''
         Constructor
         '''
+        if not((varLength is None) or (0 <= varLength <= 1.0)):
+            raise IllegalArgumentTypeException(varLength, "Float value between 0.0 and 1.0 or None")
+
         self.nbranchs = nbranchs
-        self.sequenceRadii = SequenceRadii(nbranchs, width, length)
+        self.sequenceRadii = SequenceRadii(nbranchs, width, length, varLength)
         self.dictOfSequences = SequencesGeneration(nbranchs, mirror, withBranchs, withSectors).run()
         self.width = width
         self.offset = magnitude * length
@@ -58,7 +61,7 @@ class STCrossroadsGeneration(GeoProcess):
         for i, (gid, seq) in enumerate(self.dictOfSequences.items()):
             xoffset = self.offset * (i % self.ncols)
             yoffset = -self.offset * int(i / self.ncols)
-            geom = seq.asPolygon(self.sequenceRadii, self.width, [xoffset, yoffset])
+            geom = seq.asPolygon(self.sequenceRadii, [xoffset, yoffset])
             row = dict({'gid': gid,
                         'vpoint_x': xoffset,
                         'vpoint_y': yoffset,

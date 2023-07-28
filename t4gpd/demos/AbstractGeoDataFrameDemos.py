@@ -20,6 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from t4gpd.io.GpkgWriter import GpkgWriter
 
 
 class AbstractGeoDataFrameDemos(object):
@@ -30,3 +31,8 @@ class AbstractGeoDataFrameDemos(object):
     @staticmethod
     def postprocess(sio, crs='epsg:2154'):
         raise Exception('Deprecated!')
+
+    @staticmethod
+    def _dump(mapOfGdf, gpkgOutputFile="/tmp/dump.gpkg"):
+        if (not mapOfGdf is None) and (0 < len(mapOfGdf)):
+            GpkgWriter(mapOfGdf, gpkgOutputFile).run()

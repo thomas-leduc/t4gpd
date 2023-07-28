@@ -20,9 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import arctan2, cos, pi, sin
-from shapely.geometry import Point, Polygon
-from shapely.ops import unary_union
+from numpy import arctan2, cos, linspace, pi, round, sin
+from numpy.random import uniform
+from shapely.geometry import LineString, Point, Polygon
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class SequenceRadii(object):
@@ -30,54 +31,49 @@ class SequenceRadii(object):
     classdocs
     '''
 
-    def __init__(self, nbranchs=8, width=12.0, length=100.0):
+    def __init__(self, nbranchs=8, width=12.0, length=100.0, varLength=None):
         '''
         Constructor
         '''
         self.nbranchs = nbranchs
         self.width = 0.5 * float(width)
-        self.length = float(length)
-        # self.alpha = arcsin(self.width / self.length)
-        self.alpha = 2 * arctan2(self.width, self.length)
-        self.angles = [((2.0 * pi * i) / nbranchs) for i in range(nbranchs)]
-        self.mainDirs = [(cos(angle), sin(angle)) for angle in self.angles]
-        self.incAngle = self.alpha / 2.0
+        self.length = length - self.width
+        self.incAngle = arctan2(self.width, self.length)
+        self.angles = linspace(0, 2 * pi, num=nbranchs, endpoint=False)
+        self.mainDirs = list(zip(cos(self.angles), sin(self.angles)))
+
+        if varLength is None:
+            self.lowerBoundary = 1.0
+        elif (0 <= varLength <= 1.0):
+            self.lowerBoundary = 1.0 - varLength
+        else:
+            raise IllegalArgumentTypeException(varLength, "Float value between 0.0 and 1.0 or None")
 
     def getBranch(self, i, centre=[0, 0]):
-        w, hw, l = self.width, 0.0, (self.length * cos(self.alpha))
-        cx, cy = centre
+        length = uniform(low=self.lowerBoundary, high=1) * self.length
         ux, uy = self.mainDirs[i]
-        vx, vy = -uy, ux
-        p0 = (cx + hw * ux - w * vx, cy + hw * uy - w * vy)
-        p1 = (cx + l * ux - w * vx, cy + l * uy - w * vy)
-        p2 = (cx + l * ux + w * vx, cy + l * uy + w * vy)
-        p3 = (cx + hw * ux + w * vx, cy + hw * uy + w * vy)
-        return Polygon([p0, p1, p2, p3, p0])
+        p = (centre[0] + length * ux, centre[1] + length * uy)
+        return LineString([centre, p])
 
     def getSector(self, sector, centre=[0, 0]):
+        length = uniform(low=self.lowerBoundary, high=1) * self.length
         i, j = sector
 
         if ((0 == i) and (self.nbranchs == j)):
-            result = Point(centre).buffer(self.length)
+            result = Point(centre).buffer(length)
         else:
-            angle0, angle1 = self.angles[i], self.angles[j]
-            angle1 = angle1 + 2.0 * pi if (angle0 > angle1) else angle1
-            l = self.length * cos(self.alpha)
             cx, cy = centre
+            angle0, angle1 = self.angles[i], self.angles[j]
+            npts = round((angle1 - angle0) / self.incAngle).astype(int)
 
             result = [centre]
-            angle = angle0
-            while angle < angle1:
-                p = (cx + cos(angle) * l, cy + sin(angle) * l)
+            for angle in linspace(angle0, angle1, num=npts, endpoint=True):
+                p = (cx + length * cos(angle), cy + length * sin(angle))
                 result.append(p)
-                angle += self.incAngle
             result.append(centre)
-
-            br1 = self.getBranch(i, centre)
-            br2 = self.getBranch(j, centre)
-            polygons = [br1, br2, Polygon(result)]
-
-            # Use a buffer to avoid slivers
-            result = unary_union(polygons).buffer(0.001)
+            result = Polygon(result)
 
         return result
+
+    def getWidth(self):
+        return self.width
