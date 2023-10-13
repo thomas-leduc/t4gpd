@@ -90,19 +90,19 @@ class STGridTest(unittest.TestCase):
     def testRunBuildings_Point_Both(self):
         grid = STGrid(self.buildings, 50, dy=None,
                       indoor='both', intoPoint=True).run()
-        self.__commons(self.buildings, grid, 25, 10, 15)
+        self.__commons(self.buildings, grid, 25, 12, 13)
         # self.__plot(self.buildings, grid)
 
     def testRunBuildings_Point_True(self):
         grid = STGrid(self.buildings, 50, dy=None,
                       indoor=True, intoPoint=True).run()
-        self.__commons(self.buildings, grid, 10, 10, 0)
+        self.__commons(self.buildings, grid, 12, 12, 0)
         # self.__plot(self.buildings, grid)
 
     def testRunBuildings_Point_False(self):
         grid = STGrid(self.buildings, 50, dy=None,
                       indoor=False, intoPoint=True).run()
-        self.__commons(self.buildings, grid, 15, 0, 15)
+        self.__commons(self.buildings, grid, 13, 0, 13)
         # self.__plot(self.buildings, grid)
 
     def testRunBuildings_Polygon_None(self):
@@ -114,23 +114,23 @@ class STGridTest(unittest.TestCase):
     def testRunBuildings_Polygon_Both(self):
         grid = STGrid(self.buildings, 50, dy=None,
                       indoor='both', intoPoint=False).run()
-        self.__commons(self.buildings, grid, 25, 10, 15)
+        self.__commons(self.buildings, grid, 25, 12, 13)
         # self.__plot(self.buildings, grid)
 
     def testRunBuildings_Polygon_True(self):
         grid = STGrid(self.buildings, 50, dy=None,
                       indoor=True, intoPoint=False).run()
-        self.__commons(self.buildings, grid, 10, 10, 0)
+        self.__commons(self.buildings, grid, 12, 12, 0)
         # self.__plot(self.buildings, grid)
 
     def testRunBuildings_Polygon_False(self):
         grid = STGrid(self.buildings, 50, dy=None,
                       indoor=False, intoPoint=False).run()
-        self.__commons(self.buildings, grid, 15, 0, 15)
+        self.__commons(self.buildings, grid, 13, 0, 13)
         # self.__plot(self.buildings, grid)
 
     def testRunBuildings(self):
-        self.assertEqual(44, len(self.buildings), "Buildings features count")
+        self.assertEqual(57, len(self.buildings), "Buildings features count")
 
 
 if __name__ == "__main__":

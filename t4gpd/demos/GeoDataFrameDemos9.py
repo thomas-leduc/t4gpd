@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from _io import StringIO
+from io import StringIO
 
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.demos.AbstractGeoDataFrameDemos import AbstractGeoDataFrameDemos

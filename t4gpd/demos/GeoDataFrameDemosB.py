@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from _io import StringIO
+from io import StringIO
 
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.demos.AbstractGeoDataFrameDemos import AbstractGeoDataFrameDemos
@@ -133,12 +133,13 @@ POLYGON Z ((649224.1 6866383.6 34.4, 649259.3 6866404.7 35.1, 649305.5 6866430.5
         arrondissements.boundary.plot(ax=ax, color="red")
         arrondissements.apply(lambda x: ax.annotate(
             text=x.INSEE_ARM % 100, xy=x.geometry.centroid.coords[0],
-            color='black', size=12, ha='center'), axis=1)
+            color="black", size=12, ha="center"), axis=1)
         intraPeriph.boundary.plot(ax=ax, color="green", linewidth=8.5)
-        ax.axis('off')
+        ax.axis("off")
         ax.axis([minx, maxx, miny, maxy])
         plt.tight_layout()
         if oFile is None:
+            fig.tight_layout()
             plt.show()
         else:
             plt.savefig(oFile, bbox_inches="tight")

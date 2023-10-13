@@ -22,7 +22,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import matplotlib.pyplot as plt
 from geopandas import GeoDataFrame, overlay
-from numpy import arange, asarray, cos, exp, pi, sin, stack
+from numpy import arange, asarray, cos, exp, pi, sin, stack, zeros
 from scipy.stats import kurtosis, skew
 from shapely import equals, LineString, MultiLineString, Point, Polygon
 from shapely.affinity import translate
@@ -30,6 +30,7 @@ from shapely.ops import nearest_points
 from t4gpd.commons.Entropy import Entropy
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.GeomLib import GeomLib
+from t4gpd.commons.GeomLib3D import GeomLib3D
 from t4gpd.commons.SVFLib import SVFLib
 
 
@@ -47,6 +48,8 @@ class RayCasting4Lib(object):
         rays2D = sensors.copy(deep=True)
         rays2D["viewpoint"] = rays2D.geometry
         rays2D.geometry = rays2D.geometry.apply(
+            lambda geom: geom.centroid)
+        rays2D.geometry = rays2D.geometry.apply(
             lambda geom: translate(shootingDirs, xoff=geom.x, yoff=geom.y))
         rays2D = rays2D.explode(index_parts=True)
         rays2D = rays2D.reset_index(names=["__VPT_ID__", "__RAY_ID__"])
@@ -56,10 +59,13 @@ class RayCasting4Lib(object):
     def get25DPanopticRaysGeoDataFrame(sensors, rayLength=100.0, nRays=64, h0=0.0):
         rays25D = RayCasting4Lib.get2DPanopticRaysGeoDataFrame(
             sensors, rayLength, nRays)
-        rays25D.geometry = rays25D.apply(lambda row: GeomLib.forceZCoordinateToZ0(
-            row.geometry, z0=row.viewpoint.z if row.viewpoint.has_z else h0), axis=1)
-        rays25D.viewpoint = rays25D.viewpoint.apply(lambda vp: GeomLib.forceZCoordinateToZ0(
-            vp, z0=vp.z if vp.has_z else h0))
+        rays25D.geometry = rays25D.apply(
+            lambda row: GeomLib.forceZCoordinateToZ0(
+                row.geometry, z0=GeomLib3D.centroid(
+                    row.viewpoint).z if row.viewpoint.has_z else h0), axis=1)
+        rays25D.viewpoint = rays25D.viewpoint.apply(
+            lambda vp: GeomLib.forceZCoordinateToZ0(
+                vp, z0=GeomLib3D.centroid(vp).z if vp.has_z else h0))
         return rays25D
 
     @staticmethod
@@ -72,25 +78,82 @@ class RayCasting4Lib(object):
             for segment in segments.geoms:
                 if (epsilon > sensor.distance(segment)):
                     return segment
-        # return LineString([sensor, sensor])
         return LineString([])
 
     @staticmethod
-    def multipleRayCast2D(buildings, rays):
+    def __buildIsovist(nRays, viewpoint, ray_ids, mls):
+        if not GeomLib.isMultipart(mls):
+            return Polygon([])
+
+        _ctrPts1 = [ls.coords[-1] for ls in mls.geoms]
+        if (nRays == len(_ctrPts1)):
+            return Polygon(_ctrPts1)
+
+        viewpoint = viewpoint.coords[0][0:2]
+        assert len(ray_ids) == len(_ctrPts1)
+        assert ray_ids == sorted(ray_ids)
+        _ctrPts2 = []
+        for i, ray_id in enumerate(ray_ids):
+            if (0 == i):
+                if (0 != ray_id):
+                    _ctrPts2.append(viewpoint)
+                _ctrPts2.append(_ctrPts1[i])
+            else:
+                if (ray_ids[i-1]+1 < ray_id):
+                    _ctrPts2.append(viewpoint)
+                _ctrPts2.append(_ctrPts1[i])
+        return Polygon(_ctrPts2)
+
+    @staticmethod
+    def multipleRayCast2D(buildings, rays, withIndices):
         if not GeoDataFrameLib.shareTheSameCrs(buildings, rays):
             raise Exception(
                 "Illegal argument: buildings and rays must share shames CRS!")
 
+        nRays = len(rays)
         rays = overlay(rays, buildings, how="difference")
         rays.geometry = rays.apply(lambda row: RayCasting4Lib.__keepTheAnchoredSegment(
             row.viewpoint, GeomLib.removeZCoordinate(row.geometry)), axis=1)
         rays = rays.loc[rays[~rays.geometry.apply(
             lambda geom: geom.is_empty)].index, :]
         isovRaysField = rays.dissolve(
-            by="__VPT_ID__", as_index=False, aggfunc={"viewpoint": "first", "__RAY_ID__": list})
-        # isovRaysField.drop(columns=["__VPT_ID__", "__RAY_ID__"], inplace=True)
+            by="__VPT_ID__", as_index=False, aggfunc=list)
         isovRaysField.drop(columns=["__VPT_ID__"], inplace=True)
-        return isovRaysField
+        for fieldname in isovRaysField.columns:
+            if fieldname not in ["geometry", "__RAY_ID__"]:
+                isovRaysField[fieldname] = isovRaysField[fieldname].apply(
+                    lambda t: t[0])
+
+        if (0 < len(isovRaysField)):
+            isovRaysField["__ISOV_GEOM__"] = isovRaysField.apply(lambda row: RayCasting4Lib.__buildIsovist(
+                nRays, row.viewpoint, row.__RAY_ID__, row.geometry), axis=1)
+
+        if withIndices:
+            isovRaysField = RayCasting4Lib.addIndicesToIsovRaysField2D(
+                nRays, isovRaysField)
+
+        isovField = isovRaysField.copy(deep=True)
+        if (0 < len(isovField)):
+            isovField.geometry = isovField.__ISOV_GEOM__
+
+        isovRaysField.drop(
+            columns=["__RAY_ID__", "__ISOV_GEOM__"], inplace=True)
+        isovField.drop(columns=["__RAY_ID__", "__ISOV_GEOM__"], inplace=True)
+
+        return isovRaysField, isovField
+
+    @staticmethod
+    def __from2DRaysToRayLengths(nRays, ray_ids, mls):
+        _raylens = asarray(
+            [ray.length for ray in GeomLib.toListOfLineStrings(mls)])
+
+        if (nRays == len(_raylens)):
+            return _raylens
+
+        raylens = zeros(nRays)
+        for i, ray_id in enumerate(ray_ids):
+            raylens[ray_id] = _raylens[i]
+        return raylens
 
     @staticmethod
     def __add2DIndices(isovRaysField, precision=1.0, base=exp(1)):
@@ -109,15 +172,13 @@ class RayCasting4Lib(object):
         return isovRaysField
 
     @staticmethod
-    def addIndicesToIsovRaysField2D(isovRaysField, precision=1.0, base=exp(1)):
-        isovRaysField["__RAY_LEN__"] = isovRaysField.geometry.apply(
-            lambda geom: asarray([ray.length for ray in geom.geoms]))
+    def addIndicesToIsovRaysField2D(nRays, isovRaysField, precision=1.0, base=exp(1)):
+        isovRaysField["__RAY_LEN__"] = isovRaysField.apply(
+            lambda row: RayCasting4Lib.__from2DRaysToRayLengths(nRays, row.__RAY_ID__, row.geometry), axis=1)
 
         isovRaysField = RayCasting4Lib.__add2DIndices(
             isovRaysField, precision, base)
 
-        isovRaysField["__ISOV_GEOM__"] = isovRaysField.geometry.apply(
-            lambda mls: Polygon([ls.coords[-1] for ls in mls.geoms]))
         isovRaysField["__ISOV_CENTRE__"] = isovRaysField.__ISOV_GEOM__.apply(
             lambda geom: geom.centroid)
 
@@ -125,149 +186,150 @@ class RayCasting4Lib(object):
             lambda row: None if row.__ISOV_CENTRE__.is_empty else LineString([
                 row.viewpoint.coords[0][0:2], row.__ISOV_CENTRE__.coords[0]]), axis=1)
         isovRaysField["drift"] = isovRaysField.vect_drift.apply(
-            lambda v: v.length)
+            lambda v: None if v is None else v.length)
 
         isovRaysField.drop(
-            columns=["__RAY_LEN__", "__ISOV_GEOM__", "__ISOV_CENTRE__"], inplace=True)
+            columns=["__RAY_LEN__", "__ISOV_CENTRE__"], inplace=True)
         return isovRaysField
 
     @staticmethod
+    def __build_LineString(pA, pB):
+        if (equals(pA, pB)) or (pA.is_empty) or (pB.is_empty):
+            return LineString([])
+        if (pA.has_z == pB.has_z):
+            return LineString([pA, pB])
+        return LineString([(pA.x, pA.y), (pB.x, pB.y)])
+
+    @staticmethod
     def __keepTheLargestSolidAngle(sensor, masks):
+        sensor = GeomLib3D.centroid(sensor)
         if isinstance(masks, (Point, LineString)):
             _, remotePoint = nearest_points(sensor, masks)
-            if equals(sensor, remotePoint):
-                return LineString([])
-            return LineString([sensor, remotePoint])
+            # if equals(sensor, remotePoint):
+            #     return LineString([])
+            # return LineString([sensor, remotePoint])
+            return RayCasting4Lib.__build_LineString(sensor, remotePoint)
 
         maxSolidAngle, maxMask = -float("inf"), None
         for mask in masks.geoms:
             h, w = mask.coords[0][2], sensor.distance(mask)
             if (0 == w):
-                # return LineString([sensor, sensor])
                 return LineString([])
             currSolidAngle = h / w
             if (currSolidAngle > maxSolidAngle):
                 maxSolidAngle, maxMask = currSolidAngle, mask
         _, remotePoint = nearest_points(sensor, maxMask)
 
-        if equals(sensor, remotePoint):
-            return LineString([])
-        return LineString([sensor, remotePoint])
+        # if equals(sensor, remotePoint):
+        #     return LineString([])
+        # return LineString([sensor, remotePoint])
+        return RayCasting4Lib.__build_LineString(sensor, remotePoint)
 
     @staticmethod
-    def multipleRayCast25D(buildings, rays, elevationFieldName, h0=0.0):
+    def __from25DRaysToRayLengths(nRays, rayLength, ray_ids, mls):
+        _raylens = asarray(
+            [ray.length for ray in GeomLib.toListOfLineStrings(mls)])
+
+        if (nRays == len(_raylens)):
+            return _raylens
+
+        # raylens = asarray([rayLength for _ in range(nRays)])
+        raylens = zeros(nRays)
+        for i, ray_id in enumerate(ray_ids):
+            raylens[ray_id] = _raylens[i]
+        return raylens
+
+    @staticmethod
+    def __from25DRaysToRayAlts(nRays, ray_ids, mls):
+        _rayalts = asarray(
+            [ray.coords[-1][2] for ray in GeomLib.toListOfLineStrings(mls)])
+
+        if (nRays == len(_rayalts)):
+            return _rayalts
+
+        # The altitude of the building adjacent to the viewpoint should be assigned here.
+        rayalts = zeros(nRays)
+        for i, ray_id in enumerate(ray_ids):
+            rayalts[ray_id] = _rayalts[i]
+        return rayalts
+
+    @staticmethod
+    def __from25DRaysToRayDeltaAlts(nRays, ray_ids, mls):
+        _rayDeltaAlts = asarray(
+            [max(ray.coords[-1][2]-ray.coords[0][2], 0) for ray in GeomLib.toListOfLineStrings(mls)])
+
+        if (nRays == len(_rayDeltaAlts)):
+            return _rayDeltaAlts
+
+        # The altitude of the building adjacent to the viewpoint should be assigned here.
+        rayDeltaAlts = zeros(nRays)
+        for i, ray_id in enumerate(ray_ids):
+            rayDeltaAlts[ray_id] = _rayDeltaAlts[i]
+        return rayDeltaAlts
+
+    @staticmethod
+    def multipleRayCast25D(buildings, rays, nRays, rayLength, elevationFieldName, withIndices, h0=0.0):
         if not GeoDataFrameLib.shareTheSameCrs(buildings, rays):
             raise Exception(
                 "Illegal argument: buildings and rays must share shames CRS!")
         rays.geometry = rays.geometry.apply(lambda geom: GeomLib.forceZCoordinateToZ0(
             geom, z0=geom.coords[0][2] if geom.has_z else h0))
 
-        isovRaysField = overlay(rays, buildings.geometry.to_frame(
+        smapRaysField = overlay(rays, buildings.geometry.to_frame(
         ), how="intersection", keep_geom_type=True)
-        isovRaysField = isovRaysField.dissolve(by=["__VPT_ID__", "__RAY_ID__"], as_index=False, aggfunc={
+        smapRaysField = smapRaysField.dissolve(by=["__VPT_ID__", "__RAY_ID__"], as_index=False, aggfunc={
                                                "gid": "first", "viewpoint": "first"})
-        isovRaysField.geometry = isovRaysField.apply(lambda row: RayCasting4Lib.__keepTheLargestSolidAngle(
+        smapRaysField.geometry = smapRaysField.apply(lambda row: RayCasting4Lib.__keepTheLargestSolidAngle(
             row.viewpoint, row.geometry), axis=1)
+        # smapRaysField.to_csv("/tmp/a.csv", index=False, sep=";")
 
-        # left = rays.set_index(["__VPT_ID__", "__RAY_ID__"]).geometry.to_frame()
-        # left = rays.set_index(["__VPT_ID__", "__RAY_ID__"])[["viewpoint", "geometry"]]
         left = rays.set_index(["__VPT_ID__", "__RAY_ID__"], drop=False)
         left.drop(columns=["__VPT_ID__"], inplace=True)
-        right = isovRaysField.set_index(
+        right = smapRaysField.set_index(
             ["__VPT_ID__", "__RAY_ID__"]).geometry.to_frame()
-        isovRaysField = left.merge(
+        smapRaysField = left.merge(
             right, how="outer", left_index=True, right_index=True)
 
-        isovRaysField["geometry"] = isovRaysField.apply(
+        smapRaysField["geometry"] = smapRaysField.apply(
             lambda row: row.geometry_x if row.geometry_y is None else row.geometry_y, axis=1)
-        isovRaysField.drop(columns=["geometry_x", "geometry_y"], inplace=True)
-        isovRaysField = GeoDataFrame(isovRaysField, crs=buildings.crs)
-        isovRaysField = isovRaysField.loc[isovRaysField[~isovRaysField.geometry.apply(
+        smapRaysField.drop(columns=["geometry_x", "geometry_y"], inplace=True)
+        smapRaysField = GeoDataFrame(smapRaysField, crs=buildings.crs)
+        smapRaysField = smapRaysField.loc[smapRaysField[~smapRaysField.geometry.apply(
             lambda geom: geom.is_empty)].index, :]
-        isovRaysField = isovRaysField.dissolve(by="__VPT_ID__", as_index=False, aggfunc={
-                                               "viewpoint": "first", "__RAY_ID__": list})
-        isovRaysField.drop(columns=["__VPT_ID__"], inplace=True)
+        smapRaysField = smapRaysField.dissolve(
+            by="__VPT_ID__", as_index=False, aggfunc=list)
+        smapRaysField.drop(columns=["__VPT_ID__"], inplace=True)
+        for fieldname in smapRaysField.columns:
+            if fieldname not in ["geometry", "__RAY_ID__"]:
+                smapRaysField[fieldname] = smapRaysField[fieldname].apply(
+                    lambda t: t[0])
 
-        return isovRaysField
+        if (0 < len(smapRaysField)):
+            smapRaysField["__RAY_LEN__"] = smapRaysField.apply(
+                lambda row: RayCasting4Lib.__from25DRaysToRayLengths(nRays, rayLength, row.__RAY_ID__, row.geometry), axis=1)
+            smapRaysField["__RAY_ALT__"] = smapRaysField.apply(
+                lambda row: RayCasting4Lib.__from25DRaysToRayAlts(nRays, row.__RAY_ID__, row.geometry), axis=1)
+            smapRaysField["__RAY_DELTA_ALT__"] = smapRaysField.apply(
+                lambda row: RayCasting4Lib.__from25DRaysToRayDeltaAlts(nRays, row.__RAY_ID__, row.geometry), axis=1)
+
+            if withIndices:
+                smapRaysField = RayCasting4Lib.addIndicesToSkyMapRaysField25D(
+                    nRays, smapRaysField)
+
+        return smapRaysField
 
     @staticmethod
-    def __add3DIndices(isovRaysField):
-        isovRaysField["w_mean"] = isovRaysField.__RAY_LEN__.apply(
+    def addIndicesToSkyMapRaysField25D(nRays, smapRaysField, precision=1.0, base=exp(1)):
+        smapRaysField["w_mean"] = smapRaysField.__RAY_LEN__.apply(
             lambda raylens: float(raylens.mean()))
-        isovRaysField["w_std"] = isovRaysField.__RAY_LEN__.apply(
+        smapRaysField["w_std"] = smapRaysField.__RAY_LEN__.apply(
             lambda raylens: float(raylens.std()))
-        isovRaysField["h_mean"] = isovRaysField.__RAY_ALT__.apply(
+        smapRaysField["h_mean"] = smapRaysField.__RAY_ALT__.apply(
             lambda heights: float(heights.mean()))
 
-        isovRaysField["h_over_w"] = isovRaysField.apply(
-            lambda row: row.h_mean / (2 * row.w_mean), axis=1)
-        isovRaysField["svf"] = isovRaysField.apply(
+        smapRaysField["h_over_w"] = smapRaysField.apply(
+            lambda row: row.__RAY_DELTA_ALT__.mean() / (2 * row.w_mean), axis=1)
+        smapRaysField["svf"] = smapRaysField.apply(
             lambda row: SVFLib.svf2018(row.__RAY_DELTA_ALT__, row.__RAY_LEN__), axis=1)
 
-        return isovRaysField
-
-    @staticmethod
-    def addIndicesToIsovRaysField25D(isovRaysField, precision=1.0, base=exp(1)):
-        isovRaysField["__RAY_LEN__"] = isovRaysField.geometry.apply(
-            lambda geom: asarray([ray.length for ray in geom.geoms]))
-        isovRaysField["__RAY_ALT__"] = isovRaysField.geometry.apply(
-            lambda geom: asarray([ray.coords[-1][2] for ray in geom.geoms]))
-        isovRaysField["__RAY_DELTA_ALT__"] = isovRaysField.geometry.apply(
-            lambda geom: asarray([max(ray.coords[-1][2]-ray.coords[0][2], 0) for ray in geom.geoms]))
-
-        isovRaysField = RayCasting4Lib.__add3DIndices(isovRaysField)
-
-        isovRaysField.drop(
-            columns=["__RAY_LEN__", "__RAY_ALT__", "__RAY_DELTA_ALT__"], inplace=True)
-        return isovRaysField
-
-
-"""
-buildings = GeoDataFrame([{"gid": x, "geometry": Polygon(
-    [(-x, x, h), (x, x, h), (x, x+1, h), (-x, x+1, h)]), "H": h} for x, h in [(4, 4), (8, 8.1), (12, 12.1)]])
-sensors = GeoDataFrame([
-    {"id": y, "geometry": Point([0, y, 0])} for y in [0, 10, 13.0001]
-])
-rays = RayCasting4Lib.get25DPanopticRaysGeoDataFrame(
-    sensors, rayLength=20.0, nRays=64)
-
-isov = RayCasting4Lib.multipleRayCast25D(
-    buildings, rays, elevationFieldName="H")
-isov = RayCasting4Lib.addIndicesToIsovRaysField25D(
-    isov)
-
-_, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
-buildings.plot(ax=ax, color="grey")
-sensors.plot(ax=ax, color="green", marker="o")
-# rays.plot(ax=ax, color="black", linewidth=0.3)
-isov.plot(ax=ax, column="id", linewidth=1.5)
-plt.tight_layout()
-plt.show()
-"""
-
-"""
-buildings = GeoDataFrame([{"gid": x, "geometry": Polygon(
-    # [(-x, x, h), (x, x, h), (x, x+1, h), (-x, x+1, h)]), "H": h} for x, h in [(4, 4), (8, 8.1), (12, 12.1)]])
-    [(-x, x, h), (x, x, h), (x, x+1, h), (-x, x+1, h)]), "H": h} for x, h in [(4, 4)]])
-sensors = GeoDataFrame([
-    # {"id": y, "geometry": Point([0, y])} for y in [0, 10, 15]
-    {"id": y, "geometry": Point([0, y])} for y in [0]
-])
-
-nRays, rayLength = 64, 10.0
-rays = RayCasting4Lib.get2DPanopticRaysGeoDataFrame(
-    sensors, rayLength, nRays)
-isovRaysField = RayCasting4Lib.multipleRayCast2D(
-    buildings, rays)
-
-_, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
-buildings.plot(ax=ax, color="lightgrey", edgecolor="black", linewidth=0.3)
-sensors.plot(ax=ax, color="red", marker=".")
-sensors.apply(lambda x: ax.annotate(
-    text=x["id"], xy=x.geometry.coords[0],
-    color="red", size=12, ha="left", va="top"), axis=1)
-isovRaysField.plot(ax=ax, color="blue", linewidth=0.3)
-plt.axis("off")
-plt.tight_layout()
-plt.show()
-"""
+        return smapRaysField

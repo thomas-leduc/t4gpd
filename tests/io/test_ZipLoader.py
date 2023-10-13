@@ -35,33 +35,34 @@ class ZipLoaderTest(unittest.TestCase):
     def setUp(self):
         self.buildings = GeoDataFrameDemos.ensaNantesBuildings()
         self.roads = GeoDataFrameDemos.ensaNantesRoads()
-        self.misc = DataFrame(data=[(i, 10 * i) for i in range(4)], columns=['colA', 'colB'])
+        self.misc = DataFrame(data=[(i, 10 * i)
+                              for i in range(4)], columns=["colA", "colB"])
 
     def tearDown(self):
         pass
 
     def testRun1(self):
         with TemporaryDirectory() as tmpdir:
-            ZipWriter({'buildings': self.buildings, 'roads': self.roads, 'misc': self.misc},
-                      f'{tmpdir}/test', driver='GPKG').run()
-            result = ZipLoader(f'{tmpdir}/test.zip').run()
-            self.assertIsNone(result, 'Test if result is None')
+            ZipWriter({"buildings": self.buildings, "roads": self.roads, "misc": self.misc},
+                      f"{tmpdir}/test", driver="GPKG").run()
+            result = ZipLoader(f"{tmpdir}/test.zip").run()
+            self.assertIsNone(result, "Test if result is None")
 
     def testRun2(self):
         with TemporaryDirectory() as tmpdir:
-            ZipWriter({'buildings': self.buildings, 'roads': self.roads, 'misc': self.misc},
-                      f'{tmpdir}/test', driver='GPKG').run()
-            buildings, misc, roads = ZipLoader(f'{tmpdir}/test.zip',
-                                               ['buildings', 'misc', 'roads']).run()
+            ZipWriter({"buildings": self.buildings, "roads": self.roads, "misc": self.misc},
+                      f"{tmpdir}/test", driver="GPKG").run()
+            buildings, misc, roads = ZipLoader(f"{tmpdir}/test.zip",
+                                               ["buildings", "misc", "roads"]).run()
 
-        self.assertIsInstance(buildings, GeoDataFrame, 'Is a GeoDataFrame (1)')
-        self.assertEqual(44, len(buildings), 'Count rows (1)')
+        self.assertIsInstance(buildings, GeoDataFrame, "Is a GeoDataFrame (1)")
+        self.assertEqual(len(self.buildings), len(buildings), "Count rows (1)")
 
-        self.assertIsInstance(roads, GeoDataFrame, 'Is a GeoDataFrame (2)')
-        self.assertEqual(37, len(roads), 'Count rows (2)')
+        self.assertIsInstance(roads, GeoDataFrame, "Is a GeoDataFrame (2)")
+        self.assertEqual(len(self.roads), len(roads), "Count rows (2)")
 
-        self.assertIsInstance(misc, GeoDataFrame, 'Is a GeoDataFrame (3)')
-        self.assertEqual(4, len(misc), 'Count rows (3)')
+        self.assertIsInstance(misc, GeoDataFrame, "Is a GeoDataFrame (3)")
+        self.assertEqual(len(self.misc), len(misc), "Count rows (3)")
 
 
 if __name__ == "__main__":

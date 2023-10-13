@@ -76,7 +76,8 @@ class RayCasting4LibTest(unittest.TestCase):
             sensors = GeoDataFrame([{"geometry": viewPoint}])
             rays = RayCasting4Lib.get2DPanopticRaysGeoDataFrame(
                 sensors, rayLength, nRays)
-            isovRaysField = RayCasting4Lib.multipleRayCast2D(self.masks, rays)
+            isovRaysField, isovField = RayCasting4Lib.multipleRayCast2D(
+                self.masks, rays, withIndices=False)
 
             self.assertEqual(actualNRays, len(list(filter(
                 nonNul, isovRaysField.loc[0, "geometry"].geoms))), "Test nb of rays")

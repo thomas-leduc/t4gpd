@@ -1,5 +1,39 @@
 # Package t4gpd history
 
+## Version 0.8.0 - rev. 14062 - 13 Oct. 2023
+* Add new morph.STAdaptativeGrid class
+* Add new tests.avidon.STDeploymentOfPVPanels{-,2,3}Test classes
+* Add new tests.avidon.EnergyDemandOfITEquipment2Test class
+* Add new tests.avidon.commons.EnergyDemandCalculator{-,2}Test classes
+* Add new avidon.STDeploymentOfPVPanels{-,2,3} classes
+* Add new avidon.EnergyDemandOfITEquipment{-,2,3} classes
+* Add new avidon.commons.EnergyDemandCalculator{-,2} classes
+* Add new avidon.commons.AbstractEnergyDemand class
+* Add new avidon.commons.Wh class
+* Add new avidon.scenarios.CredocBasedScenario class
+* Add new avidon.scenarios.FullLockdown class
+* Add new avidon.scenarios.CredocBasedScenario class
+* Add new avidon.scenariosAbstractScenario class
+* Add new raster.RTFromRasterToGeoDataFrameOfPoints class
+* Add new raster.AbstractRasterGeoProcess class
+* Add new energy.PlotIrradiances class
+* Add new energy.Angstrom class
+* Add new tests.morph.STSkyMap25DTest class
+* Add new energy.WilliamAtkinson class
+* Add new energy.FelixMarboutin class
+* Add new tests.morph.STHeightOfRoughnessTest class
+* Add new morph.STHeightOfRoughness class
+* Add new tests.morph.STSurfaceFractionTest class
+* Add new morph.STSurfaceFraction class
+* Add new raster.RTVectorize class
+* Add new raster.RTNdvi class
+* Add new raster.RTFromArrayToRaster class
+* Add new raster.RTToFile class
+* Add new raster.STRasterize class
+* Add new raster.RTLoad class
+* Add new raster.RTClip class
+* Debug RayCasting4Lib, STIsovistField2D_new, STSkyMap25D classes
+
 ## Version 0.7.1 - rev. 13835 - 28 Jul. 2023
 * Add new morph.STSkyMap25D class
 * Add new tests.commons.RayCasting4LibTest
@@ -131,7 +165,7 @@
 * Add new tests.io.ZipLoaderTest class
 * Add new io.ZipLoader class
 * Add new misc.PopulationPyramid class
-* Add new pyqgis/{AddMemoryLayer,SetSymbolLib,ShowFeatureCount,ZoomLib} classes
+* Add new pyqgis.{AddMemoryLayer,SetSymbolLib,ShowFeatureCount,ZoomLib} classes
 * Add new tests datasets: la_defense_{measurepts.csv, pathway.gpkg, waypoints.gpkg}
 * Add new tests.io.ZipWriterTest class
 * Add new io.ZipWriter class

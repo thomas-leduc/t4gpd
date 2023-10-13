@@ -20,10 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from geopandas import clip, GeoDataFrame
+from datetime import datetime, timedelta, timezone
 import pyvista
-from datetime import datetime, timedelta
 from numpy import asarray
-from pyvista import Cylinder, global_theme, Light, Plane, Plotter, Sphere, themes
+from pyvista import Cylinder, Disc, global_theme, Light, Plane, Plotter, Sphere, themes
 from t4gpd.commons.ColorTemperature import ColorTemperature
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.GeoProcess import GeoProcess
@@ -42,7 +43,7 @@ class Plotter3D(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, window_size=(1100, 1100), ofile=None):
+    def __init__(self, window_size=(1100, 1100), theme=themes.ParaViewTheme(), ofile=None):
         '''
         Constructor
         '''
@@ -53,13 +54,16 @@ class Plotter3D(GeoProcess):
         self.plotter.show_axes()
         # pyvista.set_plot_theme(themes.DarkTheme())
         # pyvista.set_plot_theme(themes.DocumentTheme())
-        pyvista.set_plot_theme(themes.ParaViewTheme())
+        # pyvista.set_plot_theme(themes.ParaViewTheme())
+        pyvista.set_plot_theme(theme)
 
-    def add_mesh(self, scene, show_scalar_bar=False, show_edges=False):
-        self.plotter.add_mesh(scene, show_scalar_bar=show_scalar_bar,
-                              show_edges=show_edges, smooth_shading=True)
+    def add_mesh(self, scene, color=None, opacity=1.0, show_edges=False,
+                 show_scalar_bar=False):
+        self.plotter.add_mesh(scene, color=color, opacity=opacity, show_edges=show_edges,
+                              show_scalar_bar=show_scalar_bar, smooth_shading=True)
 
-    def add_buildings(self, buildings, show_edges=True, elevationFieldname='HAUTEUR',
+    def add_buildings(self, buildings, color="grey", opacity=1.0, show_edges=False,
+                      show_scalar_bar=False, elevationFieldname='HAUTEUR',
                       forceZCoordToZero=True, withoutBuildingFloors=False):
         _buildings = buildings.explode(ignore_index=True)
 
@@ -69,20 +73,37 @@ class Plotter3D(GeoProcess):
 
         # scene = ToUnstructuredGrid([buildingsIn3d], fieldname=None).run()
         scene = ToPolyData([buildingsIn3d], fieldname=None).run()
-        self.add_mesh(scene, show_edges=show_edges)
+        self.add_mesh(scene, color=color, show_edges=show_edges,
+                      show_scalar_bar=show_scalar_bar)
 
-    def add_ground_surface(self, length=None):
+    def add_ground_surface(self, length=None, npts=64, color=None, opacity=1.0,
+                           show_edges=False, show_scalar_bar=False):
         xmin, xmax, ymin, ymax, zmin, zmax = self.plotter.bounds
         xc, yc, zc = self.plotter.center
 
         if length is None:
             length = self.plotter.length
+            ground = Plane(center=[xc, yc, zmin],
+                           i_size=length, j_size=length,
+                           i_resolution=10, j_resolution=10)
+        else:
+            ground = Disc(center=[xc, yc, zmin], inner=0.0,
+                          outer=length, normal=(0.0, 0.0, 1.0),
+                          r_res=1, c_res=npts)
 
-        ground = Plane(center=[xc, yc, zmin],
-                       i_size=length, j_size=length,
-                       i_resolution=10, j_resolution=10)
+        self.add_mesh(ground, color=color, show_edges=show_edges,
+                      show_scalar_bar=show_scalar_bar)
 
-        self.plotter.add_mesh(ground, show_edges=False, smooth_shading=True)
+    def add_general_lighting(self, color="grey", intensity=0.95):
+        xmin, xmax, ymin, ymax, zmin, zmax = self.plotter.bounds
+        xc, yc, zc = self.plotter.center
+        light = Light(
+            position=(xc, yc, zmax+100),
+            focal_point=(xc, yc, zc),
+            color=color,  # "blue"
+            intensity=intensity
+        )
+        self.plotter.add_light(light)
 
     def add_streetlights(self, streetlights, generalLighting=True,
                          color=[1.0, 0.83921, 0.6666, 1.0],
@@ -112,28 +133,23 @@ class Plotter3D(GeoProcess):
             )
             self.plotter.add_light(light)
 
-        #
         if generalLighting:
-            xmin, xmax, ymin, ymax, zmin, zmax = self.plotter.bounds
-            xc, yc, zc = self.plotter.center
-            light = Light(
-                position=(xc, yc, zmax+100),
-                focal_point=(xc, yc, zc),
-                color="dimgrey",  # "blue"
-                intensity=0.35
-            )
-            self.plotter.add_light(light)
+            self.add_general_lighting(color="dimgrey", intensity=0.35)
 
-    def add_sun_shadows(self, dts, gdf=LatLonLib.NANTES, model="pysolar"):
+    def add_sun_shadows(self, dts, gdf=LatLonLib.NANTES, model="pysolar", colors=None):
         # color = [1.0, 1.0, 0.9843, 1.0],  # Color temp. 5400 K
         # color = [1.0, 0.83921, 0.6666, 1.0],  # Color temp. 2850 K
         self.plotter.enable_shadows()
         sunModel = SunLib(gdf, model)
 
+        if colors is None:
+            colors = [ColorTemperature.convert_K_to_RGB(
+                2850 + 1000*i) for i in range(len(dts))]
+
         for i, dt in enumerate(dts):
             solarAlti, solarAzim = sunModel.getSolarAnglesInDegrees(dt)
             light = Light(
-                color=ColorTemperature.convert_K_to_RGB(2850 + 1000*i),
+                color=colors[i],
                 positional=False,
             )
             light.set_direction_angle(solarAlti, solarAzim)
@@ -141,27 +157,28 @@ class Plotter3D(GeoProcess):
             print(f"{dt}: alti={solarAlti:.1f}, azim={solarAzim:.1f}")
 
     def add_sun_positions(self, dts, radius=10, length=None,
-                          gdf=LatLonLib.NANTES, model="pysolar"):
-        xc, yc, zc = self.plotter.center
-
-        if length is None:
-            length = self.plotter.length/2
-
+                          gdf=LatLonLib.NANTES, model="pysolar",
+                          centre=None, color="yellow", opacity=1.0,
+                          show_edges=False, show_scalar_bar=False):
+        xc, yc, zc = self.plotter.center if centre is None else centre
+        length = self.plotter.length/2 if length is None else length
         sunModel = SunLib(gdf, model)
 
         for i, dt in enumerate(dts):
             x, y, z = sunModel.getRadiationDirection(dt)
             xyz = xc + length*x, yc + length*y, zc + length*z
             sun = Sphere(radius=radius, center=xyz)
-            self.plotter.add_mesh(sun, show_edges=False,
-                                  color="yellow",
-                                  smooth_shading=True, opacity=1.0)
+            self.add_mesh(sun, color=color, show_edges=show_edges,
+                          show_scalar_bar=show_scalar_bar)
+        return xc, yc, zc
 
     def add_tree_cylinders(self):
         pass
 
     def add_tree_spheres(self, trees, trunk_height="trunk_height",
-                         crown_radius="crown_radius"):
+                         crown_radius="crown_radius", color="green",
+                         opacity=1.0, show_edges=False,
+                         show_scalar_bar=False):
         for _, row in trees.iterrows():
             h, r = row[trunk_height], row[crown_radius],
             xyz = list(row.geometry.coords[0])[0:2] + [h]
@@ -170,9 +187,12 @@ class Plotter3D(GeoProcess):
             tronc = Cylinder(center=xyz[0:2] + [xyz[2]/2],
                              direction=(0.0, 0.0, 1.0),
                              radius=0.2, height=h)
-            self.plotter.add_mesh(houppier, show_edges=False,
-                                  smooth_shading=True, opacity=1.0)
-            self.plotter.add_mesh(tronc, show_edges=False, smooth_shading=True)
+            self.add_mesh(houppier, color=color, opacity=1.0,
+                          show_edges=False,
+                          show_scalar_bar=show_scalar_bar)
+            self.add_mesh(tronc, color=color, opacity=1.0,
+                          show_edges=False,
+                          show_scalar_bar=show_scalar_bar)
 
     def my_cpos_callback(self):
         # tuple: camera location, focus point, viewup vector
@@ -180,7 +200,7 @@ class Plotter3D(GeoProcess):
         cpos = self.plotter.camera_position
         (x, y, z), (fx, fy, fz,), (nx, ny, nz) = \
             cpos.position, cpos.focal_point, cpos.viewup
-        msg = f"""[({x:.2f}, {y:.2f}, {z:.2f})
+        msg = f"""[({x:.2f}, {y:.2f}, {z:.2f}),
  ({fx:.2f}, {fy:.2f}, {fz:.2f}),
  ({nx:.2f}, {ny:.2f}, {nz:.2f})]
 """
@@ -188,6 +208,12 @@ class Plotter3D(GeoProcess):
         self.plotter.add_text(msg, name="cpos")
         print(msg)
         return
+
+    def set_camera_position(self, cpos=None):
+        # tuple: camera location, focus point, viewup vector
+        # self.plotter.camera_position = [(x,y,z), (fx,fy,fz,), (nx,ny,nz)]
+        if not cpos is None:
+            self.plotter.camera_position = cpos
 
     def run(self):
         self.plotter.add_key_event("p", self.my_cpos_callback)
@@ -223,3 +249,47 @@ pl.add_sun_shadows([dt0, dt0 + timedelta(hours=6)])
 # pl.add_sun_positions(dts)
 pl.run()
 """
+
+'''
+tzinfo = timezone.utc
+
+buffDist = 140.0
+roi = GeoDataFrameDemos.coursCambronneInNantes()
+roi = roi.geometry.squeeze().centroid.buffer(buffDist)
+buildings = GeoDataFrameDemos.districtGraslinInNantesBuildings()
+buildings = clip(buildings, roi, keep_geom_type=True)
+
+ground = GeoDataFrame(
+    [{"geometry": GeomLib.forceZCoordinateToZ0(roi, z0=0)}], crs="epsg:2154")
+
+trees = GeoDataFrameDemos.districtGraslinInNantesTrees()
+trees = clip(trees, roi, keep_geom_type=True)
+trees["trunk_height"] = 5.0
+trees["crown_radius"] = 3.0
+
+# ofile = "/tmp/test.png"
+ofile = None
+# pl = Plotter3D(ofile, theme=themes.ParaViewTheme())
+pl = Plotter3D(ofile, theme=themes.DocumentTheme())
+# pl = Plotter3D(ofile, theme=themes.DarkTheme())
+
+pl.add_buildings(buildings, show_edges=False)
+pl.add_tree_spheres(trees)
+pl.add_ground_surface(buffDist)
+
+dt0 = datetime(2021, 6, 21, 4, tzinfo=tzinfo)
+dts = [dt0 + timedelta(hours=i) for i in range(0, 17, 1)]
+pl.add_sun_positions(dts, radius=10, length=160)
+
+# dt0 = datetime(2021, 3, 21, 9, tzinfo=tzinfo)
+# dts = [dt0 + timedelta(hours=i) for i in range(1, 6, 1)]
+# pl.add_sun_shadows(dts)
+
+cpos = [(354975.59, 6689462.60, 435.57),
+        (354805.12, 6689029.84, 16.62),
+        (-0.30, -0.60, 0.74)]
+pl.set_camera_position(cpos)
+pl.my_cpos_callback()
+pl.add_general_lighting(color="lightgrey", intensity=0.95)
+pl.run()
+'''

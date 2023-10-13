@@ -51,7 +51,8 @@ class PET(AbstractThermalComfortIndice):
             Interval(left=23, right=29, closed="right"),
             Interval(left=29, right=35, closed="right"),
             Interval(left=35, right=41, closed="right"),
-            Interval(left=41, right=float("inf"), closed="right"),
+            Interval(left=41, right=100, closed="right"),
+            # Interval(left=41, right=float("inf"), closed="right"),
             ])
         )
 

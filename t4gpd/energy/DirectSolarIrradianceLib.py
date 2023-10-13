@@ -125,114 +125,6 @@ class DirectSolarIrradianceLib(object):
         plt.close(fig)
 
     @staticmethod
-    def plotFelixMarboutin(ofile=None):
-        t = 1.0 / sqrt(2.0)
-        PAIRS = [
-            # ('Roof', (0, 0, 1)),
-            ('NE', (t, t, 0)),
-            ('N', (0, 1, 0)),
-            ('NW', (-t, t, 0)),
-            ('W', (-1, 0, 0)),
-            ('SW', (-t, -t, 0)),
-            ('S', (0, -1, 0)),
-            ('SE', (t, -t, 0)),
-            ('E', (1, 0, 0)),
-            ] 
-        magn = 0.5
-
-        lat, _ = LatLonLib.fromGeoDataFrameToLatLon(LatLonLib.NANTES)
-
-        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(3.0 * magn * 8.26, 1.1 * magn * 8.26))
-        fig.suptitle(f'''Direct Solar Irradiance, lat={lat:+.1f}°''', size=20)
-        MINS = range(0, 60, 15)
-        for i, month in enumerate([12, 3, 6]):
-            for label, normal in PAIRS:
-                X, Y = [], []
-                for hour in range(4, 22):
-                    for minutes in MINS:
-                        dt = datetime(2021, month, 21, hour, minutes)
-                        X.append(hour + minutes / 60)
-                        Y.append(DirectSolarIrradianceLib.noMaskDI(normal, dt))
-                linestyle = '-' if (1 == len(label)) else ':'
-                ax[i].plot(X, Y, linestyle=linestyle, linewidth=1.5,
-                           label=f'{label} {sum(Y) / (1e3 * len(MINS)):.1f} kWh/m$^2$')
-
-            setlocale(LC_ALL, 'en_US.utf8')
-            ax[i].set_title(f'{dt.strftime("%b %d")}st')
-            ax[i].set_xlabel('Hour')
-            if (0 == i):
-                ax[i].set_ylabel('Instantaneous irradiance [W.m$^{-2}$]')
-                ax[i].set_xlim([8, 16])
-            elif (1 == i):
-                ax[i].set_xlim([6, 18])
-            elif (1 == 2):
-                ax[i].set_xlim([4, 20])
-            ax[i].set_ylim([0, 900])
-            ax[i].legend(loc='upper left', framealpha=0.5, ncol=2, fontsize=8)
-
-        if ofile is None:
-            plt.show()
-        else:
-            plt.savefig(ofile, format='pdf', bbox_inches='tight')
-        plt.close(fig)
-
-    @staticmethod
-    def plotFelixMarboutinAnnuel(ofile=None):
-        t = 1.0 / sqrt(2.0)
-        PAIRS = [
-            # ('Roof', (0, 0, 1)),
-            ('NE', (t, t, 0)),
-            ('N', (0, 1, 0)),
-            ('NW', (-t, t, 0)),
-            ('W', (-1, 0, 0)),
-            ('SW', (-t, -t, 0)),
-            ('S', (0, -1, 0)),
-            ('SE', (t, -t, 0)),
-            ('E', (1, 0, 0)),
-            ] 
-        magn = 0.5
-
-        lat, _ = LatLonLib.fromGeoDataFrameToLatLon(LatLonLib.NANTES)
-
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(2.0 * magn * 8.26, 1.1 * magn * 8.26))
-        fig.suptitle(f'''Direct Solar Irradiation, lat={lat:+.1f}°''', size=20)
-        MINS = range(0, 60, 30)
-        for label, normal in PAIRS:
-            X, Y = [], []
-            for month in range(1, 13):
-                for day in range(1, 28, 10):
-                    _Y = []
-                    for hour in range(4, 22):
-                        for minutes in MINS:
-                            dt = datetime(2021, month, day, hour, minutes)
-                            _Y.append(DirectSolarIrradianceLib.noMaskDI(normal, dt))
-
-                    dayInYear = dt.timetuple().tm_yday
-                    X.append(dayInYear)
-                    Y.append(sum(_Y) / (1e3 * len(MINS)))
-
-            linestyle = '-' if (1 == len(label)) else ':'
-            ax.plot(X, Y, linestyle=linestyle, linewidth=1.5,
-                       label=f'{label} {10 * sum(Y) / 1e3:.2f} MWh/m$^2$')
-        ax.set_xlabel('Day of year')
-        ax.set_ylabel('Daily irradiation [kWh.m$^{-2}$]')
-
-        for month, label in [(3, 'Spring equinox'), (6, 'Summer solstice'), (9, 'Autumn equinox')]:
-            x0 = int(datetime(2021, month, 21).strftime('%j'))
-            ax.axvline(x=x0, linestyle=':', color='blue', linewidth=1)
-            ax.text(x0 + 5, 0.4, label, fontsize=10, rotation=90, color='blue')
-
-        ax.set_ylim([0, 5.2])
-        # ax.grid(color='gray', linestyle=':', linewidth=1)
-        ax.legend(loc='upper left', framealpha=0.5, ncol=4, fontsize=8)
-
-        if ofile is None:
-            plt.show()
-        else:
-            plt.savefig(ofile, format='pdf', bbox_inches='tight')
-        plt.close(fig)
-
-    @staticmethod
     def plotAtkinsonAnnuel(ofile=None):
         t = 1.0 / sqrt(2.0)
         PAIRS1 = [
@@ -299,7 +191,5 @@ DirectSolarIrradianceLib.plot('East orientation', (1, 0, 0), '/tmp/east.pdf')
 DirectSolarIrradianceLib.plot('West orientation', (-1, 0, 0), '/tmp/west.pdf')
 DirectSolarIrradianceLib.plot('Roof', (0, 0, 1), '/tmp/roof.pdf')
 
-DirectSolarIrradianceLib.plotFelixMarboutin('/tmp/felix_marboutin.pdf')
-DirectSolarIrradianceLib.plotFelixMarboutinAnnuel('/tmp/felix_marboutin_annuel.pdf')
 DirectSolarIrradianceLib.plotAtkinsonAnnuel('/tmp/atkinson_annuel.pdf')
 '''

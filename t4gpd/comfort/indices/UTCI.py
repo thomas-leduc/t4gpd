@@ -53,7 +53,8 @@ class UTCI(AbstractThermalComfortIndice):
             Interval(left=26, right=32, closed="right"),
             Interval(left=32, right=38, closed="right"),
             Interval(left=38, right=46, closed="right"),
-            Interval(left=46, right=float("inf"), closed="right"),
+            Interval(left=46, right=100, closed="right"),
+            # Interval(left=46, right=float("inf"), closed="right"),
             ])
         )
 

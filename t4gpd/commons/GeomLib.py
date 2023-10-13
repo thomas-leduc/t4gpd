@@ -71,14 +71,14 @@ class GeomLib(object):
                 for i, p in enumerate(coords):
                     pdist = geom.project(Point(p))
                     if (curvDistance == pdist):
-                        return [ LineString(coords[:i + 1]), LineString(coords[i:]) ]
+                        return [LineString(coords[:i + 1]), LineString(coords[i:])]
                     elif (curvDistance < pdist):
                         cp = geom.interpolate(curvDistance)
                         cp = (cp.x, cp.y, cp.z) if geom.has_z else (cp.x, cp.y)
                         return [
                             LineString(coords[:i] + [cp]),
-                            LineString([cp] + coords[i:]) ]
-            return [ geom ]
+                            LineString([cp] + coords[i:])]
+            return [geom]
         raise IllegalArgumentTypeException(geom, 'LineString')
 
     @staticmethod
@@ -96,7 +96,8 @@ class GeomLib(object):
         pzone = prep(zone)
 
         # outputGdf = inputGdf[pzone.intersects(inputGdf.geometry)].copy(deep=True)
-        outputGdf = inputGdf.loc[inputGdf.geometry.apply(lambda g: pzone.intersects(g))].copy(deep=True)
+        outputGdf = inputGdf.loc[inputGdf.geometry.apply(
+            lambda g: pzone.intersects(g))].copy(deep=True)
         outputGdf.reset_index(drop=True, inplace=True)
         # Use buffers to avoid slivers
         outputGdf.geometry = outputGdf.geometry.apply(
@@ -118,7 +119,8 @@ class GeomLib(object):
 
     @staticmethod
     def flattenGeometry(obj):
-        _develop = lambda geom: [_develop(g) for g in geom.geoms] if GeomLib.isMultipart(geom) else [geom]
+        def _develop(geom): return [_develop(
+            g) for g in geom.geoms] if GeomLib.isMultipart(geom) else [geom]
 
         if GeomLib.isAShapelyGeometry(obj):
             return list(flatten(_develop(obj)))
@@ -151,9 +153,11 @@ class GeomLib(object):
         if not isinstance(polygon, Polygon):
             raise IllegalArgumentTypeException(polygon, 'Polygon')
         if GeomLib.isHoled(polygon):
-            raise Exception('The processing of polygons with holes remains to be developed!')
+            raise Exception(
+                'The processing of polygons with holes remains to be developed!')
 
-        p = list(GeomLib.normalizeRingOrientation(polygon).exterior.coords)[:-1]
+        p = list(GeomLib.normalizeRingOrientation(
+            polygon).exterior.coords)[:-1]
         i, n, result = 0, len(p), []
         while n > 0:
             if (3 >= n):
@@ -163,15 +167,15 @@ class GeomLib(object):
                 i, ip1, ip2 = i % n, (i + 1) % n, (i + 2) % n
 
                 if ((0 <= GeomLib.zCrossProduct(p[i], p[ip1], p[ip2])) and
-                    LineString([p[i], p[ip2]]).within(Polygon(p))):
-                    result.append(Polygon([ p[i], p[ip1], p[ip2] ]))
-                    del(p[ip1])
+                        LineString([p[i], p[ip2]]).within(Polygon(p))):
+                    result.append(Polygon([p[i], p[ip1], p[ip2]]))
+                    del (p[ip1])
                     n = n - 1
 
                 i += 1
 
-        return result 
-        
+        return result
+
     @staticmethod
     def getEnclosingFeatures(inputGdf, inputSpatialIndex, point):
         result = []
@@ -181,7 +185,7 @@ class GeomLib(object):
             _geom = _feature.geometry
             if point.within(_geom):
                 result.append(_feature)
-        return result        
+        return result
 
     @staticmethod
     def getCircumcircle(a, b, c):
@@ -213,7 +217,8 @@ class GeomLib(object):
             if centroid.within(geom):
                 return centroid
             extPts = geom.exterior.coords
-            dists = [{'dist': centroid.distance(Point(v)), 'v': Point(v)} for v in extPts]
+            dists = [{'dist': centroid.distance(
+                Point(v)), 'v': Point(v)} for v in extPts]
             # dists = sorted(dists, key=lambda l: l['dist'], reverse=True)
             dists = sorted(dists, key=lambda l: l['dist'], reverse=False)
 
@@ -226,14 +231,15 @@ class GeomLib(object):
                 if p.within(geom):
                     return p
             return dists[0]['v']
-        raise Exception('GeomLib.getInteriorPoint(...): implementation to be continued!')
-    
+        raise Exception(
+            'GeomLib.getInteriorPoint(...): implementation to be continued!')
+
     @staticmethod
     def getLineSegmentBisector(a, b):
         # The resulting line is represented by a point and a vector
         ab = GeomLib.vector_to(a, b)
         c = GeomLib.getMidPoint(a, b)
-        return [ c, [-ab[1], ab[0]] ]
+        return [c, [-ab[1], ab[0]]]
 
     @staticmethod
     def getLineStringOrientation(line):
@@ -257,17 +263,19 @@ class GeomLib(object):
                 return [Point(p) for p in obj.coords[:-1]]
             return [Point(p) for p in obj.coords]
         elif isinstance(obj, Polygon):
-            result = GeomLib.getListOfShapelyPoints(obj.exterior, withoutClosingLoops)
+            result = GeomLib.getListOfShapelyPoints(
+                obj.exterior, withoutClosingLoops)
             for ring in obj.interiors:
-                result += GeomLib.getListOfShapelyPoints(ring, withoutClosingLoops)
+                result += GeomLib.getListOfShapelyPoints(
+                    ring, withoutClosingLoops)
             return result
         elif GeomLib.isMultipart(obj):
-            return reduce(lambda a, b: a + b, [GeomLib.getListOfShapelyPoints(g, withoutClosingLoops) for g in obj.geoms])            
+            return reduce(lambda a, b: a + b, [GeomLib.getListOfShapelyPoints(g, withoutClosingLoops) for g in obj.geoms])
         raise IllegalArgumentTypeException(obj, 'Shapely geometry')
 
     @staticmethod
     def getMidPoint(a, b):
-        return [ (a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0 ]
+        return [(a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0]
 
     @staticmethod
     def getNearestFeature(inputGdf, inputSpatialIndex, point, buffDist, incScale=sqrt(2)):
@@ -278,7 +286,8 @@ class GeomLib(object):
 
         ids = []
         while (0 == len(ids)):
-            ids = list(inputSpatialIndex.intersection(point.buffer(buffDist, -1).bounds))
+            ids = list(inputSpatialIndex.intersection(
+                point.buffer(buffDist, -1).bounds))
             buffDist *= incScale
 
         for _id in ids:
@@ -303,7 +312,8 @@ class GeomLib(object):
         while (0 == len(candidates)):
             pzone = prep(point.buffer(buffDist, cap_style=CAP_STYLE.square))
             # candidates = gdf[pzone.intersects(gdf.geometry)].copy(deep=True)
-            candidates = gdf.loc[gdf.geometry.apply(lambda g: pzone.intersects(g))].copy(deep=True)
+            candidates = gdf.loc[gdf.geometry.apply(
+                lambda g: pzone.intersects(g))].copy(deep=True)
             buffDist *= incScale
 
         for _, row in candidates.iterrows():
@@ -319,7 +329,7 @@ class GeomLib(object):
     @staticmethod
     def getStraightLineEquation(line):
         # The input line is represented by a point and a vector
-        # The output result is [a, b, c] 
+        # The output result is [a, b, c]
         # where a * x + b * y + c = 0
         point, vector = line
         a = vector[1]
@@ -352,7 +362,7 @@ class GeomLib(object):
     @staticmethod
     def getAnchoringBuildingId(point, buildings, spatialIndex):
         # isAnAnchoringPolygon = isABorderPoint OR isAnInsidePoint
-        isAnAnchoringPolygon = lambda point, polygon: (
+        def isAnAnchoringPolygon(point, polygon): return (
             point.relate(polygon) in ['F0FFFF212', '0FFFFF212'])
         buildingsIds = list(spatialIndex.intersection(point.bounds))
         for buildingId in buildingsIds:
@@ -364,19 +374,22 @@ class GeomLib(object):
     @staticmethod
     def getAnchoringBuildingId3(point, buildings):
         # isAnAnchoringPolygon = isABorderPoint OR isAnInsidePoint
-        isAnAnchoringPolygon = lambda point, polygon: (
+        def isAnAnchoringPolygon(point, polygon): return (
             point.relate(polygon) in ['F0FFFF212', '0FFFFF212'])
 
         pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
         # gdf = buildings[pgeom.intersects(buildings.geometry)]
-        gdf = buildings.loc[buildings.geometry.apply(lambda g: pgeom.intersects(g))]
-        gdf = gdf.loc[gdf.geometry.apply(lambda g: isAnAnchoringPolygon(point, g))]
+        gdf = buildings.loc[buildings.geometry.apply(
+            lambda g: pgeom.intersects(g))]
+        gdf = gdf.loc[gdf.geometry.apply(
+            lambda g: isAnAnchoringPolygon(point, g))]
 
         return gdf.index[0] if (0 < len(gdf)) else None
 
     @staticmethod
     def isABorderPoint(point, buildings):
-        isAPointOnTheBorder = lambda point, polygon: ('F0FFFF212' == point.relate(polygon))
+        def isAPointOnTheBorder(point, polygon): return (
+            'F0FFFF212' == point.relate(polygon))
         pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
         candidates = filter(pgeom.intersects, buildings.geometry)
         for candidate in candidates:
@@ -386,7 +399,8 @@ class GeomLib(object):
 
     @staticmethod
     def isAnIndoorPoint(point, buildings):
-        isAnInsidePoint = lambda point, polygon: ('0FFFFF212' == point.relate(polygon))
+        def isAnInsidePoint(point, polygon): return (
+            '0FFFFF212' == point.relate(polygon))
         pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
         candidates = filter(pgeom.intersects, buildings.geometry)
         for candidate in candidates:
@@ -396,7 +410,8 @@ class GeomLib(object):
 
     @staticmethod
     def isAnOutdoorPoint(point, buildings):
-        isAnOutsidePoint = lambda point, polygon: ('FF0FFF212' == point.relate(polygon))
+        def isAnOutsidePoint(point, polygon): return (
+            'FF0FFF212' == point.relate(polygon))
         pgeom = prep(point.buffer(0.1, cap_style=CAP_STYLE.square))
         candidates = filter(pgeom.intersects, buildings.geometry)
         for candidate in candidates:
@@ -419,7 +434,8 @@ class GeomLib(object):
             coords = list(obj.exterior.coords)[:-1]
             if 3 >= len(coords):
                 return True
-            signs = [GeomLib.zCrossProduct(a, b, c) > 0 for a, b, c in zip(ListUtilities.rotate(coords, 2), ListUtilities.rotate(coords, 1), coords)]
+            signs = [GeomLib.zCrossProduct(a, b, c) > 0 for a, b, c in zip(
+                ListUtilities.rotate(coords, 2), ListUtilities.rotate(coords, 1), coords)]
             return all(signs) or not any(signs)
         return False
 
@@ -431,9 +447,10 @@ class GeomLib(object):
     def isInFrontOf(viewpoint, bipointAsLinestring):
         if not isinstance(viewpoint, Point):
             raise IllegalArgumentTypeException(viewpoint, 'Point')
-        if (not isinstance(bipointAsLinestring, LineString) or 
-            (2 != len(bipointAsLinestring.coords))):
-            raise IllegalArgumentTypeException(bipointAsLinestring, 'LineString of 2 points')
+        if (not isinstance(bipointAsLinestring, LineString) or
+                (2 != len(bipointAsLinestring.coords))):
+            raise IllegalArgumentTypeException(
+                bipointAsLinestring, 'LineString of 2 points')
         a, b = bipointAsLinestring.coords
         ab = GeomLib.vector_to(a, b)
         n2ab = [ab[1], -ab[0]]
@@ -468,7 +485,8 @@ class GeomLib(object):
 
         elif isinstance(obj, Polygon):
             extRing = GeomLib.normalizeRingOrientation(obj.exterior, ccw)
-            intRings = [GeomLib.normalizeRingOrientation(hole, not ccw) for hole in obj.interiors]
+            intRings = [GeomLib.normalizeRingOrientation(
+                hole, not ccw) for hole in obj.interiors]
             return Polygon(extRing, intRings)
 
         elif isinstance(obj, MultiLineString):
@@ -485,17 +503,18 @@ class GeomLib(object):
 
     @staticmethod
     def projectOntoStraightLine(p, line):
-        # This method returns the projection 'projP' of point p on the 
-        # given line but also the distance from p to the given line 
-        # ('distFromPToLine') and the distance from the projection 
-        # 'projP' to the first point of the input line. The input 
+        # This method returns the projection 'projP' of point p on the
+        # given line but also the distance from p to the given line
+        # ('distFromPToLine') and the distance from the projection
+        # 'projP' to the first point of the input line. The input
         # line is represented by two points.
         a, b = line
         ap = GeomLib.vector_to(a, p)
         unitAB = GeomLib.unitVector(a, b)
         orthoUnitAB = [-unitAB[1], unitAB[0]]
         distFromAToProjP = GeomLib.dotProduct(ap, unitAB)
-        projP = [ a[0] + distFromAToProjP * unitAB[0], a[1] + distFromAToProjP * unitAB[1]]
+        projP = [a[0] + distFromAToProjP * unitAB[0],
+                 a[1] + distFromAToProjP * unitAB[1]]
         distFromPToLine = GeomLib.dotProduct(ap, orthoUnitAB)
         return [projP, distFromAToProjP, distFromPToLine]
 
@@ -522,7 +541,8 @@ class GeomLib(object):
 
         elif isinstance(obj, Polygon):
             extRing = GeomLib.reverseRingOrientation(obj.exterior)
-            intRings = [GeomLib.reverseRingOrientation(hole) for hole in obj.interiors]
+            intRings = [GeomLib.reverseRingOrientation(
+                hole) for hole in obj.interiors]
             return Polygon(extRing, intRings)
 
         elif isinstance(obj, MultiLineString):
@@ -593,7 +613,7 @@ class GeomLib(object):
         elif (0 == discr):
             t0 = -b / (2 * a)
             if (0 <= t0 <= 1):
-                return [ Point([p0[0] + dx * t0, p0[1] + dy * t0]) ]
+                return [Point([p0[0] + dx * t0, p0[1] + dy * t0])]
 
         raise Exception('Unreachable instruction!')
 
@@ -626,7 +646,19 @@ class GeomLib(object):
                     result.append(LineString([prev, curr]))
                 prev = curr
         return result
-    
+
+    @staticmethod
+    def toListOfBipointsAsLineStringsInFrontOf(viewpoint, obj):
+        if not isinstance(viewpoint, Point):
+            raise IllegalArgumentTypeException(viewpoint, "Point")
+        if not GeomLib.isPolygonal(obj):
+            raise IllegalArgumentTypeException(
+                obj, "Polygon or MultiPolygon")
+        segments = GeomLib.toListOfBipointsAsLineStrings(obj)
+        segments = [
+            segm for segm in segments if GeomLib.isInFrontOf(viewpoint, segm)]
+        return segments
+
     @staticmethod
     def toListOfPolygons(obj):
         if GeomLib.isAShapelyGeometry(obj):

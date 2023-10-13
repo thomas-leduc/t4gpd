@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.commons.grid.GridLib import GridLib
@@ -31,35 +31,42 @@ class STGrid(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, inputGdf, dx, dy=None, indoor=None, intoPoint=True, encode=True):
+    def __init__(self, gdf, dx, dy=None, indoor=None, intoPoint=True,
+                 encode=True, withDist=False):
         '''
         Constructor
         '''
-        if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, "GeoDataFrame")
+        if not isinstance(gdf, GeoDataFrame):
+            raise IllegalArgumentTypeException(gdf, "GeoDataFrame")
 
-        self.inputGdf = inputGdf
+        self.gdf = gdf
         self.dx = dx
         self.dy = dy
         if indoor in [None, True, False, "both"]:
             self.indoor = indoor
         else:
-            raise Exception("Illegal argument: indoor must be chosen in [None, True, False, 'both']!")
+            raise Exception(
+                "Illegal argument: indoor must be chosen in [None, True, False, 'both']!")
         self.intoPoint = intoPoint
         self.encode = encode
+        self.withDist = withDist
 
     def run(self):
-        gridLib = GridLib(self.inputGdf, self.dx, self.dy, self.encode)
+        grid = GridLib.getGrid2(self.gdf, self.dx, self.dy, self.encode)
 
         if self.indoor is None:
-            grid = gridLib.grid()
+            pass
         elif ("both" == self.indoor):
-            grid = gridLib.indoorOutdoorGrid()
+            grid = GridLib.getIndoorOutdoorGrid(self.gdf, grid)
         elif self.indoor:
-            grid = gridLib.indoorGrid()
+            grid = GridLib.getIndoorGrid(self.gdf, grid)
         else:
-            grid = gridLib.outdoorGrid()
+            grid = GridLib.getOutdoorGrid(self.gdf, grid)
 
         if self.intoPoint:
             grid.geometry = grid.centroid
+
+        if self.withDist:
+            grid = GridLib.distanceToNearestContour(self.gdf, grid)
+
         return grid

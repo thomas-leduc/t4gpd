@@ -20,7 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas import GeoDataFrame, overlay
+from geopandas import GeoDataFrame, overlay, sjoin_nearest
+from shapely import MultiLineString
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -40,6 +41,18 @@ class AbstractGridLib(object):
         self.dx = dx
         self.dy = dx if (dy is None) else dy
         self.encode = encode
+
+    def distanceToNearestContour(self, grid):
+        gdf = self.gdf.copy(deep=True)
+        gdf.geometry = gdf.geometry.apply(
+            lambda geom: MultiLineString(GeomLib.toListOfLineStrings(geom)))
+        grid2 = sjoin_nearest(
+            grid, gdf[["geometry"]], how="inner", distance_col="dist_to_ctr", max_distance=None)
+        if ("index_right" not in gdf) and ("index_right" in grid2):
+            grid2.drop(columns="index_right", inplace=True)
+        grid2.drop_duplicates(
+            subset=["gid"], keep="first", ignore_index=True, inplace=True)
+        return grid2
 
     def grid(self):
         raise NotImplementedError('grid() must be overridden!')

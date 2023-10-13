@@ -58,71 +58,7 @@ class STIsovistField2D_new(GeoProcess):
         self.nRays = nRays
         self.withIndices = withIndices
 
-    def __buildIsovist(self, viewpoint, ray_ids, mls):
-        _ctrPts1 = [ls.coords[-1] for ls in mls.geoms]
-        if (self.nRays == len(_ctrPts1)):
-            return Polygon(_ctrPts1)
-
-        viewpoint = viewpoint.coords[0][0:2]
-        assert len(ray_ids) == len(_ctrPts1)
-        assert ray_ids == sorted(ray_ids)
-        _ctrPts2 = []
-        for i, ray_id in enumerate(ray_ids):
-            if (0 == i):
-                if (0 != ray_id):
-                    _ctrPts2.append(viewpoint)
-                _ctrPts2.append(_ctrPts1[i])
-            else:
-                if (ray_ids[i-1]+1 < ray_id):
-                    _ctrPts2.append(viewpoint)
-                _ctrPts2.append(_ctrPts1[i])
-        return Polygon(_ctrPts2)
-
     def run(self):
-        isovRaysField = RayCasting4Lib.multipleRayCast2D(
-            self.buildings, self.rays)
-
-        if self.withIndices:
-            isovRaysField = RayCasting4Lib.addIndicesToIsovRaysField2D(
-                isovRaysField)
-
-        isovField = isovRaysField.copy(deep=True)
-        # isovField.geometry = isovField.geometry.apply(
-        #     lambda mls: Polygon([ls.coords[-1] for ls in mls.geoms]))
-        if (0 < len(isovField)):
-            isovField.geometry = isovField.apply(lambda row: self.__buildIsovist(
-                row.viewpoint, row.__RAY_ID__, row.geometry), axis=1)
-
-        isovRaysField.drop(columns=["__RAY_ID__"], inplace=True)
-        isovField.drop(columns=["__RAY_ID__"], inplace=True)
+        isovRaysField, isovField = RayCasting4Lib.multipleRayCast2D(
+            self.buildings, self.rays, self.withIndices)
         return isovRaysField, isovField
-
-
-"""
-# buildings = GeoDataFrameDemos.ensaNantesBuildings()
-# buildings = GeoDataFrameDemos4.comfortPathInNantesBuildings()
-# sensors = STGrid(buildings, 50, dy=None, indoor=False, intoPoint=True).run()
-# sensors = sensors.loc[sensors[sensors.gid.isin([86, 100, 117])].index, [
-#     "gid", "geometry"]]
-
-buildings = GeoDataFrame([{"gid": x, "geometry": Polygon(
-    [(-x, x, h), (x, x, h), (x, x+1, h), (-x, x+1, h)]), "H": h} for x, h in [(4, 4), (8, 8.1), (12, 12.1)]])
-sensors = GeoDataFrame([
-    {"id": y, "geometry": Point([0, y])} for y in [0, 10, 15]
-])
-
-nRays, rayLength = 64, 10.0
-isovRaysField, isovField = STIsovistField2D_new(
-    buildings, sensors, nRays, rayLength, withIndices=True).run()
-
-_, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
-buildings.plot(ax=ax, color="lightgrey", edgecolor="black", linewidth=0.3)
-sensors.apply(lambda x: ax.annotate(
-    text=x["id"], xy=x.geometry.coords[0],
-    color="red", size=12, ha="left", va="top"), axis=1)
-isovRaysField.plot(ax=ax, color="blue", linewidth=0.3)
-isovField.plot(ax=ax, color="yellow", alpha=0.4)
-plt.axis("off")
-plt.tight_layout()
-plt.show()
-"""
