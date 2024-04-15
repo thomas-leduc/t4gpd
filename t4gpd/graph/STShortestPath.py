@@ -20,12 +20,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
+from pandas import concat
 from shapely.geometry import Point
-
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.graph.ShortestPathLib import ShortestPathLib
+from t4gpd.commons.graph.UrbanGraphFactory import UrbanGraphFactory
 
 
 class STShortestPath(GeoProcess):
@@ -38,13 +38,16 @@ class STShortestPath(GeoProcess):
         Constructor
         '''
         if not isinstance(roads, GeoDataFrame):
-            raise IllegalArgumentTypeException(roads, 'GeoDataFrame')
+            raise IllegalArgumentTypeException(roads, "GeoDataFrame")
         if not isinstance(fromPoints, (GeoDataFrame, Point)):
-            raise IllegalArgumentTypeException(fromPoints, 'GeoDataFrame or single Point')
+            raise IllegalArgumentTypeException(
+                fromPoints, "GeoDataFrame or single Point")
         if not isinstance(toPoints, (GeoDataFrame, Point)):
-            raise IllegalArgumentTypeException(toPoints, 'GeoDataFrame or single Point')
+            raise IllegalArgumentTypeException(
+                toPoints, "GeoDataFrame or single Point")
 
-        self.graph = ShortestPathLib(roads)
+        self.graph = UrbanGraphFactory.create(roads, method="networkx")
+
         self.roads = roads
 
         if isinstance(fromPoints, GeoDataFrame):
@@ -58,13 +61,11 @@ class STShortestPath(GeoProcess):
             self.toPoints = [toPoints]
 
     def run(self):
-        gid, rows = 0, []
+        gdfs = []
         for fromPoint in self.fromPoints:
             for toPoint in self.toPoints:
-                pathGeom, pathLen = self.graph.shortestPath(fromPoint, toPoint)
-                if not pathGeom is None:
-                    rows.append({'gid':gid, 'pathLen': pathLen, 'fromPoint': fromPoint.wkt,
-                                 'toPoint': toPoint.wkt, 'geometry': pathGeom})
-                    gid += 1
+                gdfs.append(self.graph.shortest_path(fromPoint, toPoint))
 
-        return GeoDataFrame(rows, crs=self.roads.crs)
+        result = GeoDataFrame(concat(gdfs), crs=self.roads.crs)
+        result["gid"] = range(len(result))
+        return result

@@ -3,7 +3,7 @@ Created on 11 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 

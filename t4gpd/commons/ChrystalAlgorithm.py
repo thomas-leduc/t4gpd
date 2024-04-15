@@ -3,7 +3,7 @@ Created on 15 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -42,7 +42,8 @@ class ChrystalAlgorithm(object):
         self.ncoords = len(self.coords)
 
     def __angleBetweenNodes(self, i, j, k):
-        result = AngleLib.angleBetweenNodes(self.coords[i], self.coords[j], self.coords[k])
+        result = AngleLib.angleBetweenNodes(
+            self.coords[i], self.coords[j], self.coords[k])
         return result if (result <= pi) else self.DPI - result
 
     def __getThirdNodeWithLowestAngleValue(self, idA, idB):
@@ -53,7 +54,7 @@ class ChrystalAlgorithm(object):
                 if tmp < minAngle:
                     minAngle, idC = tmp, i
 
-        return [ idC, minAngle ]
+        return [idC, minAngle]
 
     def __getCircleViaCenterRadius(self, center, radius):
         center = Point(center)
@@ -78,7 +79,8 @@ class ChrystalAlgorithm(object):
 
             if self.PI_DIV_2 > maxAngle:
                 # Un triangle acutangle est un triangle dont tous les angles sont aigus
-                center, radius = GeomLib.getCircumcircle(self.coords[idA], self.coords[idB], self.coords[idC])
+                center, radius = GeomLib.getCircumcircle(
+                    self.coords[idA], self.coords[idB], self.coords[idC])
                 return self.__getCircleViaCenterRadius(center, radius)
 
             elif self.PI_DIV_2 <= abc_angle:

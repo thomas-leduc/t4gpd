@@ -43,7 +43,8 @@ class Plotter3D(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, window_size=(1100, 1100), theme=themes.ParaViewTheme(), ofile=None):
+    def __init__(self, window_size=(1100, 1100), theme=themes.ParaViewTheme(),
+                 show_axes=True, ofile=None):
         '''
         Constructor
         '''
@@ -51,7 +52,8 @@ class Plotter3D(GeoProcess):
 
         self.plotter = Plotter(off_screen=(ofile is not None), lighting="none",
                                window_size=window_size)
-        self.plotter.show_axes()
+        if show_axes:
+            self.plotter.show_axes()
         # pyvista.set_plot_theme(themes.DarkTheme())
         # pyvista.set_plot_theme(themes.DocumentTheme())
         # pyvista.set_plot_theme(themes.ParaViewTheme())
@@ -91,8 +93,8 @@ class Plotter3D(GeoProcess):
                           outer=length, normal=(0.0, 0.0, 1.0),
                           r_res=1, c_res=npts)
 
-        self.add_mesh(ground, color=color, show_edges=show_edges,
-                      show_scalar_bar=show_scalar_bar)
+        self.add_mesh(ground, color=color, opacity=opacity,
+                      show_edges=show_edges, show_scalar_bar=show_scalar_bar)
 
     def add_general_lighting(self, color="grey", intensity=0.95):
         xmin, xmax, ymin, ymax, zmin, zmax = self.plotter.bounds
@@ -187,11 +189,11 @@ class Plotter3D(GeoProcess):
             tronc = Cylinder(center=xyz[0:2] + [xyz[2]/2],
                              direction=(0.0, 0.0, 1.0),
                              radius=0.2, height=h)
-            self.add_mesh(houppier, color=color, opacity=1.0,
-                          show_edges=False,
+            self.add_mesh(houppier, color=color, opacity=opacity,
+                          show_edges=show_edges,
                           show_scalar_bar=show_scalar_bar)
-            self.add_mesh(tronc, color=color, opacity=1.0,
-                          show_edges=False,
+            self.add_mesh(tronc, color=color, opacity=opacity,
+                          show_edges=show_edges,
                           show_scalar_bar=show_scalar_bar)
 
     def my_cpos_callback(self):

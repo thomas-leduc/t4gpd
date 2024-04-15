@@ -3,7 +3,7 @@ Created on 10 avr. 2021
 
 @author: tleduc
 
-Copyright 2020-2021 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,8 +20,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry.linestring import LineString
+from geopandas import GeoDataFrame
+from shapely import LineString
+from shapely.ops import substring
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -59,5 +60,13 @@ class LineStringCuttingLib(object):
             _geom = row.geometry
             _segms = GeomLib.toListOfBipointsAsLineStrings(_geom)
             for _segm in _segms:
-                result += LineStringCuttingLib.__fromLineStringToSegments(_segm, cuttingDist)
+                result += LineStringCuttingLib.__fromLineStringToSegments(
+                    _segm, cuttingDist)
         return GeoDataFrame([{'gid': i, 'geometry': g} for i, g in enumerate(result)], crs=gdf.crs)
+
+    @staticmethod
+    def lineStringShortener(gdf, start_dist, end_dist, normalized):
+        result = gdf.copy(deep=True)
+        result.geometry = result.geometry.apply(
+            lambda geom: substring(geom, start_dist, end_dist, normalized))
+        return result

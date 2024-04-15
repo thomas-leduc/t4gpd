@@ -3,7 +3,7 @@ Created on 18 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,9 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Point
-
+from geopandas import GeoDataFrame
+from shapely import Point
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -33,25 +32,23 @@ class BiggestInscribedDisc(AbstractGeoprocess):
     classdocs
     '''
 
-    def __init__(self, masksGdf, nsegm=8):
+    def __init__(self, masksGdf, nsegm=16):
         '''
         Constructor
         '''
         if not isinstance(masksGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(masksGdf, 'GeoDataFrame')
+            raise IllegalArgumentTypeException(masksGdf, "GeoDataFrame")
         self.masksGdf = masksGdf
-        self.spatialIdx = self.masksGdf.sindex
         self.nsegm = nsegm
 
     def runWithArgs(self, row):
         geom = row.geometry
         if not isinstance(geom, Point):
-            raise IllegalArgumentTypeException(geom, 'GeoDataFrame of Point')
+            raise IllegalArgumentTypeException(geom, "GeoDataFrame of Point")
 
-        buffDist = 40.0
-        minDist, _, _ = GeomLib.getNearestFeature(self.masksGdf, self.spatialIdx, geom, buffDist)
+        minDist, _, _ = GeomLib.getNearestFeature(self.masksGdf, geom)
 
         return {
-            'geometry': geom.buffer(minDist, self.nsegm),
-            'insc_diam': 2 * minDist
-            }
+            "geometry": geom.buffer(minDist, quad_segs=self.nsegm),
+            "insc_diam": 2 * minDist
+        }

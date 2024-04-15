@@ -62,7 +62,7 @@ class SkyViewFactorOnTopOfRoof(AbstractGeoprocess):
     def runWithArgs(self, row):
         viewpoint = row.geometry.centroid
 
-        enclosingFeatures = GeomLib.getEnclosingFeatures(self.buildings, self.spatialIndex, viewpoint)
+        enclosingFeatures = GeomLib.getEnclosingFeatures(self.buildings, viewpoint)
 
         if (0 == len(enclosingFeatures)):
             # OUTDOOR/STREET-LEVEL VIEWPOINT

@@ -21,11 +21,11 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame
-from shapely import Polygon
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.RayCasting4Lib import RayCasting4Lib
+# from t4gpd.commons.raycasting.PrepareMasksLib import PrepareMasksLib
+from t4gpd.commons.raycasting.RayCasting2DLib import RayCasting2DLib
 
 
 class STIsovistField2D_new(GeoProcess):
@@ -53,12 +53,16 @@ class STIsovistField2D_new(GeoProcess):
         self.buildings.geometry = self.buildings.geometry.apply(
             lambda g: g.buffer(0))
 
-        self.rays = RayCasting4Lib.get2DPanopticRaysGeoDataFrame(
+        # the following instruction seems to slow down processing
+        # self.buildings = PrepareMasksLib.getMasksAsBipoints(
+        #     buildings, oriented=True, make_valid=True)
+
+        self.rays = RayCasting2DLib.get2DPanopticRaysGeoDataFrame(
             viewpoints, rayLength, nRays)
         self.nRays = nRays
         self.withIndices = withIndices
 
     def run(self):
-        isovRaysField, isovField = RayCasting4Lib.multipleRayCast2D(
+        isovRaysField, isovField = RayCasting2DLib.multipleRayCast2D(
             self.buildings, self.rays, self.withIndices)
         return isovRaysField, isovField

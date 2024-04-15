@@ -3,7 +3,7 @@ Created on 11 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -22,14 +22,10 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import unittest
 
-from geopandas import clip, read_file
-from geopandas.datasets import get_path
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Polygon
+from geopandas import GeoDataFrame
+from shapely import box
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.morph.STGrid import STGrid
-
-import matplotlib.pyplot as plt
 
 
 class STGridTest(unittest.TestCase):
@@ -42,6 +38,8 @@ class STGridTest(unittest.TestCase):
         self.countries = None
 
     def __plot(self, inputGdf, grid):
+        import matplotlib.pyplot as plt
+
         # grid.to_file('/tmp/grid.shp')
         basemap = inputGdf.boundary.plot(color='red', linewidth=1.0)
         if (0 < len(grid['Point' == grid.geom_type])):
@@ -131,6 +129,19 @@ class STGridTest(unittest.TestCase):
 
     def testRunBuildings(self):
         self.assertEqual(57, len(self.buildings), "Buildings features count")
+
+    def testRunEmpty(self):
+        buildings = GeoDataFrame({"geometry": []})
+        roi = GeoDataFrame({"geometry": [box(0, 0, 10, 10)]})
+        result = STGrid(buildings, dx=5, dy=None, indoor=False,
+                        intoPoint=False, withDist=True, roi=roi).run()
+
+        self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(4, len(result), "Count rows")
+        self.assertEqual(8, len(result.columns), "Count columns")
+        for _, row in result.iterrows():
+            self.assertEqual(float("inf"), row.dist_to_ctr,
+                             "Test dist_to_ctr attr.")
 
 
 if __name__ == "__main__":

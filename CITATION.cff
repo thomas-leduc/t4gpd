@@ -5,7 +5,7 @@ authors:
    given-names: "Thomas"
    orcid: "https://orcid.org/0000-0002-5728-9787"
 title: "t4gpd"
-version: 0.8.0
+version: 0.9.0
 doi: 10.5281/zenodo.5771916
-date-released: 2023-10-13
+date-released: 2024-04-15
 url: "https://pypi.org/project/t4gpd/"

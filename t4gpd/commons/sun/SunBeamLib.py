@@ -3,7 +3,7 @@ Created on 28 avr. 2022
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -58,5 +58,4 @@ class SunBeamLib(object):
         R = (maxElevation - ptA.z) / tan(alti)
         ptB = Point([ptA.x + R * cos(azim), ptA.y + R * sin(azim), ptA.z + R * sin(alti)])
 
-        # return RayCasting2Lib.areCovisible(ptA, ptB, masks, maskElevationFieldname, masksSIdx)
         return RayCasting3Lib.areCovisibleIn3D(ptA, ptB, masks, maskElevationFieldname, masksSIdx)

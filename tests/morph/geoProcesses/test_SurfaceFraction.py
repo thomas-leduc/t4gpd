@@ -24,6 +24,7 @@ import unittest
 
 from geopandas.geodataframe import GeoDataFrame
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+from t4gpd.demos.GeoDataFrameDemos2 import GeoDataFrameDemos2
 from t4gpd.morph.STGrid import STGrid
 from t4gpd.morph.STPolygonize import STPolygonize
 from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
@@ -33,52 +34,40 @@ from t4gpd.morph.geoProcesses.SurfaceFraction import SurfaceFraction
 class SurfaceFractionTest(unittest.TestCase):
 
     def setUp(self):
-        self.buildings = GeoDataFrameDemos.ensaNantesBuildings()
-        self.roads = GeoDataFrameDemos.ensaNantesRoads()
+        self.buildings = GeoDataFrameDemos2.irisMadeleineInNantesBuildings()
+        self.grid = GeoDataFrameDemos2.irisMadeleineInNantesINSEEGrid()
 
     def tearDown(self):
         pass
 
-    def testRun1(self):
-        blocks = STPolygonize(self.roads).run()
+    def __plot(self, result):
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
+        self.buildings.plot(ax=ax, color="grey")
+        self.grid.boundary.plot(ax=ax, color="black")
+        result.plot(ax=ax, column="surf_ratio", legend=True,
+                    alpha=0.35, cmap="viridis")
+        result.apply(lambda x: ax.annotate(
+            text=f"{x.surf_ratio:.2f}", xy=x.geometry.centroid.coords[0],
+            color="red", size=12, ha="center"), axis=1)
+        ax.axis("off")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
 
+    def testRun(self):
         op = SurfaceFraction(self.buildings, buffDist=None)
-        result = STGeoProcess(op, blocks).run()
+        result = STGeoProcess(op, self.grid).run()
 
-        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(6, len(result), 'Count rows')
-        self.assertEqual(3, len(result.columns), 'Count columns')
+        self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(result.crs, self.grid.crs, "Verify result CRS")
+        self.assertEqual(len(self.grid), len(result), "Count rows")
+        self.assertEqual(len(self.grid.columns)+1,
+                         len(result.columns), "Count columns")
         for _, row in result.iterrows():
-            self.assertTrue(0.0 <= row['surf_ratio'] <= 1.0, 'Test "surf_ratio" attribute value')
-        '''
-        import matplotlib.pyplot as plt
-        _, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
-        result.plot(ax=basemap, column='surf_ratio', legend=True, cmap='cividis')
-        self.buildings.plot(ax=basemap, color='lightgrey')
-        self.roads.plot(ax=basemap, color='black')
-        plt.show()
-        '''
-
-    def testRun2(self):
-        sensors = STGrid(self.buildings, 50, dy=None, indoor=False, intoPoint=True).run()
-
-        op = SurfaceFraction(self.buildings, buffDist=30.0)
-        result = STGeoProcess(op, sensors).run()
-
-        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(15, len(result), 'Count rows')
-        self.assertEqual(8, len(result.columns), 'Count columns')
-        for _, row in result.iterrows():
-            self.assertTrue(0.0 <= row['surf_ratio'] <= 1.0, 'Test "surf_ratio" attribute value')
-        '''
-        import matplotlib.pyplot as plt
-        _, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
-        self.buildings.plot(ax=basemap, color='lightgrey')
-        self.roads.plot(ax=basemap, color='black')
-        result.plot(ax=basemap, column='surf_ratio', legend=True, cmap='cividis')
-        plt.show()
-        '''
-        # result.to_file('/tmp/xxx.shp')
+            self.assertTrue(0.0 <= row["surf_ratio"] <=
+                            1.0, "Test 'surf_ratio' attribute value")
+        self.__plot(result)
 
 
 if __name__ == "__main__":

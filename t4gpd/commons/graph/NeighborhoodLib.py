@@ -3,7 +3,7 @@ Created on 22 nov. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,88 +20,60 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-import copy
-
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Point
-
-from t4gpd.commons.GeomLib import GeomLib
-from t4gpd.commons.graph.AbstractUrbanGraphLib import AbstractUrbanGraphLib
-from t4gpd.commons.graph.ShortestPathLib import ShortestPathLib
+from geopandas import GeoDataFrame
+from shapely import line_interpolate_point, LineString, Point, union_all
+from t4gpd.commons.ArrayCoding import ArrayCoding
+from t4gpd.commons.graph.UrbanGraphFactory import UrbanGraphFactory
 
 
-class NeighborhoodLib(AbstractUrbanGraphLib):
+class NeighborhoodLib(object):
     '''
     classdocs
     '''
+    @staticmethod
+    def hash_edge(id1, id2):
+        str_hash = ArrayCoding.encode([int(min(id1, id2)), int(max(id1, id2))])
+        return str_hash
 
     @staticmethod
     def neighborhood(roads, fromPoint, maxDist):
-        roi = fromPoint.buffer(maxDist, 1).bounds
-        mygraph = ShortestPathLib(roads, roi)
+        # WRONG IDEA:
+        # roi = fromPoint.buffer(maxDist, cap_style=CAP_STYLE.round)
+        # roi = GeoDataFrame([{"geometry": roi}], crs=roads.crs)
+        # ug = UrbanGraphFactory.create(roads, method="networkx", roi=roi)
+        ug = UrbanGraphFactory.create(roads, method="networkx")
+        sourceIdx = ug._add_new_point(fromPoint)
 
-        str_coord = AbstractUrbanGraphLib.hashCoord([fromPoint.x, fromPoint.y])
-        if not str_coord in mygraph.ciVertices:
-            _, nearestLine = AbstractUrbanGraphLib.addEndPoint(
-                roads, roads.sindex, mygraph.graph, mygraph.ciVertices, mygraph.icVertices, mygraph.edges, fromPoint)
+        # Identification of full edges and vertices in the neighborhood
+        burned_vertices, burned_edges = {sourceIdx: maxDist}, {}
+        for vtxIdx, vtxGeom in ug.icVertices.items():
+            geom = Point(vtxGeom)
+            if (maxDist >= fromPoint.distance(geom)):
+                path = ug.shortest_path(fromPoint, geom)
+                if (0 < len(path)):
+                    pathVertices = ArrayCoding.decode(path.path.squeeze())
+                    pathLen = path.geometry.squeeze().length
 
-            _foo = lambda coord: mygraph.ciVertices[AbstractUrbanGraphLib.hashCoord(coord)]
-            first, last = _foo(nearestLine.coords[0]), _foo(nearestLine.coords[-1])
-            if (first in mygraph.edges) and (last in mygraph.edges[first]):
-                del(mygraph.edges[first][last])
-            if (last in mygraph.edges) and (first in mygraph.edges[last]):
-                del(mygraph.edges[last][first])
+                    if (maxDist >= pathLen):
+                        burned_vertices[vtxIdx] = maxDist - pathLen
+                        for i in range(1, len(pathVertices)):
+                            burned_edges[NeighborhoodLib.hash_edge(
+                                pathVertices[i-1], pathVertices[i]
+                            )] = True
 
-        _icVertices = copy.deepcopy(mygraph.icVertices)
+        rows = []
+        for str_hash in burned_edges.keys():
+            id1, id2 = ArrayCoding.decode(str_hash, outputType=int)
+            rows.append(LineString([ug.icVertices[id1], ug.icVertices[id2]]))
 
-        # Identification of vertices in the neighborhood
-        candidates = dict()
-        for _vtxIdx, _vtxGeom in _icVertices.items():
-            _geom = Point(_vtxGeom)
-            if (maxDist >= fromPoint.distance(_geom)):
-                pathGeom, pathLen = mygraph.shortestPath(fromPoint, _geom)
-                if (pathGeom is not None) and (maxDist >= pathLen):
-                    candidates[_vtxIdx] = maxDist - pathLen
+        # Identification of remaining edges in the neighborhood
+        for id1, remaining_dist in burned_vertices.items():
+            for id2 in ug.nx_graph.adj[id1].keys():
+                str_hash = NeighborhoodLib.hash_edge(id1, id2)
+                if not str_hash in burned_edges:
+                    ls = LineString([ug.icVertices[id1], ug.icVertices[id2]])
+                    rp = line_interpolate_point(ls, remaining_dist)
+                    ls = LineString([ug.icVertices[id1], rp])
+                    rows.append(ls)
 
-        # Identification of edges in the neighborhood
-        _burnedEdges, rows, gid = dict(), [], 0
-        for _vtxIdx in candidates.keys():
-            _remainingDist = candidates[_vtxIdx]
-            for _neighborIdx in mygraph.edges[_vtxIdx].keys():
-                _hash = '%d_%d' % (min(_neighborIdx, _vtxIdx), max(_neighborIdx, _vtxIdx))
-                if _hash not in _burnedEdges:
-                    _edgeItem = mygraph.edges[_vtxIdx][_neighborIdx]
-                    if (_remainingDist >= _edgeItem['length']):
-                        rows.append({ 'gid': gid, 'geometry': _edgeItem['geometry'], 'length': _edgeItem['length']})
-                        _burnedEdges[_hash] = None
-                        gid += 1
-
-                    elif (_neighborIdx in candidates):
-                        if ((candidates[_neighborIdx] >= _edgeItem['length']) or
-                            (_remainingDist + candidates[_neighborIdx] >= _edgeItem['length'])):
-                            rows.append({ 'gid': gid, 'geometry': _edgeItem['geometry'], 'length': _edgeItem['length']})
-                            _burnedEdges[_hash] = None
-                            gid += 1
-                        else:
-                            tmp = GeomLib.cutsLineStringByCurvilinearDistance(_edgeItem['geometry'], _remainingDist)
-                            rows.append({ 'gid': gid, 'geometry': tmp[0], 'length': _remainingDist})
-                            _burnedEdges[_hash] = None
-                            gid += 1
-
-                            _otherEdgeItem = mygraph.edges[_neighborIdx][_vtxIdx]
-                            tmp = GeomLib.cutsLineStringByCurvilinearDistance(_otherEdgeItem['geometry'], candidates[_neighborIdx])
-                            rows.append({ 'gid': gid, 'geometry': tmp[0], 'length': candidates[_neighborIdx]})
-                            gid += 1
-
-                    else:
-                        tmp = GeomLib.cutsLineStringByCurvilinearDistance(_edgeItem['geometry'], _remainingDist)
-                        rows.append({ 'gid': gid, 'geometry': tmp[0], 'length': _remainingDist})
-                        _burnedEdges[_hash] = None
-                        gid += 1
-        '''
-        rows2 = []
-        for vtxIdx in candidates.keys():
-            rows2.append({'gid':vtxIdx, 'remain_dist': candidates[vtxIdx], 'geometry': Point(mygraph.icVertices[vtxIdx])})
-        return GeoDataFrame(rows, crs=roads.crs), GeoDataFrame(rows2, crs=roads.crs)
-        '''
-        return GeoDataFrame(rows, crs=roads.crs)
+        return GeoDataFrame([{"geometry": union_all(rows)}], crs=roads.crs)

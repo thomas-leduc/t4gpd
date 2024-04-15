@@ -3,7 +3,7 @@ Created on 31 aug. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,7 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
+from pandas import read_csv
 from shapely.wkt import loads
 from t4gpd.commons.CSVLib import CSVLib
 from t4gpd.commons.GeoProcess import GeoProcess
@@ -42,19 +43,15 @@ class CSVWKTReader(GeoProcess):
         self.crs = srcEpsgCode
         self.dstEpsgCode = dstEpsgCode
         self.decimalSep = decimalSep
-        
+
     def run(self):
-        _rows = CSVLib.read(self.inputFile, self.fieldSep, self.decimalSep)
-
-        rows = []
-        for row in _rows:
-            row['geometry'] = loads(row[self.geomFieldName])
-            rows.append(row)
-
-        outputGdf = GeoDataFrame(rows, crs=self.crs)
-        if 'geometry' != self.geomFieldName:
-            outputGdf = outputGdf.drop(self.geomFieldName, axis=1)
-
+        df = read_csv(self.inputFile, sep=self.fieldSep,
+                      decimal=self.decimalSep)
+        df.rename(columns={fieldname: fieldname.strip()
+                  for fieldname in df.columns}, inplace=True)
+        df.rename(columns={self.geomFieldName: "geometry"}, inplace=True)
+        df.geometry = df.geometry.apply(lambda v: loads(v))
+        gdf = GeoDataFrame(df, crs=self.crs)
         if not self.dstEpsgCode is None:
-            outputGdf = outputGdf.to_crs(self.dstEpsgCode)
-        return outputGdf
+            return gdf.to_crs(self.dstEpsgCode)
+        return gdf

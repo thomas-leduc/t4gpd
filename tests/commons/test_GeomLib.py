@@ -7,6 +7,7 @@ import unittest
 
 from geopandas import GeoDataFrame
 from numpy import pi
+from pandas import Series
 from shapely.geometry import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 from shapely.wkt import loads
@@ -118,16 +119,22 @@ class GeomLibTest(unittest.TestCase):
 
     def testGetEnclosingFeatures(self):
         buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
-        spatialIndex = buildings.sindex
-
-        result = GeomLib.getEnclosingFeatures(buildings, spatialIndex, Point((355148, 6689335)))
+        result = GeomLib.getEnclosingFeatures(buildings, Point((355148, 6689335)))
         self.assertIsInstance(result, list, 'Test if result is a list')
         self.assertEqual(1, len(result), 'Test result length')
         self.assertEqual('BATIMENT0000000302931268', result[0]['ID'], 'Test ID attribute')
         self.assertEqual(21.7, result[0]['HAUTEUR'], 'Test HAUTEUR attribute')
 
-        result = GeomLib.getEnclosingFeatures(buildings, spatialIndex, Point((355160, 6689335)))
+        result = GeomLib.getEnclosingFeatures(buildings, Point((355160, 6689335)))
         self.assertEqual([], result, 'Test if result is an empty list')
+
+    def testGetNearestFeature(self):
+        buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
+        result = GeomLib.getNearestFeature(buildings, Point((355160, 6689335)))
+        self.assertIsInstance(result, list, "Test if result is a list")
+        self.assertAlmostEqual(2.78028, result[0], None, "Test minDist", 1e-3)
+        self.assertIsInstance(result[1], Point, "Test if nearestPoint is a Shapely Point")
+        self.assertIsInstance(result[2], Series, "Test if nearestRow is a Series")
 
     def testGetInteriorPoint(self):
         result = GeomLib.getInteriorPoint(self.polygon)

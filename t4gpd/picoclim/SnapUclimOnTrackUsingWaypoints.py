@@ -144,24 +144,28 @@ from t4gpd.picoclim.CampbellSciReader import CampbellSciReader
 from t4gpd.picoclim.UClimGuidingReader import UClimGuidingReader
 from t4gpd.picoclim.UClimTrackWaypointsReader import UClimTrackWaypointsReader
 
-dir1 = "/home/tleduc/prj/uclim/flask/static/uploads/1686227346623113409"
-dir2 = "/home/tleduc/prj/uclim/data/nantes_commerce_feydeau"
-dfUclim = UClimGuidingReader(f"{dir1}/uclimLOC_nantes_commerce_feydeau_20230607T1228.txt").run()
-tracks, waypoints = UClimTrackWaypointsReader(f"{dir2}/nantes_commerce_feydeau_track1.csv").run()
-dfMob = CampbellSciReader(f"{dir1}/CR1000XSeries_TwoSec.dat").run() 
-# r0, r1, r2, r3 = SnapUclimOnTrackUsingWaypoints(dfUclim, dfMob, tracks, waypoints).run()
-r3 = SnapUclimOnTrackUsingWaypoints(dfUclim, dfMob, tracks, waypoints).run()
+dir1 = "/home/tleduc/prj/uclim/data/nantes_commerce_feydeau"
+dir2 = f"{dir1}/nantes_commerce_feydeau_20230607_track1_122846/raw_data"
+
+tracks, waypoints = UClimTrackWaypointsReader(f"{dir1}/nantes_commerce_feydeau_track1.csv").run()
+dfUclim = UClimGuidingReader(f"{dir2}/uclimLOC_nantes_commerce_feydeau_20230607T1228.txt").run()
+dfMob = CampbellSciReader(f"{dir2}/CR1000XSeries_TwoSec.dat").run() 
+
+r = SnapUclimOnTrackUsingWaypoints(dfUclim, dfMob, tracks, waypoints).run()
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
-waypoints.plot(ax=ax, marker="P", color="red")
-r3.plot(ax=ax, marker="+", color="black")
 tracks.plot(ax=ax, color="red", linewidth=0.3)
+r.plot(ax=ax, marker="+", color="grey")
+waypoints.plot(ax=ax, marker="o", color="red")
+waypoints.apply(lambda x: ax.annotate(
+	text=x.id, xy=x.geometry.coords[0],
+	color="black", size=16, ha="left"), axis=1)
 ax.axis("off")
 fig.tight_layout()
 plt.show()
 
 waypoints.to_file("/tmp/1.gpkg", layer="waypoints")
 tracks.to_file("/tmp/1.gpkg", layer="tracks")
-r3.to_file("/tmp/1.gpkg", layer="measures")
+r.to_file("/tmp/1.gpkg", layer="measures")
 """

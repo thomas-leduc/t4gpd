@@ -22,6 +22,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from functools import reduce
 
+from geopandas import GeoDataFrame, overlay, sjoin_nearest
 from numpy import cos, sin, sqrt, pi
 from pandas.core.common import flatten
 from shapely.geometry import CAP_STYLE, GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
@@ -177,15 +178,11 @@ class GeomLib(object):
         return result
 
     @staticmethod
-    def getEnclosingFeatures(inputGdf, inputSpatialIndex, point):
-        result = []
-        ids = list(inputSpatialIndex.intersection(point.bounds))
-        for _id in ids:
-            _feature = inputGdf.loc[_id]
-            _geom = _feature.geometry
-            if point.within(_geom):
-                result.append(_feature)
-        return result
+    def getEnclosingFeatures(inputGdf, point):
+        otherGdf = GeoDataFrame({"geometry": [point]}, crs=inputGdf.crs)
+        result = overlay(inputGdf, otherGdf,
+                         how="intersection", keep_geom_type=False)
+        return result.to_dict("records")
 
     @staticmethod
     def getCircumcircle(a, b, c):
@@ -278,26 +275,15 @@ class GeomLib(object):
         return [(a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0]
 
     @staticmethod
-    def getNearestFeature(inputGdf, inputSpatialIndex, point, buffDist, incScale=sqrt(2)):
+    def getNearestFeature(inputGdf, point):
         if not isinstance(point, Point):
-            raise IllegalArgumentTypeException(point, 'Point')
+            raise IllegalArgumentTypeException(point, "Point")
 
-        minDist, nearestPoint, nearestRow = float('inf'), None, None
-
-        ids = []
-        while (0 == len(ids)):
-            ids = list(inputSpatialIndex.intersection(
-                point.buffer(buffDist, -1).bounds))
-            buffDist *= incScale
-
-        for _id in ids:
-            row = inputGdf.loc[_id]
-            rowGeom = row.geometry
-            dist = point.distance(rowGeom)
-            if (dist < minDist):
-                minDist = dist
-                _, nearestPoint = nearest_points(point, rowGeom)
-                nearestRow = row
+        otherGdf = GeoDataFrame({"geometry": [point]}, crs=inputGdf.crs)
+        tmp = sjoin_nearest(inputGdf, otherGdf, distance_col="dist_to_pt")
+        nearestRow = tmp.loc[tmp.dist_to_pt.idxmin()]
+        minDist = nearestRow.dist_to_pt
+        nearestPoint = nearest_points(point, nearestRow.geometry)[1]
 
         return [minDist, nearestPoint, nearestRow]
 

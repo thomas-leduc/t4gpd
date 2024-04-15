@@ -94,7 +94,9 @@ class TmrtRadiometer(AbstractThermalComfortIndice):
         # calculation of the mean radiant temperature [C]
         T_mrt = ((S_rad / (ConstantsLib.epsi_p * ConstantsLib.sigma_B)) ** (0.25) - ConstantsLib.T_kel)
 
-        # T_mrt splitted in up, down and lateral IR and SR according to Middel and Krayenhoff (2019) and Kantor et al. (2016)
+        # T_mrt splitted in up, down and lateral IR and SR according to Middel and 
+        # Krayenhoff (2019, https://doi.org/10.1016/j.scitotenv.2019.06.085) and
+        # Kantor et al. (2016, https://doi.org/10.1515/geo-2016-0021)
         _ratio = T_mrt / S_rad
 
         T_mrt_SRUp = _ratio * _SRUp

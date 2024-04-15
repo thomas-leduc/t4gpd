@@ -108,7 +108,7 @@ class GridLib(AbstractGridLib):
         rows = []
         for c, x in enumerate(linspace(x0, x0 + ncols * dx, ncols, endpoint=False)):
             xpp = x+dx
-            for r, y in enumerate(linspace(y0, y0 + nrows * dx, nrows, endpoint=False)):
+            for r, y in enumerate(linspace(y0, y0 + nrows * dy, nrows, endpoint=False)):
                 ypp = y+dy
                 rows.append({
                     "gid": r * ncols + c,
@@ -117,7 +117,7 @@ class GridLib(AbstractGridLib):
                     "geometry": box(x, y, xpp, ypp)
                 })
         grid = GeoDataFrame(rows, crs=gdf.crs)
-        grid2 = GridLib.distanceToNearestContour(gdf, grid)
+        grid2 = GridLib.getDistanceToNearestContour(gdf, grid)
         return grid2
 
     @staticmethod
@@ -158,7 +158,7 @@ class GridLib(AbstractGridLib):
         rows = []
         for c, x in enumerate(linspace(x0, x0 + ncols * dx, ncols, endpoint=False)):
             xpp = x+dx
-            for r, y in enumerate(linspace(y0, y0 + nrows * dx, nrows, endpoint=False)):
+            for r, y in enumerate(linspace(y0, y0 + nrows * dy, nrows, endpoint=False)):
                 ypp = y+dy
                 neighbors4, neighbors8 = GridLib.__neighbors_4_8(
                     nrows, ncols, r, c)
@@ -176,17 +176,18 @@ class GridLib(AbstractGridLib):
                     "geometry": box(x, y, xpp, ypp)
                 })
         grid = GeoDataFrame(rows, crs=gdf.crs)
-        grid2 = GridLib.distanceToNearestContour(gdf, grid)
-        return grid2
+        return grid
 
     @staticmethod
-    def distanceToNearestContour(gdf, grid):
-        gdf = gdf.copy(deep=True)
-        gdf.geometry = gdf.geometry.apply(
+    def getDistanceToNearestContour(gdf, grid):
+        gdf2 = gdf.copy(deep=True)
+        gdf2.geometry = gdf2.geometry.apply(
             lambda geom: MultiLineString(GeomLib.toListOfLineStrings(geom)))
+        if "dist_to_ctr" in grid:
+            grid.drop(columns="dist_to_ctr", inplace=True)
         grid2 = sjoin_nearest(
-            grid, gdf[["geometry"]], how="inner", distance_col="dist_to_ctr", max_distance=None)
-        if ("index_right" not in gdf) and ("index_right" in grid2):
+            grid, gdf2[["geometry"]], how="inner", distance_col="dist_to_ctr", max_distance=None)
+        if ("index_right" not in gdf2) and ("index_right" in grid2):
             grid2.drop(columns="index_right", inplace=True)
         grid2.drop_duplicates(
             subset=["gid"], keep="first", ignore_index=True, inplace=True)
@@ -325,5 +326,5 @@ class GridLib(AbstractGridLib):
                             "geometry": box(x, y, xpp, ypp)
                         })
         grid2 = GeoDataFrame(rows, crs=gdf.crs)
-        grid3 = GridLib.distanceToNearestContour(gdf, grid2)
+        grid3 = GridLib.getDistanceToNearestContour(gdf, grid2)
         return grid3

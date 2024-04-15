@@ -3,7 +3,7 @@ Created on 31 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,8 +20,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-from shapely.ops import polygonize, unary_union
+from geopandas import GeoDataFrame
+from shapely import union_all
+from shapely.ops import polygonize
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -37,19 +38,19 @@ class STPolygonize(GeoProcess):
         Constructor
         '''
         if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
+            raise IllegalArgumentTypeException(inputGdf, "GeoDataFrame")
         self.inputGdf = inputGdf
-        
+
     def run(self):
         contours = []
         for geom in self.inputGdf.geometry:
             contours += GeomLib.toListOfLineStrings(geom)
 
         # Contour union
-        contourUnion = unary_union(contours)
+        contourUnion = union_all(contours)
         # Contour network polygonization
         patches = polygonize(contourUnion)
 
-        rows = [{'gid': i, 'geometry': patch} for i, patch in enumerate(patches)]
+        rows = [{"gid": i, "geometry": patch}
+                for i, patch in enumerate(patches)]
         return GeoDataFrame(rows, crs=self.inputGdf.crs)
-

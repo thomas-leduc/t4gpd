@@ -2,6 +2,23 @@
 Created on 17 juin 2020
 
 @author: tleduc
+
+Copyright 2020-2023 Thomas Leduc
+
+This file is part of t4gpd.
+
+t4gpd is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+t4gpd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import unittest
 
@@ -11,7 +28,6 @@ from shapely.geometry import LineString, MultiLineString, Point, Polygon
 from shapely.wkt import loads
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.isovist.STIsovistField2D import STIsovistField2D
-from t4gpd.isovist.STIsovistField2D_new import STIsovistField2D_new
 from t4gpd.morph.STGrid import STGrid
 from t4gpd.morph.STPointsDensifier2 import STPointsDensifier2
 
@@ -46,38 +62,38 @@ class STIsovistField2DTest(unittest.TestCase):
         for result in [isovRaysField, isovField]:
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
             self.assertEqual(result.crs, self.buildings.crs, "Verify CRS")
-            self.assertEqual(15, len(result), "Count rows")
+            self.assertEqual(len(self.viewpoints), len(result), "Count rows")
             self.assertEqual(2 + len(self.viewpoints.columns),
-                             len(result.columns), 'Count columns')
+                             len(result.columns), "Count columns")
 
         approxRayLength = rayLength + 1e-6
         for _, row in isovRaysField.iterrows():
             self.assertIsInstance(
-                row.geometry, MultiLineString, 'Is a GeoDataFrame of MultiLineString')
-            self.assertEqual(0, row['indoor'], 'indoor attribute values')
+                row.geometry, MultiLineString, "Is a GeoDataFrame of MultiLineString")
+            self.assertEqual(0, row["indoor"], "indoor attribute values")
             self.assertEqual(nRays, len(row.geometry.geoms),
-                             'Verify number of rays')
+                             "Verify number of rays")
             self.assertTrue(all(
-                [0 <= g.length <= approxRayLength for g in row.geometry.geoms]), 'Verify ray lengths')
+                [0 <= g.length <= approxRayLength for g in row.geometry.geoms]), "Verify ray lengths")
             self.assertIsInstance(
-                loads(row['viewpoint']), Point, 'Test viewpoint attribute')
+                loads(row["viewpoint"]), Point, "Test viewpoint attribute")
             self.assertIsInstance(
-                loads(row['vect_drift']), LineString, 'Test vect_drift attribute')
-            self.assertEqual(loads(row['viewpoint']).coords[0], loads(row['vect_drift']).coords[0],
-                             'Test viewpoint and vect_drift attribute values')
+                loads(row["vect_drift"]), LineString, "Test vect_drift attribute")
+            self.assertEqual(loads(row["viewpoint"]).coords[0], loads(row["vect_drift"]).coords[0],
+                             "Test viewpoint and vect_drift attribute values")
 
         for _, row in isovField.iterrows():
             self.assertIsInstance(row.geometry, Polygon,
-                                  'Is a GeoDataFrame of Polygon')
-            self.assertEqual(0, row['indoor'], 'indoor attribute values')
+                                  "Is a GeoDataFrame of Polygon")
+            self.assertEqual(0, row["indoor"], "indoor attribute values")
             self.assertTrue(0 <= row.geometry.area <= pi *
-                            rayLength ** 2, 'Verify isovist field areas')
+                            rayLength ** 2, "Verify isovist field areas")
             self.assertIsInstance(
-                loads(row['viewpoint']), Point, 'Test viewpoint attribute')
+                loads(row["viewpoint"]), Point, "Test viewpoint attribute")
             self.assertIsInstance(
-                loads(row['vect_drift']), LineString, 'Test vect_drift attribute')
-            self.assertEqual(loads(row['viewpoint']).coords[0], loads(row['vect_drift']).coords[0],
-                             'Test viewpoint and vect_drift attribute values')
+                loads(row["vect_drift"]), LineString, "Test vect_drift attribute")
+            self.assertEqual(loads(row["viewpoint"]).coords[0], loads(row["vect_drift"]).coords[0],
+                             "Test viewpoint and vect_drift attribute values")
 
         # self.__plot(self.buildings, self.viewpoints, isovField, isovRaysField)
 
@@ -100,20 +116,20 @@ class STIsovistField2DTest(unittest.TestCase):
             self.assertEqual(result.crs, buildings.crs, "Verify CRS")
             self.assertEqual(16, len(result), "Count rows")
             self.assertEqual(2 + len(sensors.columns),
-                             len(result.columns), 'Count columns')
+                             len(result.columns), "Count columns")
 
         # self.__plot(buildings, sensors, isovField, isovRaysField)
 
     def testRun3(self):
         buildings = GeoDataFrame([
-            {'geometry': loads(
-                'POLYGON ((50 80, 60 80, 60 70, 50 70, 50 80))')},
-            {'geometry': loads(
-                'POLYGON ((0 100, 10 100, 10 10, 90 10, 90 30, 60 30, 60 60, 70 60, 70 40, 90 40, 90 90, 80 90, 80 80, 70 80, 70 90, 30 90, 30 50, 20 50, 20 100, 100 100, 100 0, 0 0, 0 100))')},
+            {"geometry": loads(
+                "POLYGON ((50 80, 60 80, 60 70, 50 70, 50 80))")},
+            {"geometry": loads(
+                "POLYGON ((0 100, 10 100, 10 10, 90 10, 90 30, 60 30, 60 60, 70 60, 70 40, 90 40, 90 90, 80 90, 80 80, 70 80, 70 90, 30 90, 30 50, 20 50, 20 100, 100 100, 100 0, 0 0, 0 100))")},
         ])
         for x, y in [(30, 80), (40, 70), (60, 70)]:
             sensors = GeoDataFrame([
-                {'geometry': loads(f'POINT ({x} {y})')},
+                {"geometry": loads(f"POINT ({x} {y})")},
             ])
 
             nRays, rayLength = 64, 100.0
@@ -125,7 +141,7 @@ class STIsovistField2DTest(unittest.TestCase):
                     result, GeoDataFrame, "Is a GeoDataFrame")
                 self.assertEqual(result.crs, buildings.crs, "Verify CRS")
                 self.assertEqual(1, len(result), "Count rows")
-                self.assertEqual(3, len(result.columns), 'Count columns')
+                self.assertEqual(3, len(result.columns), "Count columns")
 
             # self.__plot(buildings, sensors, isovField, isovRaysField)
 

@@ -20,13 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-import rasterio
 from geopandas import GeoDataFrame
-from numpy import asarray, ndarray
+from numpy import asarray, dtype, ndarray
 from rasterio.io import DatasetReader
-from rasterio.shutil import copy
 from rasterio.transform import Affine
-from tempfile import TemporaryDirectory
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.raster.AbstractRasterGeoProcess import AbstractRasterGeoProcess
 
@@ -36,14 +33,14 @@ class RTFromArrayToRaster(AbstractRasterGeoProcess):
     classdocs
     '''
 
-    def __init__(self, array, rasterOrRoi, debug=False):
+    def __init__(self, array, rasterOrRoi, ndv=-9999, debug=False):
         '''
         Constructor
         '''
         if not isinstance(array, (list, ndarray, tuple)):
             raise IllegalArgumentTypeException(
                 array, "list, numpy ndarray, or tuple")
-        self.array = asarray(array).astype("float32")
+        self.array = RTFromArrayToRaster.__asarray(array)
         if (1 == self.array.ndim):
             self.array = self.array.reshape(1, -1)
         if (2 != self.array.ndim):
@@ -54,16 +51,26 @@ class RTFromArrayToRaster(AbstractRasterGeoProcess):
             raise IllegalArgumentTypeException(
                 rasterOrRoi, "DatasetReader or GeoDataFrame")
         self.rasterOrRoi = rasterOrRoi
+        self.ndv = ndv
         self.debug = debug
 
     @staticmethod
-    def __extract_metadata_from_DatasetReader(array, raster):
-        if (array.shape[0] != raster.height):
+    def __asarray(array):
+        array = asarray(array)
+        if (array.dtype == dtype(float)):
+            return array.astype("float32")
+        elif (array.dtype == dtype(int)):
+            # Conversion to uint16, int16, int32, etc. is automatic
+            return array.astype("uint8")
+        raise IllegalArgumentTypeException(array, "Array of int or float values")
+
+    def __extract_metadata_from_DatasetReader(self, raster):
+        if (self.array.shape[0] != raster.height):
             raise Exception(
-                f"array.shape[0] ({array.shape[0]}) <> raster.height ({raster.height})!")
-        if (array.shape[1] != raster.width):
+                f"array.shape[0] ({self.array.shape[0]}) <> raster.height ({raster.height})!")
+        if (self.array.shape[1] != raster.width):
             raise Exception(
-                f"array.shape[1] ({array.shape[1]}) <> raster.width ({raster.width})!")
+                f"array.shape[1] ({self.array.shape[1]}) <> raster.width ({raster.width})!")
 
         out_meta = raster.meta.copy()
         out_meta.update({
@@ -73,15 +80,14 @@ class RTFromArrayToRaster(AbstractRasterGeoProcess):
             "transform": raster.transform,
             "crs": raster.crs,
             "count": 1,
-            "dtype": array.dtype,
-            "nodata": -9999
+            "dtype": self.array.dtype,
+            "nodata": self.ndv
         })
         return out_meta
 
-    @staticmethod
-    def __extract_metadata_from_GeoDataFrame(array, roi):
+    def __extract_metadata_from_GeoDataFrame(self, roi):
         minx, miny, maxx, maxy = roi.total_bounds
-        nrows, ncols = array.shape
+        nrows, ncols = self.array.shape
 
         xres = (maxx-minx) / ncols
         yres = (maxy-miny) / nrows
@@ -95,8 +101,8 @@ class RTFromArrayToRaster(AbstractRasterGeoProcess):
             "transform": transform,
             "crs": roi.crs,
             "count": 1,
-            "dtype": array.dtype,
-            "nodata": -9999,
+            "dtype": self.array.dtype,
+            "nodata": self.ndv,
             # "blockxsize": 1,
             # "blockysize": 1,
             # "compress": "lzw",
@@ -105,13 +111,21 @@ class RTFromArrayToRaster(AbstractRasterGeoProcess):
 
     def run(self):
         if isinstance(self.rasterOrRoi, DatasetReader):
-            out_meta = RTFromArrayToRaster.__extract_metadata_from_DatasetReader(
-                self.array, self.rasterOrRoi)
+            out_meta = self.__extract_metadata_from_DatasetReader(
+                self.rasterOrRoi)
 
         elif isinstance(self.rasterOrRoi, GeoDataFrame):
-            out_meta = RTFromArrayToRaster.__extract_metadata_from_GeoDataFrame(
-                self.array, self.rasterOrRoi)
+            out_meta = self.__extract_metadata_from_GeoDataFrame(
+                self.rasterOrRoi)
 
+        #         print(f"""\theight / nrows = {out_meta['height']}
+        # \twidth / ncols  = {out_meta['width']}
+        # \tminx           = {out_meta['transform'][2]}
+        # \tmaxy           = {out_meta['transform'][5]}
+        # \txres           = {out_meta['transform'][0]}
+        # \tyres           = {out_meta['transform'][4]}
+        # \tndv            = {out_meta['nodata']}
+        # """)
         result = self._write_and_load(self.array, out_meta, self.debug)
         return result
 

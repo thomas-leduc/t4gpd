@@ -3,7 +3,7 @@ Created on 17 sept. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
@@ -36,12 +36,12 @@ class IdentifyTheClosestPolyline(AbstractGeoprocess):
         Constructor
         '''
         if not isinstance(roadsGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(roadsGdf, 'GeoDataFrame')
+            raise IllegalArgumentTypeException(roadsGdf, "GeoDataFrame")
         self.roadsGdf = roadsGdf
-        self.spatialIdx = roadsGdf.sindex
 
         if roadsIdFieldname not in roadsGdf:
-            raise Exception('%s is not a relevant field name!' % (roadsIdFieldname))
+            raise Exception(
+                f"{roadsIdFieldname} is not a relevant field name!")
         self.roadsIdFieldname = roadsIdFieldname
 
         self.buffDist = defaultBuffDist
@@ -56,7 +56,7 @@ class IdentifyTheClosestPolyline(AbstractGeoprocess):
 
         self.buffDist = 40.0
         minDist, nearestPoint, nearestRow = GeomLib.getNearestFeature(
-            self.roadsGdf, self.spatialIdx, geom, self.buffDist)
+            self.roadsGdf, geom)
 
         nearestRoad = nearestRow.geometry
         curvilinearAbscissa = nearestRoad.project(nearestPoint)
@@ -65,10 +65,10 @@ class IdentifyTheClosestPolyline(AbstractGeoprocess):
         roadSide = self.__sign(GeomLib.zCrossProduct(
             otherPoint.coords[0], nearestPoint.coords[0], geom.coords[0]))
 
-        return { 
-            # 'geometry': LineString((geom, nearestPoint)),
-            'road_id': nearestRow[self.roadsIdFieldname],
-            'road_dist': minDist,
-            'road_absc': curvilinearAbscissa,
-            'road_side': roadSide
-            }
+        return {
+            # "geometry": LineString((geom, nearestPoint)),
+            "road_id": nearestRow[self.roadsIdFieldname],
+            "road_dist": minDist,
+            "road_absc": curvilinearAbscissa,
+            "road_side": roadSide
+        }

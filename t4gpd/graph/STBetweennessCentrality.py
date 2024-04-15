@@ -3,7 +3,7 @@ Created on 31 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,8 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from geopandas import GeoDataFrame
 from t4gpd.commons.GeoProcess import GeoProcess
-from t4gpd.commons.graph.MCALib import MCALib
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.commons.graph.UrbanGraphFactory import UrbanGraphFactory
 
 
 class STBetweennessCentrality(GeoProcess):
@@ -33,7 +35,10 @@ class STBetweennessCentrality(GeoProcess):
         '''
         Constructor
         '''
-        self.mca = MCALib(roads)
+        if not isinstance(roads, GeoDataFrame):
+            raise IllegalArgumentTypeException(roads, "GeoDataFrame")
+        self.roads = roads
 
     def run(self):
-        return self.mca.betweenness_centrality()
+        ug = UrbanGraphFactory.create(self.roads, method="networkx")
+        return ug.betweenness_centrality()

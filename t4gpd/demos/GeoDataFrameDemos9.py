@@ -251,7 +251,7 @@ BDT_3-3_SHP_LAMB93_D044-ED2022-12-15/TRANSPORT/TRONCON_DE_ROUTE.shp', bbox=roi)
 ;commune;commune;Rue Arthur III;Rue Arthur III;;;44109_0408;44109_0408;;;;;;;;;;;;44109#0EA;44109#0EA;;;;44109;44109;5;;9;;Non;;;;;;;;;;;;;Libre;35;Non;;Double sens;Non;Non;4.0;2.0;1.5;Photogrammétrie;2.5;Photogrammétrie;;;2017-07-01;;2022-12-10 14:57:12;2009-09-09 16:24:10;En service;0;Non;5;R ARTHUR III;R ARTHUR III;Route à 1 chaussée;TRONROUT0000000224176726;LINESTRING Z (354864.8 6688397.3 6.8, 354863.79649122804 6688409 6.959649122810142)
 """)
         return GeoDataFrameLib.read_csv(_sio)
-       
+
     @staticmethod
     def prairieAuDucInNantesPath1():
         _sio = StringIO("""geometry
@@ -279,7 +279,7 @@ LINESTRING (354648.14260727953 6688211.714330149, 354647.98951279157 6688211.700
 216;POINT (354796.08260541165 6688208.036073784)
 """)
         return GeoDataFrameLib.read_csv(_sio)
-       
+
     @staticmethod
     def plot(oFile=None):
         roi = GeoDataFrameDemos9.prairieAuDucInNantesRoi()

@@ -85,7 +85,7 @@ class SunshineDurationOnTopOfRoof(AbstractSunshineDuration):
         # viewpoint = row.geometry.centroid
         viewpoint = row.geometry.representative_point()
 
-        enclosingFeatures = GeomLib.getEnclosingFeatures(self.masksGdf, self.masksSIdx, viewpoint)
+        enclosingFeatures = GeomLib.getEnclosingFeatures(self.masksGdf, viewpoint)
 
         if (0 == len(enclosingFeatures)):
             # OUTDOOR/STREET-LEVEL VIEWPOINT

@@ -3,7 +3,7 @@ Created on 17 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,11 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from geopandas.geodataframe import GeoDataFrame
-
+from geopandas import GeoDataFrame
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
-from t4gpd.commons.graph.UrbanGraphLibOld import UrbanGraphLibOld
+from t4gpd.commons.graph.UrbanGraphFactory import UrbanGraphFactory
 
 
 class STToRoadsSections(GeoProcess):
@@ -37,17 +36,12 @@ class STToRoadsSections(GeoProcess):
         Constructor
         '''
         if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, 'GeoDataFrame')
+            raise IllegalArgumentTypeException(inputGdf, "GeoDataFrame")
         self.inputGdf = inputGdf
         self.withoutCulDeSac = withoutCulDeSac
 
     def run(self):
-        ga = UrbanGraphLibOld()
-        ga.add([row for _, row in self.inputGdf.iterrows()])
-
+        ug = UrbanGraphFactory.create(self.inputGdf, method=None)
         if self.withoutCulDeSac:
-            rs = ga.getUniqueRoadsSectionsWithoutCulDeSac()
-        else:
-            rs = ga.getUniqueRoadsSections()
-
-        return GeoDataFrame(rs, crs=self.inputGdf.crs)
+            return ug.getUniqueRoadsSectionsWithoutCulDeSac()
+        return ug.getUniqueRoadsSections()

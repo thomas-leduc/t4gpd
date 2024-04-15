@@ -3,7 +3,7 @@ Created on 24 sept. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -43,7 +43,6 @@ class STSnappingPointsOnLines(GeoProcess):
         if not isinstance(linesGdf, GeoDataFrame):
             raise IllegalArgumentTypeException(linesGdf, 'GeoDataFrame')
         self.linesGdf = linesGdf
-        self.spatialIdx = linesGdf.sindex
 
         if stepCountFieldname is not None:
             if stepCountFieldname not in pointsGdf:
@@ -64,7 +63,7 @@ class STSnappingPointsOnLines(GeoProcess):
             geomPoint = rowPoint.geometry
             buffDist = 40.0
             minDist, nearestPoint, nearestRow = GeomLib.getNearestFeature(
-                self.linesGdf, self.spatialIdx, geomPoint, buffDist)
+                self.linesGdf, geomPoint)
 
             nearestLine = nearestRow.geometry
             curvilinearAbscissa = nearestLine.project(nearestPoint)

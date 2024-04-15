@@ -3,7 +3,7 @@ Created on 17 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,33 +21,46 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import unittest
-
-from shapely.geometry import Point
+from geopandas import GeoDataFrame
+from shapely import Point
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.graph.STToRoadsSectionsNodes import STToRoadsSectionsNodes
-from geopandas.geodataframe import GeoDataFrame
 
 
 class STToRoadsSectionsNodesTest(unittest.TestCase):
 
     def setUp(self):
-        self.roads = GeoDataFrameDemos.ensaNantesRoads()
+        self.roads = GeoDataFrameDemos.simpleUrbanGraph()
 
     def tearDown(self):
         self.roads = None
 
+    def __plot(self, result):
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
+        result.plot(ax=ax, color="red", marker="o", markersize=100)
+        result.apply(lambda x: ax.annotate(
+            text=x.gid, xy=x.geometry.coords[0], color="black",
+            size=16, ha="right", va="top"), axis=1)
+        self.roads.plot(ax=ax, color="lightgrey", linewidth=3)
+        ax.axis("off")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
     def testRun(self):
         result = STToRoadsSectionsNodes(self.roads).run()
-
-        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(31, len(result), 'Count rows')
-        self.assertEqual(3, len(result.columns), 'Count columns')
+        self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(7, len(result), "Count rows")
+        self.assertEqual(3, len(result.columns), "Count columns")
 
         for _, row in result.iterrows():
-            self.assertIsInstance(row.geometry, Point, 'Is a GeoDataFrame of Points')
-            self.assertIn(row['valency'], [1, 3, 4], 'Test valency attribute values')
-
-        # result.to_file('/tmp/xxx.shp')
+            self.assertIsInstance(row.geometry, Point,
+                                  "Is a GeoDataFrame of Points")
+            self.assertIn(row["valency"], [1, 3, 6],
+                          "Test valency attribute values")
+        # self.__plot(result)
+        # result.to_file("/tmp/xxx.shp")
 
 
 if __name__ == "__main__":

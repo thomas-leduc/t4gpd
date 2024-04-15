@@ -89,7 +89,7 @@ class RayCasting4Lib(object):
         if (nRays == len(_ctrPts1)):
             return Polygon(_ctrPts1)
 
-        viewpoint = viewpoint.coords[0][0:2]
+        viewpoint = viewpoint.centroid.coords[0][0:2]
         assert len(ray_ids) == len(_ctrPts1)
         assert ray_ids == sorted(ray_ids)
         _ctrPts2 = []
@@ -184,7 +184,7 @@ class RayCasting4Lib(object):
 
         isovRaysField["vect_drift"] = isovRaysField.apply(
             lambda row: None if row.__ISOV_CENTRE__.is_empty else LineString([
-                row.viewpoint.coords[0][0:2], row.__ISOV_CENTRE__.coords[0]]), axis=1)
+                row.viewpoint.centroid.coords[0][0:2], row.__ISOV_CENTRE__.coords[0]]), axis=1)
         isovRaysField["drift"] = isovRaysField.vect_drift.apply(
             lambda v: None if v is None else v.length)
 
@@ -277,25 +277,33 @@ class RayCasting4Lib(object):
 
         smapRaysField = overlay(rays, buildings.geometry.to_frame(
         ), how="intersection", keep_geom_type=True)
-        smapRaysField = smapRaysField.dissolve(by=["__VPT_ID__", "__RAY_ID__"], as_index=False, aggfunc={
-                                               "gid": "first", "viewpoint": "first"})
-        smapRaysField.geometry = smapRaysField.apply(lambda row: RayCasting4Lib.__keepTheLargestSolidAngle(
-            row.viewpoint, row.geometry), axis=1)
-        # smapRaysField.to_csv("/tmp/a.csv", index=False, sep=";")
 
-        left = rays.set_index(["__VPT_ID__", "__RAY_ID__"], drop=False)
-        left.drop(columns=["__VPT_ID__"], inplace=True)
-        right = smapRaysField.set_index(
-            ["__VPT_ID__", "__RAY_ID__"]).geometry.to_frame()
-        smapRaysField = left.merge(
-            right, how="outer", left_index=True, right_index=True)
+        if (0 == len(smapRaysField)):
+            smapRaysField = rays.set_index("__VPT_ID__", drop=True).set_index(
+                "__RAY_ID__", append=True, drop=False)
+        else:
+            smapRaysField = smapRaysField.dissolve(by=["__VPT_ID__", "__RAY_ID__"], as_index=False, aggfunc={
+                "gid": "first", "viewpoint": "first"})
+            smapRaysField.geometry = smapRaysField.apply(lambda row: RayCasting4Lib.__keepTheLargestSolidAngle(
+                row.viewpoint, row.geometry), axis=1)
 
-        smapRaysField["geometry"] = smapRaysField.apply(
-            lambda row: row.geometry_x if row.geometry_y is None else row.geometry_y, axis=1)
-        smapRaysField.drop(columns=["geometry_x", "geometry_y"], inplace=True)
-        smapRaysField = GeoDataFrame(smapRaysField, crs=buildings.crs)
-        smapRaysField = smapRaysField.loc[smapRaysField[~smapRaysField.geometry.apply(
-            lambda geom: geom.is_empty)].index, :]
+            left = rays.set_index(["__VPT_ID__", "__RAY_ID__"], drop=False)
+            left.drop(columns=["__VPT_ID__"], inplace=True)
+            right = smapRaysField.set_index(
+                ["__VPT_ID__", "__RAY_ID__"]).geometry.to_frame()
+            smapRaysField = left.merge(
+                right, how="outer", left_index=True, right_index=True)
+
+            smapRaysField["geometry"] = smapRaysField.apply(
+                lambda row: row.geometry_x if row.geometry_y is None else row.geometry_y, axis=1)
+            smapRaysField.drop(
+                columns=["geometry_x", "geometry_y"], inplace=True)
+            smapRaysField = GeoDataFrame(smapRaysField, crs=buildings.crs)
+            smapRaysField = smapRaysField.loc[smapRaysField[~smapRaysField.geometry.apply(
+                lambda geom: geom.is_empty)].index, :]
+            # smapRaysField.drop(
+            #     columns=["__RAY_ID__", "viewpoint"]).to_file("/tmp/6.shp")
+
         smapRaysField = smapRaysField.dissolve(
             by="__VPT_ID__", as_index=False, aggfunc=list)
         smapRaysField.drop(columns=["__VPT_ID__"], inplace=True)

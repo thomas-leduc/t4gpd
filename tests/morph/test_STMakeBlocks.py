@@ -3,7 +3,7 @@ Created on 12 feb. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2023 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -22,9 +22,9 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import unittest
 
-from shapely.geometry import box
-
 from geopandas import GeoDataFrame
+from t4gpd.commons.GeomLib import GeomLib
+from t4gpd.morph.STBBox import STBBox
 from t4gpd.morph.STMakeBlocks import STMakeBlocks
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 
@@ -32,27 +32,35 @@ from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 class STMakeBlocksTest(unittest.TestCase):
 
     def setUp(self):
-        self.buildings = GeoDataFrameDemos.ensaNantesBuildings()
-        self.roads = GeoDataFrameDemos.ensaNantesRoads()
+        self.buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
+        self.roads = GeoDataFrameDemos.districtRoyaleInNantesRoads()
+        self.roi = STBBox(self.buildings, buffDist=-1).run()
 
     def tearDown(self):
         pass
 
-    def testRun(self):
-        roi = GeoDataFrame([{'geometry': box(*self.roads.total_bounds)}], crs=self.buildings.crs)
-        result = STMakeBlocks(self.buildings, self.roads, roi=roi).run()
-
-        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(7, len(result), 'Count rows')
-        self.assertEqual(2, len(result.columns), 'Count columns')
-
-        '''
+    def __plot(self, result):
         import matplotlib.pyplot as plt
-        basemap = self.buildings.boundary.plot(edgecolor='dimgrey', color='lightgrey',)
-        result.plot(ax=basemap, color='red', linewidth=1.3)
+
+        fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
+        self.buildings.plot(ax=ax, color="grey")
+        self.roads.plot(ax=ax, color="black")
+        self.roi.boundary.plot(ax=ax, color="black")
+        result.plot(ax=ax, column="gid", alpha=0.42, cmap="hot")
+        ax.axis("off")
+        fig.tight_layout()
         plt.show()
-        '''
-        # result.to_file('/tmp/xxx.shp')
+        plt.close(fig)
+
+    def testRun(self):
+        result = STMakeBlocks(self.buildings, self.roads, roi=self.roi).run()
+
+        self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(39, len(result), "Count rows")
+        self.assertEqual(2, len(result.columns), "Count columns")
+        self.assertTrue(all(result.geometry.apply(
+            lambda g: GeomLib.isPolygonal(g))), "Is a GeoDataFrame of [Multi]Polygons")
+        self.__plot(result)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,43 @@
 # Package t4gpd history
 
+## Version 0.X.X - rev. XXXXX - XX XXX. 2024
+* Remove useless tests.commons.RayCasting2LibTest class
+* Remove useless commons.RayCasting2Lib class
+* Add new tests.commons.TypeLibTest class
+* Add new commons.TypeLib class
+* Add new tests.commons.CartesianProductLibTest class
+* Add new commons.CartesianProductLib class
+* Add new wrf.SkyMapRadiationBalance class
+* Add new wrf.MeteoFrancePredictor class
+* Add new wrf.MeteoFranceReader class
+* Add new raster.STFromGridToRaster class
+* Add new commons.raycasting.RayCasting25DLib class
+* Add new commons.raycasting.RayCasting2DLib class
+* Add new tests.commons.raycasting.PrepareMasksLibTest class
+* Add new commons.raycasting.PrepareMasksLib class
+* Add new tests.commons.raycasting.PanopticRaysLibTest class
+* Add new commons.raycasting.PanopticRaysLib class
+* Add new tests.commons.ConcaveLibTest class
+* Add new commons.ConcaveLib class
+* Remove useless tests.commons.graph.NeighborhoodLibTest class
+* Remove useless commons.graph.UrbanGraphLib class
+* Remove useless commons.graph.AbstractUrbanGraphLib class
+* Remove useless tests.commons.graph.ShortestPathLibTest class
+* Remove useless commons.graph.ShortestPathLib class
+* Remove useless tests.commons.graph.MCALibTest class
+* Remove useless commons.graph.MCALib class
+* Add new commons.graph.UrbanGraphVertex class
+* Add new tests.graph.STDelaunayGraphTest class
+* Add new graph.STDelaunayGraph class
+* Add new tests.graph.STMinimumSpanningTreeTest class
+* Add new graph.STMinimumSpanningTree class
+* Add new tests.graph.ST{Betweenness,Closeness,Degree}CentralityTest classes
+* Add new graph.STDegreeCentrality class
+* Add new commons.graph.UrbanGraph class
+* Add new commons.graph.UrbanGraphFactory class
+* Add new ws.BDTopoWFSReader class
+* Add new io.MedReader class (version 0.8.0)
+
 ## Version 0.8.0 - rev. 14062 - 13 Oct. 2023
 * Add new morph.STAdaptativeGrid class
 * Add new tests.avidon.STDeploymentOfPVPanels{-,2,3}Test classes

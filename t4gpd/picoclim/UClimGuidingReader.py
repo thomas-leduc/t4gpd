@@ -368,7 +368,7 @@ class UClimGuidingReader(AbstractReader):
 ****\tTOTAL PERIOD: {deltaTotal//60} min. {deltaTotal%60} sec.
 ****\tACTUAL PERIOD: {deltaActual//60} min. {deltaActual%60} sec.
 ****\tMEASUREMENT PERFORMANCE: {perf:.1f} %
-****\tNB WAYPOINTS: {len(self.getDfUclim())}
+****\tNB SEGMENTS: {len(self.getDfUclim())}
 """ + "*"*70)
 
     def run(self):
@@ -380,6 +380,6 @@ class UClimGuidingReader(AbstractReader):
         return self.dfUclim
 
 """
-ifile = "/home/tleduc/prj/uclim/flask/static/uploads/1686227346623113409/uclimLOC_nantes_commerce_feydeau_20230607T1228.txt"
+ifile = "/home/tleduc/prj/uclim/data/nantes_commerce_feydeau/nantes_commerce_feydeau_20230615_track1_092802/raw_data/uclimLOC_nantes_commerce_feydeau_20230615T0927.txt"
 df = UClimGuidingReader(ifile).run()
 """

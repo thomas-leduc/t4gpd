@@ -3,7 +3,7 @@ Created on 11 juin 2020
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -32,7 +32,7 @@ class STGrid(GeoProcess):
     '''
 
     def __init__(self, gdf, dx, dy=None, indoor=None, intoPoint=True,
-                 encode=True, withDist=False):
+                 encode=True, withDist=False, roi=None):
         '''
         Constructor
         '''
@@ -50,9 +50,13 @@ class STGrid(GeoProcess):
         self.intoPoint = intoPoint
         self.encode = encode
         self.withDist = withDist
+        self.roi = roi
 
     def run(self):
-        grid = GridLib.getGrid2(self.gdf, self.dx, self.dy, self.encode)
+        if self.roi is None:
+            grid = GridLib.getGrid2(self.gdf, self.dx, self.dy, self.encode)
+        else:
+            grid = GridLib.getGrid2(self.roi, self.dx, self.dy, self.encode)
 
         if self.indoor is None:
             pass
@@ -67,6 +71,35 @@ class STGrid(GeoProcess):
             grid.geometry = grid.centroid
 
         if self.withDist:
-            grid = GridLib.distanceToNearestContour(self.gdf, grid)
+            if (0 == len(self.gdf)):
+                grid["dist_to_ctr"] = float("inf")
+            else:
+                grid = GridLib.getDistanceToNearestContour(self.gdf, grid)
 
         return grid
+
+
+"""
+# -----
+import matplotlib.pyplot as plt
+from geopandas import clip
+from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+from t4gpd.demos.NantesBDT import NantesBDT
+from t4gpd.morph.STBBox import STBBox
+
+buffDist = 100
+roi = STBBox(GeoDataFrameDemos.squaresInNantes("Royale"), buffDist).run()
+buildings = NantesBDT.buildings(roi)
+
+dx = 30
+sensors = STGrid(buildings, dx=dx, dy=None, indoor=False,
+	intoPoint=False, withDist=True).execute()
+
+# -----
+fig, ax = plt.subplots(figsize=(1*8.26, 1*8.26))
+buildings.plot(ax=ax, color="grey")
+sensors.boundary.plot(ax=ax, color="black", linewidth=0.15)
+fig.tight_layout()
+plt.show()
+plt.close(fig)
+"""

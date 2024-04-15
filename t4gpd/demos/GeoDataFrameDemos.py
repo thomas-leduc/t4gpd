@@ -23,6 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 from io import StringIO
 
 from geopandas import clip, GeoDataFrame
+from shapely import union_all
 from shapely.affinity import rotate, translate
 from shapely.geometry import box, CAP_STYLE, MultiPolygon, Point, Polygon
 from shapely.wkt import loads
@@ -466,6 +467,47 @@ BATIMENT0000000302909608;Indifférenciée;Commercial et services;;Non;En service
         # The Chinese character for "reach" mentioned in (Avis and Toussaint, 1981)
         wkt = 'POLYGON ((62 92, 65 80, 46 77, 33 64, 52 66, 50 73, 66 71, 70 52, 52 56, 45 44, 60 42, 64 35, 42 29, 40 15, 70 18, 80 8, 7 0, 0 9, 25 14, 28 29, 17 28, 14 39, 28 38, 35 53, 17 48, 9 56, 24 64, 31 76, 17 75, 16 84, 62 92))'
         return GeoDataFrame(data=[{'geometry': loads(wkt)}])
+
+    @staticmethod
+    def simpleUrbanGraph(choice=1):
+        if (1 == choice):
+            _sio = StringIO("""gid;geometry
+1;LINESTRING(0 0, 0 3, 1 3, 1 2)
+2;LINESTRING(1 3, 3 3, 3 1)
+3;LINESTRING(1 3, 1 2, 2 2, 3 3)
+4;LINESTRING(1 2, 1 1, 3 1, 2 2)
+5;LINESTRING(0 0, 4 0, 4 4, 2 4, 1 3)
+6;LINESTRING(1 3, 1 5, 3 5)
+7;LINESTRING(1 3, 0 4, 1 6, 3 5, 3 6)
+""")
+            return GeoDataFrameLib.read_csv(_sio)
+
+        elif (2 == choice):
+            _sio = StringIO("""gid;geometry
+1;LINESTRING(0 0, 0 3, 1 3)
+2;LINESTRING(0 0, 0 3, 1 3, 1 2)
+3;LINESTRING(0 0, 0 3, 1 3, 1 2, 1 1, 3 1)
+4;LINESTRING(0 0, 0 3, 1 3, 1 2, 2 2)
+5;LINESTRING(0 0, 0 3, 1 3, 3 3)
+6;LINESTRING(0 0, 4 0, 4 4, 2 4)
+7;LINESTRING(0 0, 0 3, 1 3, 1 5, 3 5)
+8;LINESTRING(0 0, 4 0, 4 4, 2 4, 1 3)
+9;LINESTRING(2 2, 3 1, 3 3, 2 2)
+10;LINESTRING(0 0, 0 3, 1 3, 0 4, 1 6, 3 5, 3 6)
+""")
+            return GeoDataFrameLib.read_csv(_sio)
+
+        elif (3 == choice):
+            gdf = GeoDataFrameDemos.simpleUrbanGraph(choice=1)
+            return GeoDataFrame([{"geometry": union_all(gdf.geometry)}])
+
+        elif (4 == choice):
+            gdf = GeoDataFrameDemos.simpleUrbanGraph(choice=3)
+            gdf = gdf.explode(ignore_index=True).reset_index().rename(
+                columns={"index": "gid"})
+            return gdf
+
+        return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def plot(sector="Royale2", oFile=None):
