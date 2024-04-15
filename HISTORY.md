@@ -1,6 +1,6 @@
 # Package t4gpd history
 
-## Version 0.X.X - rev. XXXXX - XX XXX. 2024
+## Version 0.9.0 - rev. 14453 - 15 Apr. 2024
 * Remove useless tests.commons.RayCasting2LibTest class
 * Remove useless commons.RayCasting2Lib class
 * Add new tests.commons.TypeLibTest class
