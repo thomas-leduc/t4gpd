@@ -21,8 +21,17 @@ EOF
 }
 
 function _compile() {
-	python3 setup.py sdist bdist_wheel;
-	_comment "python3 setup.py sdist bdist_wheel";
+	# python3 setup.py sdist bdist_wheel;
+	# _comment "python3 setup.py sdist bdist_wheel";
+	python3 setup.py sdist;
+	_comment "python3 setup.py sdist";
+}
+
+function _coverage() {
+	# GATHER THE COVERAGE DATA
+	python -m coverage run -m unittest
+	# GENERATE THE COVERAGE REPORT
+	python -m coverage report
 }
 
 function _get_version() {
@@ -54,7 +63,7 @@ function _twine() {
 }
 
 function _usage() {
-	echo "Usage: $(basename ${0}) [clean|compile|deploy|distclean|help|show|twine" >& 2;
+	echo "Usage: $(basename ${0}) [clean|compile|coverage|deploy|distclean|help|official|show|test <dir>|twine" >& 2;
 	exit 1;
 }
 
@@ -66,12 +75,19 @@ case ${#} in
 		case ${1} in
 			clean) _clean;;
 			compile) _compile;;
+			coverage) _coverage;;
 			deploy) _deploy;;
 			distclean) _distclean;;
 			show) _show;;
 			twine) _twine;;
 			*) _usage;;
 		esac;;
+	2)
+		if [ "test" = ${1} ] && [ -d ${2} ]; then
+			python -m unittest discover -v ${2};
+		else
+			_usage;
+		fi;;
 	*)
 		_usage;;
 esac
