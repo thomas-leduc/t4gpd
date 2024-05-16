@@ -117,7 +117,7 @@ class RayCasting25DLib(object):
         return rayDeltaAlts
 
     @staticmethod
-    def multipleRayCast25D(viewpoints, buildings, rays, nRays, rayLength, elevationFieldName,
+    def multipleRayCast25D(viewpoints, buildings, rays, nRays, elevationFieldName,
                            withIndices, h0=0.0, threshold=1e-9):
         if not GeoDataFrameLib.shareTheSameCrs(buildings, rays):
             raise Exception(
@@ -142,8 +142,12 @@ class RayCasting25DLib(object):
                 axis=1)
             # smapRaysField.to_csv("/tmp/2.csv") # DEBUG
 
-            smapRaysField = smapRaysField.dissolve(by=["__VPT_ID__", "__RAY_ID__"], as_index=False, aggfunc={
-                "gid": "first", "viewpoint": "first"})
+            # Debug 06.05.2024
+            # smapRaysField = smapRaysField.dissolve(
+            #     by=["__VPT_ID__", "__RAY_ID__"], as_index=False, aggfunc={
+            #     "gid": "first", "viewpoint": "first"})
+            smapRaysField = smapRaysField.dissolve(
+                by=["__VPT_ID__", "__RAY_ID__"], as_index=False, aggfunc="first")
             # smapRaysField.to_csv("/tmp/3.csv") # DEBUG
             smapRaysField.geometry = smapRaysField.apply(lambda row: RayCasting25DLib.__keepTheLargestSolidAngle(
                 row.viewpoint, row.geometry, threshold), axis=1)
@@ -180,14 +184,23 @@ class RayCasting25DLib(object):
                 by="gid").agg("mean").to_dict("index")
             viewpoints2 = {
                 key: viewpoints2[key][elevationFieldName] for key in viewpoints2.keys()}
+            # FROM: ...apply(lambda row: ... if ... else None)
+            # TO: ...apply(lambda row: ... if ... else h0)
+            # Debug 30.04.2024
             smapRaysField["__HAUTEUR_VP__"] = smapRaysField.apply(
-                lambda row: viewpoints2[row.gid] if row.gid in viewpoints2 else None,
+                lambda row: viewpoints2[row.gid] if row.gid in viewpoints2 else h0,
                 axis=1)
         # smapRaysField.to_csv("/tmp/4.csv") # DEBUG
 
-        smapRaysField = smapRaysField.dissolve(
-            by="__VPT_ID__", as_index=False, aggfunc={
-                "__RAY_ID__": list, "gid": "first", "viewpoint": "first", "__HAUTEUR_VP__": "first"})
+        # Debug 06.05.2024
+        # smapRaysField = smapRaysField.dissolve(
+        #     by="__VPT_ID__", as_index=False, aggfunc={
+        #         "__RAY_ID__": list, "gid": "first", "viewpoint": "first", "__HAUTEUR_VP__": "first"})
+        aggfunc = dict({"__RAY_ID__": list})
+        for f in smapRaysField.columns:
+            if f not in ["__VPT_ID__", "__RAY_ID__", "geometry"]:
+                aggfunc[f] = "first"
+        smapRaysField = smapRaysField.dissolve(by="__VPT_ID__", as_index=False, aggfunc=aggfunc)
         smapRaysField.drop(columns=["__VPT_ID__"], inplace=True)
         # smapRaysField.to_csv("/tmp/5.csv") # DEBUG
 

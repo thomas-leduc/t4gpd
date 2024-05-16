@@ -1,5 +1,9 @@
 # Package t4gpd history
 
+## Version 0.9.5 - rev. 14477 - 16 May 2024
+* Multiple debugging
+* Add new .github/workflows/python-package.yml config file
+
 ## Version 0.9.0 - rev. 14453 - 15 Apr. 2024
 * Remove useless tests.commons.RayCasting2LibTest class
 * Remove useless commons.RayCasting2Lib class

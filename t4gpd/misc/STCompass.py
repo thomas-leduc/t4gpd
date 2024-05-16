@@ -3,7 +3,7 @@ Created on 15 mars 2022
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -27,6 +27,7 @@ from shapely.affinity import translate, scale
 from shapely.geometry import Point, Polygon
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.morph.STBBox import STBBox
 
 
 class STCompass(GeoProcess):
@@ -34,7 +35,7 @@ class STCompass(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, basemap, bounds, crs, magnitude=0.015):
+    def __init__(self, basemap, bounds, crs, magnitude=0.015, bgcolor="white"):
         '''
         Constructor
         '''
@@ -43,8 +44,10 @@ class STCompass(GeoProcess):
             self.bounds = bounds
             self.crs = crs
             self.magnitude = magnitude
+            self.bgcolor = bgcolor
         else:
-            raise IllegalArgumentTypeException(bounds, 'box (minx, miny, maxx, maxy)')
+            raise IllegalArgumentTypeException(
+                bounds, "box (minx, miny, maxx, maxy)")
 
     @staticmethod
     def __letter():
@@ -64,11 +67,13 @@ class STCompass(GeoProcess):
     def __translation_and_dilation(self, arrow):
         minx, miny, maxx, maxy = self.bounds
 
-        deltax, deltay = maxx - minx, maxy - miny 
+        deltax, deltay = maxx - minx, maxy - miny
         delta = min(deltax, deltay)
 
-        arrow = scale(arrow, xfact=self.magnitude * delta, yfact=self.magnitude * delta, origin=Point([0, 0]))
-        arrow = translate(arrow, xoff=minx + 2 * self.magnitude * delta, yoff=maxy - 4.5 * self.magnitude * delta)
+        arrow = scale(arrow, xfact=self.magnitude * delta,
+                      yfact=self.magnitude * delta, origin=Point([0, 0]))
+        arrow = translate(arrow, xoff=minx + 2 * self.magnitude *
+                          delta, yoff=maxy - 4.5 * self.magnitude * delta)
         return arrow
 
     def run(self):
@@ -76,13 +81,31 @@ class STCompass(GeoProcess):
         _right_arrow = self.__translation_and_dilation(self.__right_arrow())
         _letter = self.__translation_and_dilation(self.__letter())
 
-        my_rgb_cmap = ListedColormap(['white', 'black', 'black'])
+        my_rgb_cmap = ListedColormap(["white", "black", "black"])
 
         gdf = GeoDataFrame([
-            {'gid': 0, 'geometry': _left_arrow},
-            {'gid': 1, 'geometry': _right_arrow},
-            {'gid': 2, 'geometry': _letter}
-            ], crs=self.crs)
-        gdf.plot(ax=self.basemap, edgecolor='black', column='gid', cmap=my_rgb_cmap)
+            {"gid": 0, "geometry": _left_arrow},
+            {"gid": 1, "geometry": _right_arrow},
+            {"gid": 2, "geometry": _letter}
+        ], crs=self.crs)
+
+        bb = STBBox(gdf, buffDist=3).run()
+        bb.plot(ax=self.basemap, color=self.bgcolor, alpha=0.35)
+
+        gdf.plot(ax=self.basemap, edgecolor="black",
+                 column="gid", cmap=my_rgb_cmap)
 
         return gdf
+
+
+"""
+import matplotlib.pyplot as plt
+from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+buildings = GeoDataFrameDemos.ensaNantesBuildings()
+
+fig, ax = plt.subplots()
+buildings.plot(ax=ax)
+STCompass(ax, buildings.total_bounds, buildings.crs).run()
+plt.show()
+"""
