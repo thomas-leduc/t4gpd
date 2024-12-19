@@ -36,16 +36,21 @@ class DataFrameLibTest(unittest.TestCase):
         oneHour = timedelta(hours=1)
         self.df1 = DataFrame(data=[
             {'colA': i, 'colB': i ** 2, 'colC': dt + i * oneHour} for i in range(10)
-            ])
+        ])
 
         self.df2 = self.df1.copy(deep=True)
         colA = self.df2.colA.to_list()
         seed(0)
         shuffle(colA)
-        self.df2.colA = colA 
+        self.df2.colA = colA
 
     def tearDown(self):
         pass
+
+    def testGetNewColumnName(self):
+        result = DataFrameLib.getNewColumnName(self.df1)
+        self.assertEqual(10, len(result), 'Is a string of 10 chars')
+        self.assertFalse(result in self.df1, 'Is not a column name')
 
     def testInterpolate(self):
         result = DataFrameLib.interpolate(self.df1, 'colA', 'colA', 4.5)
@@ -55,12 +60,14 @@ class DataFrameLibTest(unittest.TestCase):
         self.assertEqual(20.5, result, 'Is equal to 20.5')
 
         result = DataFrameLib.interpolate(self.df1, 'colA', 'colC', 4.5)
-        self.assertEqual(datetime(2022, 10, 26, 13, 30), result, 'Is equal to "2022-10-26 13:30:00"')
+        self.assertEqual(datetime(2022, 10, 26, 13, 30), result,
+                         'Is equal to "2022-10-26 13:30:00"')
 
         try:
             result = DataFrameLib.interpolate(self.df2, 'colA', 'colB', 4.5)
         except AssertionError as error:
-            self.assertEqual(str(error), 'Column "colA" must be monotonic', 'Trap error message')
+            self.assertEqual(
+                str(error), 'Column "colA" must be monotonic', 'Trap error message')
 
 
 if __name__ == "__main__":

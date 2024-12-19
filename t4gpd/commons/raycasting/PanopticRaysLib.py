@@ -3,7 +3,7 @@ Created on 10 nov. 2023
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,7 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import arange, cos, pi, sin, stack
+from numpy import cos, linspace, pi, sin, stack
 from shapely import MultiLineString
 from shapely.affinity import translate
 from t4gpd.commons.GeomLib import GeomLib
@@ -61,8 +61,8 @@ class PanopticRaysLib(object):
 
     """
     @staticmethod
-    def __get2DMultiLineString(rayLength=100.0, nRays=64):
-        angles = ((2.0 * pi) / nRays) * arange(nRays)
+    def __get2DMultiLineString(rayLength, nRays):
+        angles = linspace(0, 2.0 * pi, nRays, endpoint=False)
         shootingDirs = rayLength * stack([cos(angles), sin(angles)], axis=1)
         return MultiLineString(
             [([(0, 0), xy]) for xy in shootingDirs])
@@ -78,13 +78,41 @@ class PanopticRaysLib(object):
 
     @staticmethod
     def get2DGeoDataFrame(sensors, rayLength=100.0, nRays=64):
-        shootingDirs = PanopticRaysLib.__get2DMultiLineString(rayLength, nRays)
         rays2D = sensors.copy(deep=True)
         rays2D["viewpoint"] = rays2D.loc[:, "geometry"]
         rays2D.geometry = rays2D.geometry.apply(
             lambda geom: geom.centroid)
-        rays2D.geometry = rays2D.geometry.apply(
-            lambda geom: translate(shootingDirs, xoff=geom.x, yoff=geom.y))
+
+        if (rayLength in sensors) and (nRays in sensors):
+            rays2D.geometry = rays2D.apply(
+                lambda row: translate(
+                    PanopticRaysLib.__get2DMultiLineString(
+                        row[rayLength], row[nRays]),
+                    xoff=row.geometry.x,
+                    yoff=row.geometry.y),
+                axis=1)
+        elif rayLength in sensors:
+            rays2D.geometry = rays2D.apply(
+                lambda row: translate(
+                    PanopticRaysLib.__get2DMultiLineString(
+                        row[rayLength], nRays),
+                    xoff=row.geometry.x,
+                    yoff=row.geometry.y),
+                axis=1)
+        elif nRays in sensors:
+            rays2D.geometry = rays2D.apply(
+                lambda row: translate(
+                    PanopticRaysLib.__get2DMultiLineString(
+                        rayLength, row[nRays]),
+                    xoff=row.geometry.x,
+                    yoff=row.geometry.y),
+                axis=1)
+        else:
+            shootingDirs = PanopticRaysLib.__get2DMultiLineString(
+                rayLength, nRays)
+            rays2D.geometry = rays2D.geometry.apply(
+                lambda geom: translate(shootingDirs, xoff=geom.x, yoff=geom.y))
+
         rays2D = rays2D.explode(index_parts=True)
         """
         rays2D["compass"] = rays2D.geometry.apply(

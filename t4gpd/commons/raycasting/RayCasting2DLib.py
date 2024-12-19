@@ -106,12 +106,14 @@ class RayCasting2DLib(object):
                 nRays, isovRaysField)
 
         isovField = isovRaysField.copy(deep=True)
-        if (0 < len(isovField)):
-            isovField.geometry = isovField.__ISOV_GEOM__
+
+        # debug 20.08.2024
+        isovField = isovField.set_geometry("__ISOV_GEOM__", crs=buildings.crs)
+        isovField.drop(columns=["__RAY_ID__", "geometry"], inplace=True)
+        isovField.rename_geometry("geometry", inplace=True)
 
         isovRaysField.drop(
             columns=["__RAY_ID__", "__ISOV_GEOM__"], inplace=True)
-        isovField.drop(columns=["__RAY_ID__", "__ISOV_GEOM__"], inplace=True)
 
         return isovRaysField, isovField
 

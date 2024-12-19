@@ -3,7 +3,7 @@ Created on 13 mai 2022
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -30,6 +30,10 @@ class GeoDataFrameLib(object):
     '''
     classdocs
     '''
+    @staticmethod
+    def getBBoxDiagonal(gdf):
+        xmin, ymin, xmax, ymax = gdf.total_bounds
+        return LineString([(xmin, ymin), (xmax, ymax)])
 
     @staticmethod
     def isAGeoDataFrameOfBipoints(gdf):

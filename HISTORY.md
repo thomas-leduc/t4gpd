@@ -1,5 +1,42 @@
 # Package t4gpd history
 
+## Version 0.9.6 - rev. 14829 - 19 Dec. 2024
+* Add new picoclim.PicopattReader class
+* Add new tests.commons.energy.PvlibProxyTest class
+* Add new commons.energy.PvlibProxy class
+* Add new morph.geoProcesses.EllipticityAxisIndices class
+* Add new morph.geoProcesses.LinearRegressionIndices class
+* Add new resilientgaia.STSatelliteLOSAnalysis class
+* Add new misc.PlotCorrelationMatrix
+* Add new commons.CorrelationLib class
+* Add new morph.geoProcesses.OrientedSVF class
+* Add new commons.EnergyLib class
+* Add new resilientgaia.STSatelliteLabelling class
+* Add new tests.commons.IntervalLibTest class
+* Add new commons.IntervalLib class
+* Add new resilientgaia.STSatelliteOnSiteProjection class
+* Add new tests.resilientgaia.STECEF2AERSatelliteReaderTest class
+* Add new tests.resilientgaia.SatelliteLibTest class
+* Add new resilientgaia.SatelliteLib class
+* Add new tests.commons.proj.AEProjectionLibTest class
+* Add new commons.proj.AEProjectionLib class
+* Add new resilientgaia.STECEF2AERSatelliteReader class
+* Add new tests.commons.overlap.OverlapLibTest class
+* Add new commons.overlap.OverlapLib class
+* Add new energy.STPvlibIrradiances class
+* Overwrite isovist.STIsovistField2D_new by isovist.STIsovistField2D
+* Add new tests.isovist.STExactIsovistField2DTest class
+* Add new isovist.STExactIsovistField2D class
+* Add new tests.commons.isovists.ExactIsovistLibTest class
+* Add new commons.isovists.ExactIsovistLib class
+* Remove useless tests.commons.RayCasting4LibTest class
+* Remove useless commons.RayCasting4Lib class
+* Refactor commons.raycasting.PanopticRaysLib class
+* Add new tests.morph.STMakeNeighborhoodTest class
+* Add new morph.STMakeNeighborhood class
+* Add new morph.STVoronoiPartition2 class
+* Refactor morph.STVoronoiPartition class
+
 ## Version 0.9.5 - rev. 14477 - 16 May 2024
 * Multiple debugging
 * Add new .github/workflows/python-package.yml config file

@@ -20,14 +20,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from datetime import date, time, timezone
 import unittest
 
-from geopandas.geodataframe import GeoDataFrame
+from datetime import date, time, timezone
+from geopandas import GeoDataFrame
 from shapely.geometry import box, Point
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
-from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
-from t4gpd.morph.geoProcesses.SkyMap2D import SkyMap2D
+from t4gpd.skymap.STSkyMap25D import STSkyMap25D
 from t4gpd.sun.STSunMap2D import STSunMap2D
 
 
@@ -35,40 +34,52 @@ class STSunMap2DTest(unittest.TestCase):
 
     def setUp(self):
         self.buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
+        self.buildings.fillna({"HAUTEUR": 3.33}, inplace=True)
+
         self.viewpoint = GeoDataFrame([
-            {'geometry': Point((355143.0, 6689359.4))}], crs=self.buildings.crs)
-        self.datetimes = [ date(2020, month, 21) for month in (3, 6, 12)]
-        self.datetimes += [ time(hour) for hour in range(7, 18) ]
+            {"gid": 1, "geometry": Point((355143.0, 6689359.4))}], crs=self.buildings.crs)
+        self.datetimes = [date(2023, month, 21) for month in (3, 6, 12)]
+        self.datetimes += [time(hour) for hour in range(7, 18)]
 
     def tearDown(self):
         pass
 
-    def testRun(self):
-        skymap = STGeoProcess(SkyMap2D(self.buildings, size=6.0), self.viewpoint).run()
-        result = STSunMap2D(self.viewpoint, self.datetimes, size=6.0,
-                            projectionName='Stereographic', tz=timezone.utc,
-                            model='pysolar').run()
-
-        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(17, len(result), 'Count rows')
-        self.assertEqual(2, len(result.columns), 'Count columns')
-
+    def __plot(self, result):
         import matplotlib.pyplot as plt
+
+        skymap = STSkyMap25D(self.buildings, self.viewpoint, nRays=180,
+                             rayLength=100.0, elevationFieldname="HAUTEUR",
+                             h0=0, size=6.0, epsilon=0.01, projectionName="Stereographic").run()
 
         minx, miny, maxx, maxy = box(*skymap.total_bounds).buffer(10.0).bounds
 
-        _, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
-        basemap.set_title('Sky + Sun Maps', fontsize=16)
-        plt.axis('off')
-        self.buildings.plot(ax=basemap, color='dimgrey')
-        skymap.plot(ax=basemap, color='lightgrey')
-        self.viewpoint.plot(ax=basemap, marker='+')
-        # result.plot(ax=basemap, linewidth=0.5, color='black')
-        result[ result.label == 'framework' ].plot(ax=basemap, linewidth=0.5, color='dimgrey')
-        result[ result.label.str.startswith('2020-') ].plot(ax=basemap, linewidth=0.5, color='red')
-        result[ result.label.str.endswith(':00:00') ].plot(ax=basemap, linewidth=0.5, color='blue')
+        fig, ax = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
+        ax.set_title("Sky + Sun Maps", fontsize=16)
+        self.buildings.plot(ax=ax, color="dimgrey")
+        skymap.plot(ax=ax, color="lightgrey")
+        self.viewpoint.plot(ax=ax, marker="+")
+        # result.plot(ax=ax, linewidth=0.5, color="black")
+        result[result.label == "framework"].plot(
+            ax=ax, linewidth=0.5, color="dimgrey")
+        result[result.label.str.startswith(
+            "2023-")].plot(ax=ax, linewidth=0.5, color="red")
+        result[result.label.str.endswith(":00:00")].plot(
+            ax=ax, linewidth=0.5, color="blue")
         plt.axis([minx, maxx, miny, maxy])
+        plt.axis("off")
         plt.show()
+        plt.close(fig)
+
+    def testRun(self):
+        result = STSunMap2D(self.viewpoint, self.datetimes, size=6.0,
+                            projectionName="Stereographic", tz=timezone.utc,
+                            model="pysolar").run()
+
+        self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(17, len(result), "Count rows")
+        self.assertEqual(2, len(result.columns), "Count columns")
+
+        self.__plot(result)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 '''
-Created on 17 juin 2020
+Created on 9 nov 2023
 
 @author: tleduc
 
@@ -57,13 +57,14 @@ class STIsovistField2DTest(unittest.TestCase):
     def testRun1(self):
         nRays, rayLength = 64, 20.0
         isovRaysField, isovField = STIsovistField2D(
-            self.buildings, self.viewpoints, nRays, rayLength).run()
+            self.buildings, self.viewpoints, nRays, rayLength, 
+            withIndices=True).run()
 
         for result in [isovRaysField, isovField]:
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
             self.assertEqual(result.crs, self.buildings.crs, "Verify CRS")
             self.assertEqual(len(self.viewpoints), len(result), "Count rows")
-            self.assertEqual(2 + len(self.viewpoints.columns),
+            self.assertEqual(8 + len(self.viewpoints.columns),
                              len(result.columns), "Count columns")
 
         approxRayLength = rayLength + 1e-6
@@ -76,10 +77,10 @@ class STIsovistField2DTest(unittest.TestCase):
             self.assertTrue(all(
                 [0 <= g.length <= approxRayLength for g in row.geometry.geoms]), "Verify ray lengths")
             self.assertIsInstance(
-                loads(row["viewpoint"]), Point, "Test viewpoint attribute")
+                row["viewpoint"], Point, "Test viewpoint attribute")
             self.assertIsInstance(
-                loads(row["vect_drift"]), LineString, "Test vect_drift attribute")
-            self.assertEqual(loads(row["viewpoint"]).coords[0], loads(row["vect_drift"]).coords[0],
+                row["vect_drift"], LineString, "Test vect_drift attribute")
+            self.assertEqual(row["viewpoint"].coords[0], row["vect_drift"].coords[0],
                              "Test viewpoint and vect_drift attribute values")
 
         for _, row in isovField.iterrows():
@@ -89,10 +90,10 @@ class STIsovistField2DTest(unittest.TestCase):
             self.assertTrue(0 <= row.geometry.area <= pi *
                             rayLength ** 2, "Verify isovist field areas")
             self.assertIsInstance(
-                loads(row["viewpoint"]), Point, "Test viewpoint attribute")
+                row["viewpoint"], Point, "Test viewpoint attribute")
             self.assertIsInstance(
-                loads(row["vect_drift"]), LineString, "Test vect_drift attribute")
-            self.assertEqual(loads(row["viewpoint"]).coords[0], loads(row["vect_drift"]).coords[0],
+                row["vect_drift"], LineString, "Test vect_drift attribute")
+            self.assertEqual(row["viewpoint"].coords[0], row["vect_drift"].coords[0],
                              "Test viewpoint and vect_drift attribute values")
 
         # self.__plot(self.buildings, self.viewpoints, isovField, isovRaysField)
@@ -109,13 +110,13 @@ class STIsovistField2DTest(unittest.TestCase):
 
         nRays, rayLength = 64, 20.0
         isovRaysField, isovField = STIsovistField2D(
-            buildings, sensors, nRays, rayLength).run()
+            buildings, sensors, nRays, rayLength, withIndices=True).run()
 
         for result in [isovRaysField, isovField]:
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
             self.assertEqual(result.crs, buildings.crs, "Verify CRS")
             self.assertEqual(16, len(result), "Count rows")
-            self.assertEqual(2 + len(sensors.columns),
+            self.assertEqual(8 + len(sensors.columns),
                              len(result.columns), "Count columns")
 
         # self.__plot(buildings, sensors, isovField, isovRaysField)
@@ -134,16 +135,39 @@ class STIsovistField2DTest(unittest.TestCase):
 
             nRays, rayLength = 64, 100.0
             isovRaysField, isovField = STIsovistField2D(
-                buildings, sensors, nRays, rayLength).run()
+                buildings, sensors, nRays, rayLength, withIndices=True).run()
 
             for result in [isovRaysField, isovField]:
                 self.assertIsInstance(
                     result, GeoDataFrame, "Is a GeoDataFrame")
                 self.assertEqual(result.crs, buildings.crs, "Verify CRS")
                 self.assertEqual(1, len(result), "Count rows")
-                self.assertEqual(3, len(result.columns), "Count columns")
+                self.assertEqual(8 + len(sensors.columns), len(result.columns), "Count columns")
 
             # self.__plot(buildings, sensors, isovField, isovRaysField)
+
+    def testRun4(self):
+        buildings = GeoDataFrame([{
+            "gid": 1,
+            "geometry": loads("POLYGON ((353471.90000000002328306 6684814 33.5, 353463.5 6684812.09999999962747097 33.5, 353461.79999999998835847 6684819.79999999981373549 33.5, 353462.70000000001164153 6684820.20000000018626451 33.5, 353461.5 6684825.79999999981373549 33.5, 353468.59999999997671694 6684827.5 33.5, 353471.90000000002328306 6684814 33.5))"),
+            "HAUTEUR": 4.0
+        }])
+        sensors = GeoDataFrame([
+            {"gid": 1, "geometry": loads(
+                "POINT (353469.15000000008149073 6684825.25)")},
+        ])
+        nRays, rayLength = 64, 20.0
+        isovRaysField, isovField = STIsovistField2D(
+            buildings, sensors, nRays, rayLength, withIndices=True).run()
+
+        for result in [isovRaysField, isovField]:
+            self.assertIsInstance(
+                result, GeoDataFrame, "Is a GeoDataFrame")
+            self.assertEqual(result.crs, buildings.crs, "Verify CRS")
+            self.assertEqual(1, len(result), "Count rows")
+            self.assertEqual(8 + len(sensors.columns), len(result.columns), "Count columns")
+
+        # self.__plot(buildings, sensors, isovField, isovRaysField)
 
 
 if __name__ == "__main__":

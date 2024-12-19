@@ -3,7 +3,7 @@ Created on 5 janv. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -23,10 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 import unittest
 
 from geopandas.geodataframe import GeoDataFrame
-from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.demos.GeoDataFrameDemos2 import GeoDataFrameDemos2
-from t4gpd.morph.STGrid import STGrid
-from t4gpd.morph.STPolygonize import STPolygonize
 from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
 from t4gpd.morph.geoProcesses.SurfaceFraction import SurfaceFraction
 

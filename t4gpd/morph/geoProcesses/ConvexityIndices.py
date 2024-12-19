@@ -3,7 +3,7 @@ Created on 18 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,6 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
+from shapely import get_parts
 
 
 class ConvexityIndices(AbstractGeoprocess):
@@ -38,21 +39,24 @@ class ConvexityIndices(AbstractGeoprocess):
         chullArea = chull.area
         chullPerim = chull.length
 
-        connectedComponents = chull.difference(geom).geoms
+        connectedComponents = get_parts(chull.difference(geom))
 
         nConnectedComponents = len(connectedComponents)
-        areaConvexityDefect = geomArea / chullArea if (0.0 < chullArea) else None
-        perimConvexityDefect = chullPerim / geomPerim if (0.0 < geomPerim) else None
+        areaConvexityDefect = geomArea / \
+            chullArea if (0.0 < chullArea) else None
+        perimConvexityDefect = chullPerim / \
+            geomPerim if (0.0 < geomPerim) else None
 
-        bigConcavities = sum([g.area ** 2 for g in connectedComponents]) / nConnectedComponents
-        smallConcavities = sum([g.area ** (-2) 
+        bigConcavities = sum(
+            [g.area ** 2 for g in connectedComponents]) / nConnectedComponents
+        smallConcavities = sum([g.area ** (-2)
                                 for g in connectedComponents
                                 if (0.0 < g.area)]) / nConnectedComponents
 
         return {
-            'n_con_comp': nConnectedComponents,
-            'a_conv_def': areaConvexityDefect,
-            'p_conv_def': perimConvexityDefect,
-            'big_concav': bigConcavities,
-            'small_conc': smallConcavities
-            }        
+            "n_con_comp": nConnectedComponents,
+            "a_conv_def": areaConvexityDefect,
+            "p_conv_def": perimConvexityDefect,
+            "big_concav": bigConcavities,
+            "small_conc": smallConcavities
+        }

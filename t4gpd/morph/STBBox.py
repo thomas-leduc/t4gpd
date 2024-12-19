@@ -3,7 +3,7 @@ Created on 17 fev. 2023
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame
-from shapely.geometry import box, JOIN_STYLE
+from shapely.geometry import box, CAP_STYLE, JOIN_STYLE
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -41,5 +41,7 @@ class STBBox(GeoProcess):
         self.buffDist = buffDist
 
     def run(self):
-        bbox = box(*self.gdf.total_bounds).buffer(self.buffDist, join_style=JOIN_STYLE.mitre)
+        bbox = box(*self.gdf.total_bounds).buffer(
+            self.buffDist, cap_style=CAP_STYLE.square,
+            join_style=JOIN_STYLE.mitre)
         return GeoDataFrame([{'geometry': bbox}], crs=self.gdf.crs)

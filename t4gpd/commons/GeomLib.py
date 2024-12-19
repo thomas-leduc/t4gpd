@@ -190,8 +190,8 @@ class GeomLib(object):
             ab = GeomLib.distFromTo(a, b)
             bc = GeomLib.distFromTo(b, c)
             ca = GeomLib.distFromTo(c, a)
-            if Epsilon.EPSILON < min([ab, bc, ca]):
-                return None
+            if Epsilon.EPSILON > min([ab, bc, ca]):
+                return [a, 0]
             diam = max([ab, bc, ca])
             if diam == ab:
                 return [GeomLib.getMidPoint(a, b), diam / 2.0]

@@ -3,7 +3,7 @@ Created on 6 juil. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -48,27 +48,3 @@ class CSVLib(object):
         except (TypeError, ValueError):
             pass
         return s
-
-    @staticmethod
-    def read(inputFile, fieldSep=',', decimalSep='.'):
-        rows, outputFields = [], []
-
-        with open(inputFile, 'r') as f:
-            for nline, line in enumerate(f, start=1):
-                # values = line.strip().split(self.fieldSep)
-                values = re.split(fieldSep, line.strip())
-                values = [value.strip() for value in values]
-
-                if (1 == nline):
-                    for fieldName in values:
-                        fieldName = fieldName.replace('"', '')
-                        if (0 == len(fieldName)):
-                            fieldName = 'gid'
-                        outputFields.append(fieldName)
-                else:
-                    row = dict()
-                    for i, value in enumerate(values):
-                        value = value.replace('"', '')
-                        row[outputFields[i]] = CSVLib.readLexeme(value, decimalSep)
-                    rows.append(row)
-        return rows

@@ -109,7 +109,7 @@ class DoubleProjectionOfSpheresLib(object):
             raise Exception(
                 "Illegal argument: trees and sensors must share shames CRS!")
 
-        prj = DoubleProjectionLib.projectionSwitch(projectionName)
+        prj = DoubleProjectionLib.projection_switch(projectionName)
 
         sensors2 = sensors.copy(deep=True)
         sensors2.geometry = sensors2.geometry.apply(
@@ -131,62 +131,61 @@ class DoubleProjectionOfSpheresLib(object):
 
         return result
 
+    def test():
+        import matplotlib.pyplot as plt
+        from matplotlib_scalebar.scalebar import ScaleBar
+        from shapely.geometry import box
+        from t4gpd.commons.proj.DoubleProjectionOfWallsLib import DoubleProjectionOfWallsLib
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+        from t4gpd.morph.STGrid import STGrid
 
-def main():
-    import matplotlib.pyplot as plt
-    from matplotlib_scalebar.scalebar import ScaleBar
-    from shapely.geometry import box
-    from t4gpd.commons.proj.DoubleProjectionOfWallsLib import DoubleProjectionOfWallsLib
-    from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
-    from t4gpd.morph.STGrid import STGrid
+        buildings = GeoDataFrameDemos.ensaNantesBuildings()
+        trees = GeoDataFrameDemos.ensaNantesTrees()
 
-    buildings = GeoDataFrameDemos.ensaNantesBuildings()
-    trees = GeoDataFrameDemos.ensaNantesTrees()
+        trees.geometry = trees.geometry.apply(
+            lambda geom: GeomLib.forceZCoordinateToZ0(geom, 12))
+        trees["crown_radius"] = 4
 
-    trees.geometry = trees.geometry.apply(
-        lambda geom: GeomLib.forceZCoordinateToZ0(geom, 12))
-    trees["crown_radius"] = 4
+        dx = 100
+        grid = STGrid(buildings, dx=dx, dy=None, indoor=False, intoPoint=True,
+                      encode=True, withDist=False).execute()  # < 15 sec
+        sensors = grid
 
-    dx = 100
-    grid = STGrid(buildings, dx=dx, dy=None, indoor=False, intoPoint=True,
-                  encode=True, withDist=False).execute()  # < 15 sec
-    sensors = grid
+        size = 4
+        # projectionName = "Isoaire"
+        # projectionName = "orthogonal"
+        projectionName = "Stereographic"
+        pbuildings = DoubleProjectionOfWallsLib.walls(
+            sensors, buildings, horizon=50.0, elevationFieldname="HAUTEUR",
+            h0=0.0, size=size, projectionName=projectionName, npts=5, aggregate=False)
+        ptrees = DoubleProjectionOfSpheresLib.trees(
+            sensors, trees, horizon=50.0, crownRadiusFieldname="crown_radius",
+            h0=0.0, size=size, projectionName=projectionName)
 
-    size = 4
-    # projectionName = "Isoaire"
-    # projectionName = "orthogonal"
-    projectionName = "Stereographic"
-    pbuildings = DoubleProjectionOfWallsLib.walls(
-        sensors, buildings, horizon=50.0, elevationFieldname="HAUTEUR",
-        h0=0.0, size=size, projectionName=projectionName, npts=5, aggregate=False)
-    ptrees = DoubleProjectionOfSpheresLib.trees(
-        sensors, trees, horizon=50.0, crownRadiusFieldname="crown_radius",
-        h0=0.0, size=size, projectionName=projectionName)
+        # minx, miny, maxx, maxy = box(
+        #     *sensors[sensors.gid == 6].total_bounds).buffer(6.0).bounds
+        fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.35 * 8.26))
+        ax.set_title(f"Nantes (44) ({projectionName})", size=28)
+        buildings.plot(ax=ax, color="grey")
+        sensors.plot(ax=ax, color="black", marker="P")
+        trees.plot(ax=ax, color="green", marker=".")
 
-    # minx, miny, maxx, maxy = box(
-    #     *sensors[sensors.gid == 6].total_bounds).buffer(6.0).bounds
-    fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.35 * 8.26))
-    ax.set_title(f"Nantes (44) ({projectionName})", size=28)
-    buildings.plot(ax=ax, color="grey")
-    sensors.plot(ax=ax, color="black", marker="P")
-    trees.plot(ax=ax, color="green", marker=".")
+        pbuildings.plot(ax=ax, column="depth", cmap="Spectral",
+                        edgecolor="black", alpha=0.75)
+        ptrees.plot(ax=ax, column="depth", cmap="Spectral",
+                    edgecolor="black", alpha=0.75, legend="True")
 
-    pbuildings.plot(ax=ax, column="depth", cmap="Spectral",
-                    edgecolor="black", alpha=0.75)
-    ptrees.plot(ax=ax, column="depth", cmap="Spectral",
-                edgecolor="black", alpha=0.75, legend="True")
+        ax.axis("off")
+        # ax.axis([minx, maxx, miny, maxy])
+        # ax.legend(loc="lower left", fontsize=18)
+        scalebar = ScaleBar(dx=1.0, units="m", length_fraction=None, box_alpha=0.85,
+                            width_fraction=0.005, location="lower right", frameon=True)
+        ax.add_artist(scalebar)
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
 
-    ax.axis("off")
-    # ax.axis([minx, maxx, miny, maxy])
-    # ax.legend(loc="lower left", fontsize=18)
-    scalebar = ScaleBar(dx=1.0, units="m", length_fraction=None, box_alpha=0.85,
-                        width_fraction=0.005, location="lower right", frameon=True)
-    ax.add_artist(scalebar)
-    fig.tight_layout()
-    plt.show()
-    plt.close(fig)
-
-    return ptrees
+        return ptrees
 
 
-# ptrees = main()
+# ptrees = DoubleProjectionOfSpheresLib.test()

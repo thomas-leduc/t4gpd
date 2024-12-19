@@ -59,10 +59,12 @@ class DoubleProjectionOfPointsLibTest(unittest.TestCase):
         ax.add_artist(scalebar)
 
     def testPoints(self):
-        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(
-            3 * 0.7 * 8.26, 0.7 * 8.26), squeeze=False)
+        projections = ["Isoaire", "Orthogonal", "Polar", "Stereographic"]
 
-        for i, projectionName in enumerate(["Isoaire", "Orthogonal", "Stereographic"]):
+        fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(
+            2 * 0.7 * 8.26, 2 * 0.7 * 8.26), squeeze=False)
+
+        for i, projectionName in enumerate(projections):
             result = DoubleProjectionOfPointsLib.points(
                 self.sensors, self.streetlights, horizon=None, h0=0.0, size=self.radius,
                 projectionName=projectionName, encode=True
@@ -76,7 +78,7 @@ class DoubleProjectionOfPointsLibTest(unittest.TestCase):
             self.assertGreaterEqual(result.depth.min(), 12,
                                     "Test depth attribute (2)")
             # print(result)
-            self._plot(ax[0, i], projectionName, result)
+            self._plot(ax[i//2, i % 2], projectionName, result)
 
         fig.tight_layout()
         plt.show()

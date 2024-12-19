@@ -29,7 +29,7 @@ class ColorTemperature(object):
     '''
 
     @staticmethod
-    def convert_K_to_RGB(colour_temperature):
+    def convert_K_to_RGB(colour_temperature, decimal=False):
         """
         Converts from K to RGB, algorithm courtesy of 
         http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
@@ -67,4 +67,6 @@ class ColorTemperature(object):
             blue = setMinMax(blue, 0, 255)
 
         # return red, green, blue
+        if decimal:
+            return red/255, green/255, blue/255
         return int(round(red)), int(round(green)), int(round(blue))

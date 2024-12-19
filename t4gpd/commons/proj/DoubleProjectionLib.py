@@ -20,10 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import asarray, sqrt
+from numpy import asarray, cos, pi, sin, sqrt
 from shapely import Point
 from shapely.coords import CoordinateSequence
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.commons.SphericalCartesianCoordinates import SphericalCartesianCoordinates
 
 
 class DoubleProjectionLib(object):
@@ -31,13 +32,18 @@ class DoubleProjectionLib(object):
     classdocs
     '''
     @staticmethod
-    def __first_projection(vp, rp):
+    def __to_pair_of_arrays(vp, rp):
         if (isinstance(vp, Point) and isinstance(rp, Point)):
             vp, rp = vp.coords, rp.coords
         if (isinstance(vp, CoordinateSequence) and isinstance(rp, CoordinateSequence)):
             vp, rp = vp[0], rp[0]
-
         vp, rp = asarray(vp), asarray(rp)
+        return vp, rp
+
+    @staticmethod
+    def __first_projection(vp, rp):
+        vp, rp = DoubleProjectionLib.__to_pair_of_arrays(vp, rp)
+
         vp2rp = rp - vp
         D = sqrt((vp2rp**2).sum())
         invD = 1 / D
@@ -77,6 +83,19 @@ class DoubleProjectionLib(object):
         ])
 
     @staticmethod
+    def polar_projection(vp, rp, size=1):
+        viewpoint, pp, D = DoubleProjectionLib.__first_projection(
+            vp, rp)
+        _, lon, lat = SphericalCartesianCoordinates.fromCartesianToSphericalCoordinates(
+            *pp)
+        magn = (size * (pi - 2 * lat)) / pi
+        return Point([
+            viewpoint[0] + magn * cos(lon),
+            viewpoint[1] + magn * sin(lon),
+            D  # viewpoint[2]
+        ])
+
+    @staticmethod
     def stereographic_projection(vp, rp, size=1):
         viewpoint, pp, D = DoubleProjectionLib.__first_projection(
             vp, rp)
@@ -88,13 +107,66 @@ class DoubleProjectionLib(object):
         ])
 
     @staticmethod
-    def projectionSwitch(projectionName):
+    def reverse_isoaire_projection(vp, pp, size=1):
+        vp, pp = DoubleProjectionLib.__to_pair_of_arrays(vp, pp)
+        pp = (pp - vp)/size
+        tmp1 = 1 - pp[0]**2 - pp[1]**2
+        tmp2 = sqrt(1 + tmp1)
+        return Point([
+            vp[0] + pp[0] * tmp2,
+            vp[1] + pp[1] * tmp2,
+            vp[2] + tmp1
+        ])
+
+    @staticmethod
+    def reverse_orthogonal_projection(vp, pp, size=1):
+        vp, pp = DoubleProjectionLib.__to_pair_of_arrays(vp, pp)
+        pp = (pp - vp)/size
+        return Point([
+            vp[0] + pp[0],
+            vp[1] + pp[1],
+            vp[2] + sqrt(1.0 - pp[0]**2 - pp[1]**2)
+        ])
+
+    @staticmethod
+    def reverse_polar_projection(vp, pp, size=1):
+        raise NotImplementedError("Must be implemented!")
+
+    @staticmethod
+    def reverse_stereographic_projection(vp, pp, size=1):
+        vp, pp = DoubleProjectionLib.__to_pair_of_arrays(vp, pp)
+        pp = (pp - vp)/size
+        magn = 2 / (1.0 + pp[0]**2 + pp[1]**2)
+        return Point([
+            vp[0] + magn * pp[0],
+            vp[1] + magn * pp[1],
+            vp[2] + magn - 1
+        ])
+
+    @ staticmethod
+    def projection_switch(projectionName):
         projectionName = projectionName.lower()
         if ("stereographic" == projectionName):
             return DoubleProjectionLib.stereographic_projection
         elif ("orthogonal" == projectionName):
             return DoubleProjectionLib.orthogonal_projection
+        elif ("polar" == projectionName):
+            return DoubleProjectionLib.polar_projection
         elif ("isoaire" == projectionName):
             return DoubleProjectionLib.isoaire_projection
         raise IllegalArgumentTypeException(
-            projectionName, "spherical projection as 'Stereographic', 'Orthogonal' or 'Isoaire'")
+            projectionName, "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'")
+
+    @ staticmethod
+    def reverse_projection_switch(projectionName):
+        projectionName = projectionName.lower()
+        if ("stereographic" == projectionName):
+            return DoubleProjectionLib.reverse_stereographic_projection
+        elif ("orthogonal" == projectionName):
+            return DoubleProjectionLib.reverse_orthogonal_projection
+        elif ("polar" == projectionName):
+            return DoubleProjectionLib.reverse_polar_projection
+        elif ("isoaire" == projectionName):
+            return DoubleProjectionLib.reverse_isoaire_projection
+        raise IllegalArgumentTypeException(
+            projectionName, "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'")

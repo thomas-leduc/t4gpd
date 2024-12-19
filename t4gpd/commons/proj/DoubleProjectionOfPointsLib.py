@@ -20,6 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from geopandas import GeoDataFrame
 from t4gpd.commons.CartesianProductLib import CartesianProductLib
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
@@ -37,7 +38,7 @@ class DoubleProjectionOfPointsLib(object):
             raise Exception(
                 "Illegal argument: sensors and streetlights must share shames CRS!")
 
-        prj = DoubleProjectionLib.projectionSwitch(projectionName)
+        prj = DoubleProjectionLib.projection_switch(projectionName)
 
         sensors2 = sensors.copy(deep=True)
         sensors2.geometry = sensors2.geometry.apply(
@@ -60,7 +61,12 @@ class DoubleProjectionOfPointsLib(object):
             result.geometry_x = result.geometry_x.apply(lambda g: g.wkt)
             result.geometry_y = result.geometry_y.apply(lambda g: g.wkt)
 
-        return result
+        result.rename(columns={
+            "geometry_x": "observer_p",
+            "geometry_y": "remote_pos",
+        }, inplace=True)
+
+        return GeoDataFrame(result, geometry="geometry", crs=sensors.crs)
 
     @staticmethod
     def test():
@@ -84,12 +90,13 @@ class DoubleProjectionOfPointsLib(object):
                       encode=True, withDist=False).execute()  # < 15 sec
         sensors = clip(grid, iris, keep_geom_type=True)
 
+        size = 4
         projectionName = "Isoaire"
         projectionName = "Orthogonal"
         projectionName = "Stereographic"
         pp = DoubleProjectionOfPointsLib.points(
             sensors, streetlights, horizon=100, h0=0.0,
-            size=1, projectionName=projectionName)
+            size=size, projectionName=projectionName, encode=False)
 
         fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.35 * 8.26))
         ax.set_title(
@@ -98,7 +105,7 @@ class DoubleProjectionOfPointsLib(object):
         buildings.plot(ax=ax, color="grey")
         # big_buildings.plot(ax=ax, color="lightgrey")
         # grid.boundary.plot(ax=ax, color="green")
-        sensors.buffer(1.0).boundary.plot(ax=ax, color="red")
+        sensors.buffer(size).boundary.plot(ax=ax, color="red")
         pp.plot(ax=ax, column="depth", cmap="Spectral",
                 marker="+", legend=True)
         # skymaps.plot(ax=ax, color="black", linewidth=0.15)

@@ -3,7 +3,7 @@ Created on 3 juil. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,9 +21,9 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Point
-from t4gpd.commons.CSVLib import CSVLib
+from geopandas import GeoDataFrame
+from pandas import read_csv
+from shapely import Point
 from t4gpd.commons.GeoProcess import GeoProcess
 
 
@@ -32,8 +32,8 @@ class CSVReader(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, inputFile, xFieldName='longitude', yFieldName='latitude',
-                 fieldSep=',', srcEpsgCode='EPSG:4326', dstEpsgCode=None, decimalSep='.'):
+    def __init__(self, inputFile, xFieldName="longitude", yFieldName="latitude",
+                 fieldSep=",", srcEpsgCode="epsg:4326", dstEpsgCode=None, decimalSep="."):
         '''
         Constructor
         '''
@@ -46,15 +46,11 @@ class CSVReader(GeoProcess):
         self.decimalSep = decimalSep
 
     def run(self):
-        _rows = CSVLib.read(self.inputFile, self.fieldSep, self.decimalSep)
-
-        rows = []
-        for row in _rows:
-            row['geometry'] = Point(row[self.xFieldName], row[self.yFieldName])
-            rows.append(row)
-
-        outputGdf = GeoDataFrame(rows, crs=self.crs)
-
+        df = read_csv(self.inputFile, sep=self.fieldSep,
+                      decimal=self.decimalSep)
+        df["geometry"] = df.apply(
+            lambda row: Point(row[self.xFieldName], row[self.yFieldName]), axis=1)
+        gdf = GeoDataFrame(df, crs=self.crs, geometry="geometry")
         if not self.dstEpsgCode is None:
-            outputGdf = outputGdf.to_crs(self.dstEpsgCode)
-        return outputGdf
+            gdf = gdf.to_crs(self.dstEpsgCode)
+        return gdf

@@ -3,7 +3,7 @@ Created on 20 janv. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -22,8 +22,9 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from warnings import warn
 
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import box, Point
+from geopandas import GeoDataFrame
+from numpy import abs
+from shapely import box, Point
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
@@ -69,3 +70,26 @@ class LatLonLib(object):
         _centroid = box(*_gdf.total_bounds).centroid
         _latitude, _longitude = _centroid.y, _centroid.x
         return _latitude, _longitude
+
+    @staticmethod
+    def decimalDegree2sexagesimalDegree(angle, ndigits=1):
+        # Convert from decimal degrees to degrees, minutes, seconds
+        _angle = abs(angle)
+        d = int(_angle)
+        m = int((_angle - d) * 60)
+        s = round(((_angle - d) * 60 - m) * 60, ndigits)
+        d = -d if (angle < 0) else d
+        return d, m, s
+
+    @staticmethod
+    def sexagesimalDegreePrettyPrinter(angle, opt=None):
+        d, m, s = angle
+
+        if ("latitude" == opt):
+            orient = "N" if (0 < d) else "S"
+        elif ("longitude" == opt):
+            orient = "E" if (0 < d) else "W"
+        else:
+            return f"{d:.0f}° {m:.0f}′ {s}″"
+
+        return f"{abs(d):.0f}° {m:.0f}′ {s}″ {orient}"

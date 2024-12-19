@@ -3,7 +3,7 @@ Created on 18 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,6 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from numpy import pi, sqrt
+# from shapely import minimum_bounding_circle
 from t4gpd.commons.ChrystalAlgorithm import ChrystalAlgorithm
 from t4gpd.commons.DiameterLib import DiameterLib
 from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
@@ -31,8 +32,10 @@ class CircularityIndices(AbstractGeoprocess):
     classdocs
     '''
 
-    @staticmethod
-    def runWithArgs(row):
+    def __init__(self, with_geom=False):
+        self.with_geom = with_geom
+
+    def runWithArgs(self, row):
         geom = row.geometry
         area, perim = geom.area, geom.length
         _, diamLen, _ = DiameterLib.diameter(geom)
@@ -40,16 +43,27 @@ class CircularityIndices(AbstractGeoprocess):
         gravelius = perim / sqrt(4.0 * pi * area) if (0.0 < area) else None
         jaggedness = (perim * perim) / area if (0.0 < area) else None
         miller = (4.0 * pi * area) / (perim * perim) if (0.0 < perim) else None
-        morton = (4.0 * area) / (pi * diamLen * diamLen) if (0.0 < diamLen) else None
+        morton = (4.0 * area) / (pi * diamLen *
+                                 diamLen) if (0.0 < diamLen) else None
 
-        _, _, radius = ChrystalAlgorithm(geom).run()
-        mbcArea = pi * radius * radius        
+        mbc, _, radius = ChrystalAlgorithm(geom).run()
+        mbcArea = pi * radius * radius
         areaCircDefect = area / mbcArea if (0.0 < mbcArea) else None
 
-        return {
-            'gravelius': gravelius,
-            'jaggedness': jaggedness,
-            'miller': miller,
-            'morton': morton,
-            'a_circ_def': areaCircDefect
+        if self.with_geom:
+            return {
+                "geometry": mbc,
+                "gravelius": gravelius,
+                "jaggedness": jaggedness,
+                "miller": miller,
+                "morton": morton,
+                "a_circ_def": areaCircDefect
             }
+
+        return {
+            "gravelius": gravelius,
+            "jaggedness": jaggedness,
+            "miller": miller,
+            "morton": morton,
+            "a_circ_def": areaCircDefect
+        }

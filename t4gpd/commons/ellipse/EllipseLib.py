@@ -20,7 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from numpy import cos, isnan, linspace, math, pi, prod, sin, sqrt
+from math import factorial
+from numpy import cos, isnan, linspace, pi, prod, sin, sqrt
 from shapely.geometry import LineString, Point, Polygon
 
 
@@ -86,7 +87,7 @@ class EllipseLib(object):
 
         acc = 1.0 + 0.25 * h
         for n in range(2, order):
-            tmp = EllipseLib.__doubleFactorial(2 * n - 3) / ((2 ** n) * math.factorial(n))
+            tmp = EllipseLib.__doubleFactorial(2 * n - 3) / ((2 ** n) * factorial(n))
             acc += tmp * tmp * h ** n
         return float(pi * summ * acc)
 

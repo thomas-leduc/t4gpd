@@ -3,7 +3,7 @@ Created on 18 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -31,30 +31,46 @@ class EllipticityIndices(AbstractGeoprocess):
     classdocs
     '''
 
-    def __init__(self, threshold=None, debug=False):
+    def __init__(self, threshold=None, debug=False, with_geom=False):
         '''
         Constructor
         '''
         self.mabe = EllipticHullLib(threshold, debug)
+        self.with_geom = with_geom
 
     def runWithArgs(self, row):
         geom = row.geometry
         geomArea = geom.area
         geomPerim = geom.length
 
-        _, semiXAxis, semiYAxis, _, _, _ = self.mabe.getMinimumAreaBoundingEllipse(geom)
+        # [Point(centre), semiXAxis, semiYAxis, azim, nodes, methName]
+        centre, semiXAxis, semiYAxis, azim, _, _ = self.mabe.getMinimumAreaBoundingEllipse(
+            geom)
 
         mabeArea = pi * semiXAxis * semiYAxis
         if (isnan(mabeArea)) or (mabeArea < geomArea):
-            raise Exception('Minimum-area bounding ellipse is %s (input geom area: %.1f)!' % (str(mabeArea), geomArea))
+            raise Exception(
+                'Minimum-area bounding ellipse is %s (input geom area: %.1f)!' % (str(mabeArea), geomArea))
         mabePerim = EllipseLib.getEllipsePerimeter(semiXAxis, semiYAxis)
 
-        flattening = min(semiXAxis, semiYAxis) / max(semiXAxis, semiYAxis) if (0.0 < max(semiXAxis, semiYAxis)) else None
+        flattening = min(semiXAxis, semiYAxis) / max(semiXAxis,
+                                                     semiYAxis) if (0.0 < max(semiXAxis, semiYAxis)) else None
         areaEllipDefect = geomArea / mabeArea if (0.0 < mabeArea) else None
         perimEllipDefect = mabePerim / geomPerim if (0.0 < geomPerim) else None
 
+        if self.with_geom:
+            # EllipseLib.getEllipseContour(centre, semiXAxis, semiYAxis, azim, npoints=40)
+            mabe = EllipseLib.getEllipseContour(
+                centre, semiXAxis, semiYAxis, azim)
+            return {
+                "geometry": mabe,
+                "flattening": flattening,
+                "a_elli_def": areaEllipDefect,
+                "p_elli_def": perimEllipDefect,
+            }
+
         return {
-            'flattening': flattening,
-            'a_elli_def': areaEllipDefect,
-            'p_elli_def': perimEllipDefect,
-            }        
+            "flattening": flattening,
+            "a_elli_def": areaEllipDefect,
+            "p_elli_def": perimEllipDefect,
+        }

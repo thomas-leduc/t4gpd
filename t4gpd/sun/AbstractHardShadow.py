@@ -3,7 +3,7 @@ Created on 12 sept. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,9 +20,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
-from t4gpd.commons.GeoProcess import GeoProcess
-from geopandas.geodataframe import GeoDataFrame
+from geopandas import GeoDataFrame
+from shapely import Polygon
 from t4gpd.commons.AngleLib import AngleLib
+from t4gpd.commons.GeoProcess import GeoProcess
 
 
 class AbstractHardShadow(GeoProcess):
@@ -34,21 +35,29 @@ class AbstractHardShadow(GeoProcess):
         rows = []
 
         for _dt, _radDir, _solarAlti, _solarAzim in self.sunPositions:
-            # Hypothesis: the shadow cast by a 1m high mask is at most 10m long (arctan(0.1)=5.71) 
+            # Hypothesis: the shadow cast by a 1m high mask is at most 10m long (arctan(0.1)=5.71)
             if (_solarAlti < AngleLib.toRadians(5.71)):
-                print('Solar height less than 5.71 degrees (%.1f degrees) on %s!' % (
+                print("Solar height less than 5.71 degrees (%.1f degrees) on %s!" % (
                     AngleLib.toDegrees(_solarAlti), _dt))
             else:
                 for _, row in self.gdf.iterrows():
-                    _shadow = self._auxiliary(row, _radDir, _solarAlti, _solarAzim)
+                    _shadow = self._auxiliary(
+                        row, _radDir, _solarAlti, _solarAzim)
                     if _shadow is not None:
-                        _row = self.updateOrAppend(row, {'datetime': str(_dt), 'geometry': _shadow})
+                        _row = self.updateOrAppend(
+                            row, {"datetime": str(_dt), "geometry": _shadow})
                         rows.append(_row)
 
-        result = GeoDataFrame(rows, crs=self.crs)
+        if (0 == len(rows)):
+            result = GeoDataFrame([{
+                "datetime": dt,
+                "geometry": Polygon([])
+            } for dt, _, _, _ in self.sunPositions], crs=self.crs)
+        else:
+            result = GeoDataFrame(rows, crs=self.crs)
 
         if self.aggregate:
-            result = result[['datetime', 'geometry']].dissolve(by='datetime')
+            result = result[["datetime", "geometry"]].dissolve(by="datetime")
             # Use a buffer to avoid slivers
             result.geometry = result.buffer(0.001, -1)
             result.reset_index(inplace=True)

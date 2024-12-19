@@ -63,7 +63,8 @@ class PrepareMasksLib(object):
         return result
 
     @staticmethod
-    def removeNonVisible25DMasks(viewpoints, masks, elevationFieldname, horizon, h0):
+    def removeNonVisible25DMasks(viewpoints, masks, elevationFieldname, horizon,
+                                 h0, encode=False):
         if not isinstance(viewpoints, GeoDataFrame):
             raise IllegalArgumentTypeException(viewpoints, "GeoDataFrame")
         if not isinstance(masks, GeoDataFrame):
@@ -78,50 +79,60 @@ class PrepareMasksLib(object):
         viewpoints2 = viewpoints.copy(deep=True)
         viewpoints2.geometry = viewpoints2.geometry.apply(
             lambda geom: geom if geom.has_z else GeomLib.forceZCoordinateToZ0(geom, h0))
-        viewpoints2["__VIEWPOINT__"] = viewpoints2.geometry
+        viewpoints2["__VIEWPOINT_GEOM__"] = viewpoints2.geometry
+        viewpoints2["__VIEWPOINT_PK__"] = range(len(viewpoints2))
         viewpoints2.geometry = viewpoints2.geometry.apply(
             lambda g: g.buffer(horizon))
 
-        masks2 = overlay(
-            masks[[elevationFieldname, "geometry"]], viewpoints2, how="intersection")
+        masks2 = overlay(masks, viewpoints2, how="intersection")
         masks2.geometry = masks2.apply(
             lambda row: GeomLib.forceZCoordinateToZ0(
-                row.geometry, row[elevationFieldname]-row.__VIEWPOINT__.z),
+                row.geometry, row[elevationFieldname]-row.__VIEWPOINT_GEOM__.z),
             axis=1)
         masks2.geometry = masks2.geometry.apply(
             lambda g: GeomLib.reverseRingOrientation(g.normalize()))
         masks2.geometry = masks2.apply(
             lambda row: MultiLineString(
                 GeomLib.toListOfBipointsAsLineStringsInFrontOf(
-                    row.__VIEWPOINT__, row.geometry)), axis=1)
-        masks2 = masks2.dissolve(by="__VIEWPOINT__", as_index=False)
-        masks2.geometry = masks2.geometry.apply(
-            lambda geom: geom if isinstance(
-                geom, MultiLineString) else MultiLineString([geom]))
+                    row.__VIEWPOINT_GEOM__, row.geometry)), axis=1)
+        if encode:
+            masks2.__VIEWPOINT_GEOM__ = masks2.__VIEWPOINT_GEOM__.apply(
+                lambda geom: geom.wkt)
         return masks2
 
-"""
-    def test():
+    @staticmethod
+    def test(ofile=None):
         import matplotlib.pyplot as plt
+        from shapely import Point
         from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
-        from t4gpd.morph.STGrid import STGrid
+        # from t4gpd.morph.STGrid import STGrid
 
-        # buildings = GeoDataFrameDemos.ensaNantesBuildings()
-        buildings = GeoDataFrameDemos.regularGridOfPlots2(nlines=4, ncols=4)
-        buildings["HAUTEUR"] = 10
+        # buildings = GeoDataFrameDemos.regularGridOfPlots2(nlines=4, ncols=4)
+        # buildings["HAUTEUR"] = 10
+        # vp = STGrid(buildings, dx=100, intoPoint=True, indoor=False).run()
 
-        vp = STGrid(buildings, dx=100, intoPoint=True, indoor=False).run()
+        buildings = GeoDataFrameDemos.ensaNantesBuildings()
+
+        viewpoints = GeoDataFrame(
+            [{"gid": 100, "geometry": Point([355315, 6688413])}], crs=buildings.crs)
+
         masks = PrepareMasksLib.removeNonVisible25DMasks(
-            vp, buildings, elevationFieldname="HAUTEUR", horizon=40, h0=1.10)
-        # masks.to_csv("/tmp/1.csv")
+            viewpoints, buildings, elevationFieldname="HAUTEUR", horizon=40,
+            h0=1.10, encode=True)
 
         fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
         buildings.plot(ax=ax, color="grey")
-        vp.plot(ax=ax, column="gid", marker="+")
+        viewpoints.plot(ax=ax, column="gid", marker="+")
         masks.plot(ax=ax, column="gid", linewidth=5)
         plt.tight_layout()
         plt.show()
 
+        if not ofile is None:
+            buildings.to_file(ofile, layer="buildings")
+            viewpoints.to_file(ofile, layer="viewpoints")
+            masks.to_file(ofile, layer="masks")
 
-PrepareMasksLib.test()
-"""
+        return masks
+
+
+# masks = PrepareMasksLib.test("/tmp/PrepareMasksLib.gpkg")

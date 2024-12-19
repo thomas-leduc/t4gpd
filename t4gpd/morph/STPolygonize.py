@@ -3,7 +3,7 @@ Created on 31 dec. 2020
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame
-from shapely import union_all
+from shapely import get_parts, union_all
 from shapely.ops import polygonize
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.GeomLib import GeomLib
@@ -33,24 +33,24 @@ class STPolygonize(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, inputGdf):
+    def __init__(self, gdf, patchid="gid"):
         '''
         Constructor
         '''
-        if not isinstance(inputGdf, GeoDataFrame):
-            raise IllegalArgumentTypeException(inputGdf, "GeoDataFrame")
-        self.inputGdf = inputGdf
+        if not isinstance(gdf, GeoDataFrame):
+            raise IllegalArgumentTypeException(gdf, "GeoDataFrame")
+        self.gdf = gdf
+        self.patchid = patchid
 
     def run(self):
-        contours = []
-        for geom in self.inputGdf.geometry:
-            contours += GeomLib.toListOfLineStrings(geom)
+        contours = [GeomLib.toListOfLineStrings(geom) for geom in self.gdf.geometry]
 
         # Contour union
         contourUnion = union_all(contours)
-        # Contour network polygonization
-        patches = polygonize(contourUnion)
 
-        rows = [{"gid": i, "geometry": patch}
+        # Contour network polygonization
+        patches = polygonize(get_parts(contourUnion))
+
+        rows = [{self.patchid: i, "geometry": patch}
                 for i, patch in enumerate(patches)]
-        return GeoDataFrame(rows, crs=self.inputGdf.crs)
+        return GeoDataFrame(rows, crs=self.gdf.crs)

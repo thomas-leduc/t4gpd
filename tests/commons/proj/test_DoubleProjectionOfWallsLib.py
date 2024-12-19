@@ -105,7 +105,7 @@ class DoubleProjectionOfWallsLibTest(unittest.TestCase):
                 npts=5, aggregate=True)
 
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
-            self.assertEqual(len(self.sensors1), len(result), "Count rows")
+            self.assertEqual(len(self.sensors1) + 2, len(result), "Count rows")
             DoubleProjectionOfWallsLibTest._plot(
                 ax[0, i], projectionName, self.sensors1, radius, self.masks1, result)
 

@@ -3,7 +3,7 @@ Created on 26 oct. 2022
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,6 +21,8 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from datetime import timedelta
+from pandas import DataFrame
+from random import choices
 
 
 class DataFrameLib(object):
@@ -29,15 +31,25 @@ class DataFrameLib(object):
     '''
 
     @staticmethod
+    def getNewColumnName(df):
+        assert isinstance(df, DataFrame), "df must be a DataFrame"
+
+        abet = "abcdefghijklmnopqrstuvwxyz"
+        while True:
+            colname = "".join(choices(abet, k=10))
+            if colname not in df:
+                return colname
+
+    @staticmethod
     def interpolate(df, xfieldname, yfieldname, x):
-        assert (df[xfieldname].is_monotonic_increasing or 
+        assert (df[xfieldname].is_monotonic_increasing or
                 df[xfieldname].is_monotonic_decreasing), \
-                f'Column "{xfieldname}" must be monotonic'
+            f'Column "{xfieldname}" must be monotonic'
 
         df.set_index(xfieldname, drop=False, inplace=True)
 
-        row0 = df.iloc[ df.index.get_indexer([x], method='ffill') ]
-        row1 = df.iloc[ df.index.get_indexer([x], method='bfill') ]
+        row0 = df.iloc[df.index.get_indexer([x], method='ffill')]
+        row1 = df.iloc[df.index.get_indexer([x], method='bfill')]
 
         x0, x1 = row0[xfieldname].squeeze(), row1[xfieldname].squeeze()
         y0, y1 = row0[yfieldname].squeeze(), row1[yfieldname].squeeze()

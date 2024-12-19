@@ -30,10 +30,11 @@ from t4gpd.commons.raycasting.PanopticRaysLib import PanopticRaysLib
 class PanopticRaysLibTest(unittest.TestCase):
 
     def setUp(self):
-        self.nRays, self.rayLength = 8, 100
+        self.rayLength, self.nRays = 100, 8
         self.sensors = GeoDataFrame([
-            {"gid": 1, "geometry": Point([0, 0])},
-            {"gid": 200, "geometry": Point([200, 200])},
+            {"gid": 1, "geometry": Point([0, 0]), "rayLength": 30, "nRays": 4},
+            {"gid": 200, "geometry": Point(
+                [200, 200]), "rayLength": 60, "nRays": 6},
         ])
 
     def tearDown(self):
@@ -49,7 +50,7 @@ class PanopticRaysLibTest(unittest.TestCase):
         plt.show()
         plt.close(fig)
 
-    def testGet2DGeoDataFrame(self):
+    def testGet2DGeoDataFrame1(self):
         result = PanopticRaysLib.get2DGeoDataFrame(
             self.sensors, self.rayLength, self.nRays)
 
@@ -69,6 +70,50 @@ class PanopticRaysLibTest(unittest.TestCase):
         self.assertTrue(all(result.dissolve(
             by="__VPT_ID__", aggfunc={"__RAY_ID__": "count"}).__RAY_ID__.apply(lambda v: self.nRays == v)),
             "Is a GeoDataFrame of same nb of LineStrings")
+
+        # self.__plot(result)
+
+    def testGet2DGeoDataFrame2(self):
+        result = PanopticRaysLib.get2DGeoDataFrame(
+            self.sensors, "rayLength", self.nRays)
+
+        self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(self.nRays * len(self.sensors),
+                         len(result), "Count rows")
+        self.assertEqual(len(self.sensors.columns)+3,
+                         len(result.columns), "Count columns")
+
+        self.assertTrue(all(result.geometry.apply(lambda g: isinstance(
+            g, LineString))), "Is a GeoDataFrame of LineString")
+        self.assertFalse(all(result.geometry.apply(
+            lambda g: g.has_z)), "Is a GeoDataFrame of 2D LineString")
+        self.assertTrue(all(result.apply(
+            lambda row: abs(row["rayLength"] - row.geometry.length) < 1e-6, axis=1)),
+            "Is a GeoDataFrame of LineString of same lengths")
+
+        self.assertTrue(all(result.dissolve(
+            by="__VPT_ID__", aggfunc={"__RAY_ID__": "count"}).__RAY_ID__.apply(lambda v: self.nRays == v)),
+            "Is a GeoDataFrame of same nb of LineStrings")
+
+        # self.__plot(result)
+
+    def testGet2DGeoDataFrame3(self):
+        result = PanopticRaysLib.get2DGeoDataFrame(
+            self.sensors, "rayLength", "nRays")
+
+        self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(self.sensors.nRays.sum(),
+                         len(result), "Count rows")
+        self.assertEqual(len(self.sensors.columns)+3,
+                         len(result.columns), "Count columns")
+
+        self.assertTrue(all(result.geometry.apply(lambda g: isinstance(
+            g, LineString))), "Is a GeoDataFrame of LineString")
+        self.assertFalse(all(result.geometry.apply(
+            lambda g: g.has_z)), "Is a GeoDataFrame of 2D LineString")
+        self.assertTrue(all(result.apply(
+            lambda row: abs(row["rayLength"] - row.geometry.length) < 1e-6, axis=1)),
+            "Is a GeoDataFrame of LineString of same lengths")
 
         # self.__plot(result)
 

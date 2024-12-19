@@ -23,7 +23,6 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 from geopandas import GeoDataFrame
 from pandas import read_csv
 from shapely.wkt import loads
-from t4gpd.commons.CSVLib import CSVLib
 from t4gpd.commons.GeoProcess import GeoProcess
 
 

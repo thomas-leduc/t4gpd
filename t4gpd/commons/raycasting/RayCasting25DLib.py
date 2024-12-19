@@ -3,7 +3,7 @@ Created on 10 nov. 2023
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -167,7 +167,9 @@ class RayCasting25DLib(object):
                 lambda row: row.geometry_x if row.geometry_y is None else row.geometry_y, axis=1)
             smapRaysField.drop(
                 columns=["geometry_x", "geometry_y"], inplace=True)
-            smapRaysField = GeoDataFrame(smapRaysField, crs=buildings.crs)
+            # Debug 20.08.2024
+            smapRaysField = GeoDataFrame(smapRaysField).set_crs(
+                buildings.crs, allow_override=True)
 
             # Retrieve the heights of buildings near problematic sensors
             # Debug 25.03.2024
@@ -200,7 +202,8 @@ class RayCasting25DLib(object):
         for f in smapRaysField.columns:
             if f not in ["__VPT_ID__", "__RAY_ID__", "geometry"]:
                 aggfunc[f] = "first"
-        smapRaysField = smapRaysField.dissolve(by="__VPT_ID__", as_index=False, aggfunc=aggfunc)
+        smapRaysField = smapRaysField.dissolve(
+            by="__VPT_ID__", as_index=False, aggfunc=aggfunc)
         smapRaysField.drop(columns=["__VPT_ID__"], inplace=True)
         # smapRaysField.to_csv("/tmp/5.csv") # DEBUG
 

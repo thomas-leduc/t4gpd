@@ -188,3 +188,34 @@ dsm12 = _dsm1.read(1) + _dsm2.read(1)
 dsm12 = RTFromArrayToRaster(dsm12, roi).run()
 RTToFile(dsm12, f"{srcdir}/data/dsm12.tif").run()
 """
+
+"""
+import matplotlib.pyplot as plt
+from geopandas import GeoDataFrame
+from numpy import arange, flip
+from shapely import box
+from t4gpd.morph.STGrid import STGrid
+from t4gpd.raster.RTToFile import RTToFile
+
+roi = GeoDataFrame([{"geometry": box(0, 0, 50, 50)}])
+grid = STGrid(roi, dx=10, dy=None, indoor=None, intoPoint=False,
+              encode=False, withDist=False).run()
+
+array = flip(arange(25).reshape(5,-1), axis=0)
+raster = RTFromArrayToRaster(array, roi, ndv=0, debug=False).run()
+
+# MAPPING - OK WITH QGIS
+roi.to_file("/tmp/roi.shp")
+grid.to_file("/tmp/grid.shp")
+RTToFile(raster, "/tmp/raster.tif").run()
+
+# MAPPING - BUG WITH IMSHOW
+fig, ax = plt.subplots(figsize=(1.4 * 8.26, 1.0 * 8.26))
+roi.boundary.plot(ax=ax, color="green")
+grid.plot(ax=ax, column="gid", cmap="magma", legend=True)
+ax.imshow(raster.read(1), cmap="magma")
+ax.axis("off")
+fig.tight_layout()
+plt.show()
+plt.close(fig)
+"""

@@ -23,6 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 import unittest
 
 from geopandas import GeoDataFrame
+from shapely import LineString, get_coordinates
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.raycasting.PrepareMasksLib import PrepareMasksLib
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
@@ -40,6 +41,13 @@ class GeoDataFrameLibTest(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def testGetBBoxDiagonal(self):
+        for gdf in (self.gdf1, self.gdf2, self.gdf3, self.gdf4, self.gdf5):
+            result = GeoDataFrameLib.getBBoxDiagonal(gdf)
+            self.assertIsInstance(result, LineString, "Is a LineString")
+            self.assertEquals(2, len(get_coordinates(result)),
+                              "Is a LineString segment")
 
     def testIsAGeoDataFrameOfBipoints(self):
         self.assertTrue(

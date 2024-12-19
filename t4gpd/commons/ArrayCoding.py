@@ -3,7 +3,7 @@ Created on 16 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2024 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,6 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
+from numpy import nan
+from pandas import isna
 
 
 class ArrayCoding(object):
@@ -28,15 +30,19 @@ class ArrayCoding(object):
     '''
 
     @staticmethod
-    def encode(listOfValues, separator='#'):
+    def encode(listOfValues, separator="#"):
         try:
             iter(listOfValues)
             return separator.join([str(v) for v in listOfValues])
         except TypeError:
+            if isna(listOfValues) or (listOfValues is None):
+                return nan
             return str(listOfValues)
 
     @staticmethod
-    def decode(string, outputType=float, separator='#'):
-        if (0 == len(string)):
+    def decode(argument, outputType=float, separator="#"):
+        if isna(argument) or (argument is None):
+            return nan
+        if (0 == len(argument)):
             return []
-        return [outputType(v) for v in string.split(separator)]
+        return [outputType(v) for v in argument.split(separator)]

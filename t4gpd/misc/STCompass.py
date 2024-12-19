@@ -35,7 +35,7 @@ class STCompass(GeoProcess):
     classdocs
     '''
 
-    def __init__(self, basemap, bounds, crs, magnitude=0.015, bgcolor="white"):
+    def __init__(self, basemap, bounds, crs, magnitude=0.015, bgcolor=None):
         '''
         Constructor
         '''
@@ -89,8 +89,9 @@ class STCompass(GeoProcess):
             {"gid": 2, "geometry": _letter}
         ], crs=self.crs)
 
-        bb = STBBox(gdf, buffDist=3).run()
-        bb.plot(ax=self.basemap, color=self.bgcolor, alpha=0.35)
+        if self.bgcolor is not None:
+            bb = STBBox(gdf, buffDist=3).run()
+            bb.plot(ax=self.basemap, color=self.bgcolor, alpha=0.35)
 
         gdf.plot(ax=self.basemap, edgecolor="black",
                  column="gid", cmap=my_rgb_cmap)
