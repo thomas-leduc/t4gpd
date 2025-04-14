@@ -1,5 +1,44 @@
 # Package t4gpd history
 
+## Version 0.9.7 - rev. 15137 - 14 Apr. 2025
+* Add new tests.shadow.STSunMapTest class
+* Add new t4gpd.shadow.STSunMap class
+* Add new tests.commons.TimestampLibTest class
+* Add new t4gpd.commons.TimestampLib class
+* Add new tests.wrf.SkyMapRadiationBalance2Test class
+* Add new tests.wrf.SkyMapRadiationBalanceTest class
+* Add new tests.wrf.MeteoFranceReaderTest class
+* Add new tests.shadow.STTreeShadow2Test class
+* Add new tests.shadow.STTreeShadowTest class
+* Add new t4gpd.shadow.STTreeShadow2 class
+* Add new t4gpd.shadow.STTreeShadow class
+* Add new tests.shadow.STBuildingShadowTest class
+* Add new t4gpd.shadow.STBuildingShadow class
+* Add new t4gpd.shadow.AbstractShadow class
+* Add new tests.indices.BufferIndicesTest class
+* Add new commons.morph.OrientedSVFLib
+* Add new indices.SkymapIndices class
+* Add new indices.IsovistIndices class
+* Add new indices.IrradianceIndices class
+* Add new indices.BufferIndices class
+* Add new commons.morph.AbstractIndicesLib class
+* Add new tests.commons.morph.LinearRegressionLibTest class
+* Add new commons.morph.LinearRegressionLib class
+* Add new tests.commons.morph.StarShapedLibTest class
+* Add new commons.morph.StarShapedLib class
+* Add new tests.commons.EntropyTest class
+* Add new tests.morph.STProjectOnEdgesTest class
+* Add new morph.STProjectOnEdges class
+* Add new tests.commons.morph.ConvexityLibTest class
+* Add new commons.morph.ConvexityLib class
+* Add new tests.commons.morph.RectangularityLibTest class
+* Add new commons.morph.RectangularityLib class
+* Add new tests.commons.morph.CircularityLibTest class
+* Add new commons.morph.CircularityLib class
+* Add new commons.sun.SunModelPlotting class
+* Add new tests.resilientgaia.STSatelliteOnSiteProjectionTest class
+* Add new commons.sun.SunModel class
+
 ## Version 0.9.6 - rev. 14829 - 19 Dec. 2024
 * Add new picoclim.PicopattReader class
 * Add new tests.commons.energy.PvlibProxyTest class

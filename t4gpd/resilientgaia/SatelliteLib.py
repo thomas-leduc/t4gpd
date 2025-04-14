@@ -1,4 +1,4 @@
-'''
+"""
 Created on 27 sep. 2024
 
 @author: tleduc
@@ -19,14 +19,15 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 from pymap3d import Ellipsoid
 
 
-class SatelliteLib():
-    '''
+class SatelliteLib:
+    """
     classdocs
-    '''
+    """
+
     CONSTELLATIONS = {"E": "Galileo", "G": "GPS", "R": "GLONASS"}
     NSAT = 94
     WGS84 = Ellipsoid.from_name("wgs84")
@@ -38,10 +39,20 @@ class SatelliteLib():
 
     @staticmethod
     def get_satellite_name(i):
-        if (0 <= i <= 31):
+        if 0 <= i <= 31:
             return f"G{i+1:02d}"  # GPS
-        if (32 <= i <= 57):
+        if 32 <= i <= 57:
             return f"R{i-32+1:02d}"  # GLONASS
-        if (58 <= i <= 93):
+        if 58 <= i <= 93:
             return f"E{i-58+1:02d}"  # GALILEO
         raise Exception("Unreachable instruction!")
+
+    @staticmethod
+    def get_satellite_names(version):
+        if version == 1:
+            return [f"sat_{i}" for i in range(SatelliteLib.NSAT)]
+        if version == 2:
+            return [
+                SatelliteLib.get_satellite_name(i) for i in range(SatelliteLib.NSAT)
+            ]
+        raise Exception("Unknown version!")

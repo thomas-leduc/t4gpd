@@ -177,7 +177,7 @@ class DoubleProjectionOfWallsLib(object):
               aggregate=True, encode=True):
         if not GeoDataFrameLib.shareTheSameCrs(buildings, sensors):
             raise Exception(
-                "Illegal argument: buildings and sensors must share shames CRS!")
+                "Illegal argument: buildings and sensors are expected to share the same crs!")
 
         rayLength = GeoDataFrameLib.getBBoxDiagonal(buildings).length
 

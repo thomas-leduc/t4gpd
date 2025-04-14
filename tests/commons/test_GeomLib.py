@@ -6,9 +6,9 @@ Created on 18 juin 2020
 import unittest
 
 from geopandas import GeoDataFrame
-from numpy import pi
+from numpy import pi, sqrt
 from pandas import Series
-from shapely.geometry import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
+from shapely import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon, box
 from shapely.ops import unary_union
 from shapely.wkt import loads
 from t4gpd.commons.GeomLib import GeomLib
@@ -217,6 +217,31 @@ class GeomLibTest(unittest.TestCase):
         result = GeomLib.normalizeRingOrientation(self.multipolygon)
         self.assertEqual('MULTIPOLYGON (((0 0, 9 0, 9 9, 0 9, 0 0), (3 3, 3 6, 6 6, 6 3, 3 3)), ((100 0, 100 100, 0 100, 100 0)))',
                          result.wkt, 'Test normalize ring orientation (4)')
+
+    def testProjectOnEdges(self):
+        point = Point(5, 5)
+        polygon = box(0, 0, 10, 10)
+        expected = Point(10, 5)
+        actual = GeomLib.projectOnEdges(point, polygon, distToEdge=0, exteriorOnly=True)
+        self.assertEqual(expected, actual, 'Test project on edges (1)')
+
+        point = Point(15, 0)
+        polygon = box(0, 0, 10, 10)
+        expected = Point(15, 0)
+        actual = GeomLib.projectOnEdges(point, polygon, distToEdge=0, exteriorOnly=True)
+        self.assertEqual(expected, actual, 'Test project on edges (2)')
+
+        point = Point(5, 5)
+        polygon = loads("POLYGON ((10 0, 10 10, 0 10, 0 0, 10 0), (1 3, 3 3, 3 1, 1 1, 1 3))")
+        expected = Point(3, 3)
+        actual = GeomLib.projectOnEdges(point, polygon, distToEdge=0, exteriorOnly=False)
+        self.assertEqual(expected, actual, 'Test project on edges (3)')
+
+        point = Point(5, 5)
+        polygon = loads("POLYGON ((10 0, 10 10, 0 10, 0 0, 10 0), (1 3, 3 3, 3 1, 1 1, 1 3))")
+        expected = Point(3 - 0.5 / sqrt(2), 3 - 0.5 / sqrt(2))
+        actual = GeomLib.projectOnEdges(point, polygon, distToEdge=0.5, exteriorOnly=False)
+        self.assertEqual(expected, actual, 'Test project on edges (4)')
 
     def testRemoveHoles(self):
         p = GeomLib.removeHoles(self.polygon)

@@ -1,9 +1,9 @@
-'''
+"""
 Created on 26 oct. 2022
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,13 +19,12 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from datetime import datetime, timedelta
+"""
+
 import unittest
-
-from numpy.random import seed, shuffle
+from datetime import datetime, timedelta
+from numpy.random import default_rng
 from pandas import DataFrame
-
 from t4gpd.commons.DataFrameLib import DataFrameLib
 
 
@@ -34,14 +33,15 @@ class DataFrameLibTest(unittest.TestCase):
     def setUp(self):
         dt = datetime(2022, 10, 26, 9)
         oneHour = timedelta(hours=1)
-        self.df1 = DataFrame(data=[
-            {'colA': i, 'colB': i ** 2, 'colC': dt + i * oneHour} for i in range(10)
-        ])
+        self.df1 = DataFrame(
+            data=[
+                {"colA": i, "colB": i**2, "colC": dt + i * oneHour} for i in range(10)
+            ]
+        )
 
         self.df2 = self.df1.copy(deep=True)
         colA = self.df2.colA.to_list()
-        seed(0)
-        shuffle(colA)
+        default_rng(0).shuffle(colA)
         self.df2.colA = colA
 
     def tearDown(self):
@@ -49,25 +49,58 @@ class DataFrameLibTest(unittest.TestCase):
 
     def testGetNewColumnName(self):
         result = DataFrameLib.getNewColumnName(self.df1)
-        self.assertEqual(10, len(result), 'Is a string of 10 chars')
-        self.assertFalse(result in self.df1, 'Is not a column name')
+        self.assertEqual(10, len(result), "Is a string of 10 chars")
+        self.assertFalse(result in self.df1, "Is not a column name")
+
+    def testHasAPrimaryKeyIndex(self):
+        self.assertTrue(
+            DataFrameLib.hasAPrimaryKeyIndex(self.df1), "Test hasAPrimaryKeyIndex (1)"
+        )
+        self.assertTrue(
+            DataFrameLib.hasAPrimaryKeyIndex(self.df2), "Test hasAPrimaryKeyIndex (2)"
+        )
+        self.assertTrue(
+            DataFrameLib.hasAPrimaryKeyIndex(DataFrame()),
+            "Test hasAPrimaryKeyIndex (3)",
+        )
+        self.assertTrue(
+            DataFrameLib.hasAPrimaryKeyIndex(DataFrame(index=[1, 2, 3])),
+            "Test hasAPrimaryKeyIndex (4)",
+        )
+        self.assertFalse(
+            DataFrameLib.hasAPrimaryKeyIndex(DataFrame(index=[1, 1, 2])),
+            "Test hasAPrimaryKeyIndex (5)",
+        )
 
     def testInterpolate(self):
-        result = DataFrameLib.interpolate(self.df1, 'colA', 'colA', 4.5)
-        self.assertEqual(4.5, result, 'Is equal to 4.5')
+        result = DataFrameLib.interpolate(self.df1, "colA", "colA", 4.5)
+        self.assertEqual(4.5, result, "Is equal to 4.5")
 
-        result = DataFrameLib.interpolate(self.df1, 'colA', 'colB', 4.5)
-        self.assertEqual(20.5, result, 'Is equal to 20.5')
+        result = DataFrameLib.interpolate(self.df1, "colA", "colB", 4.5)
+        self.assertEqual(20.5, result, "Is equal to 20.5")
 
-        result = DataFrameLib.interpolate(self.df1, 'colA', 'colC', 4.5)
-        self.assertEqual(datetime(2022, 10, 26, 13, 30), result,
-                         'Is equal to "2022-10-26 13:30:00"')
+        result = DataFrameLib.interpolate(self.df1, "colA", "colC", 4.5)
+        self.assertEqual(
+            datetime(2022, 10, 26, 13, 30), result, 'Is equal to "2022-10-26 13:30:00"'
+        )
 
         try:
-            result = DataFrameLib.interpolate(self.df2, 'colA', 'colB', 4.5)
+            result = DataFrameLib.interpolate(self.df2, "colA", "colB", 4.5)
         except AssertionError as error:
             self.assertEqual(
-                str(error), 'Column "colA" must be monotonic', 'Trap error message')
+                str(error), 'Column "colA" must be monotonic', "Trap error message"
+            )
+
+    def testIsAPrimaryKey(self):
+        self.assertTrue(
+            DataFrameLib.isAPrimaryKey(self.df1, "colA"), "Test isAPrimaryKey (1)"
+        )
+        self.assertTrue(
+            DataFrameLib.isAPrimaryKey(self.df2, "colA"), "Test isAPrimaryKey (2)"
+        )
+        self.assertFalse(
+            DataFrameLib.isAPrimaryKey(DataFrame(), "gid"), "Test isAPrimaryKey (3)"
+        )
 
 
 if __name__ == "__main__":

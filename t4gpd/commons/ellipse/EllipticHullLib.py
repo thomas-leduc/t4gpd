@@ -3,7 +3,7 @@ Created on 23 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -23,7 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 from geopandas.geodataframe import GeoDataFrame
 import itertools
 
-from numpy import arccos, arctan2, array, cos, dot, flip, imag, log, matmul, ones, pi, polyadd, polyder, polymul, polyval, real, sin, sqrt, zeros
+from numpy import arccos, arctan2, array, cos, dot, flip, imag, log, matmul, nan, ones, pi, polyadd, polyder, polymul, polyval, real, sin, sqrt, zeros
 from numpy.linalg import cond, det, LinAlgError, solve, inv  # VARIANTE: from scipy.linalg import cond, det, inv, solve
 from numpy.polynomial.polynomial import polyroots
 from shapely.geometry import MultiPoint, Point
@@ -527,12 +527,17 @@ class EllipticHullLib(object):
             for k in range(4):
                 P[l][k] = P[l][k] - mm[l][0]
 
-        m = matmul(inv(M2), mm);
+        m = matmul(inv(M2), mm)
+
+        centre = (real(m[0])[0], real(m[1])[0])
 
         dd = polyval(num, tt) / polyval(den2, tt)
+        if dd == 0.0:
+            return [centre, [nan, nan, nan]]
+
         aa = polyval(a, tt) / dd
         bb = polyval(b, tt) / dd
-        cc = polyval(c, tt) / dd;
+        cc = polyval(c, tt) / dd
 
         [m11, m12], [m21, m22] = M2
 
@@ -541,7 +546,6 @@ class EllipticHullLib(object):
         cc1 = aa * m12 * m12 + bb * m12 * m22 + cc * m22 * m22
         aa, bb, cc = float(aa1), float(bb1), float(cc1)
 
-        centre = (real(m[0])[0], real(m[1])[0])
         return [centre, [aa, bb, cc]]
 
     @staticmethod

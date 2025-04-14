@@ -34,6 +34,8 @@ class LatLonLib(object):
     '''
     ALGER = GeoDataFrame(
         [{"geometry": Point((3.042048, 36.752887))}], crs="epsg:4326")
+    AVIGNON = GeoDataFrame(
+        [{"geometry": Point((4.80892, 43.94834))}], crs="epsg:4326")
     CAP_TOWN = GeoDataFrame(
         [{"geometry": Point((18.42322, -33.92584))}], crs="epsg:4326")
     DAKAR = GeoDataFrame(

@@ -3,7 +3,7 @@ Created on 6 sep. 2023
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -50,23 +50,28 @@ class STHeightOfRoughness(GeoProcess):
 
         if not GeoDataFrameLib.shareTheSameCrs(masks, grid):
             raise Exception(
-                "Illegal argument: masks and grid must share shames CRS!")
+                "Illegal argument: masks and grid are expected to share the same crs!")
 
         self.masks = masks
         # CLEAN GEOMETRIES
         self.masks.geometry = self.masks.geometry.apply(
             lambda g: g.buffer(0))
         self.elevationFieldName = elevationFieldName
-        self.grid = grid
+        self.grid = grid.copy(deep=True)
         self.outputFieldName = outputFieldName
 
     @staticmethod
     def __overlay(masks, grid, elevationFieldName, outputFieldName):
         grid["__CELL_AREA__"] = grid.geometry.apply(lambda g: g.area)
-        grid["__CELL_ID__"] = range(len(grid))
+        if grid.index.name is None:
+            grid = grid.reset_index().rename(columns={"index": "__CELL_ID__"})
+        else:
+            grid = grid.reset_index().rename(columns={grid.index.name: "__CELL_ID__"})
+
         masks2 = overlay(masks, grid, how="intersection", keep_geom_type=True)
         masks2["__VOLUME__"] = masks2.apply(
             lambda row: row[elevationFieldName]*row.geometry.area, axis=1)
+
         masks2 = masks2.dissolve(by="__CELL_ID__",
                                  aggfunc={"__CELL_AREA__": "first",
                                           "__VOLUME__": "sum"},
@@ -75,8 +80,10 @@ class STHeightOfRoughness(GeoProcess):
             lambda row: row.__VOLUME__/row.__CELL_AREA__, axis=1)
         grid2 = grid.merge(
             masks2[["__CELL_ID__", outputFieldName]], on="__CELL_ID__")
-        grid.drop(columns=["__CELL_AREA__", "__CELL_ID__"], inplace=True)
-        grid2.drop(columns=["__CELL_AREA__", "__CELL_ID__"], inplace=True)
+
+        grid2.set_index("__CELL_ID__", drop=True, inplace=True)
+        grid2.index.name = None
+        grid2.drop(columns=["__CELL_AREA__"], inplace=True)
         return grid2
 
     def run(self):

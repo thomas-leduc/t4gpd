@@ -21,9 +21,8 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame, overlay, sjoin_nearest
-from numpy import asarray, full, mean, min, zeros
-from pandas import concat
-from shapely import equals, LineString, Point
+from numpy import asarray, full, median, min, nan, zeros
+from shapely import LineString, Point
 from shapely.ops import nearest_points
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.GeomLib import GeomLib
@@ -72,56 +71,68 @@ class RayCasting25DLib(object):
         return RayCasting25DLib.__build_LineString(sensor, remotePoint, threshold)
 
     @staticmethod
-    def __from25DRaysToRayLengths(nRays, ray_ids, mls):
-        _raylens = asarray(
-            [ray.length for ray in GeomLib.toListOfLineStrings(mls)])
+    def __from25DRaysToRayLengths(gid, nRays, ray_ids, mls):
+        try:
+            _raylens = asarray(
+                [ray.length for ray in GeomLib.toListOfLineStrings(mls)])
 
-        if (nRays == len(_raylens)):
-            return _raylens
+            if (nRays == len(_raylens)):
+                return _raylens
 
-        raylens = zeros(nRays)
-        for i, ray_id in enumerate(ray_ids):
-            raylens[ray_id] = _raylens[i]
-        return raylens
-
-    @staticmethod
-    def __from25DRaysToRayAlts(nRays, ray_ids, mls, default_height):
-        _rayalts = asarray(
-            [ray.coords[-1][2] for ray in GeomLib.toListOfLineStrings(mls)])
-
-        if (nRays == len(_rayalts)):
-            return _rayalts
-
-        # The altitude of the building adjacent to the viewpoint should be assigned here.
-        # rayalts = zeros(nRays)
-        rayalts = full(nRays, default_height)
-        for i, ray_id in enumerate(ray_ids):
-            rayalts[ray_id] = _rayalts[i]
-        return rayalts
+            raylens = zeros(nRays)
+            for i, ray_id in enumerate(ray_ids):
+                raylens[ray_id] = _raylens[i]
+            return raylens
+        except Exception as e:
+            print(f"__from25DRaysToRayLengths[{gid}]: {e}")
+            return full(nRays, nan)
 
     @staticmethod
-    def __from25DRaysToRayDeltaAlts(nRays, ray_ids, mls, default_height):
-        _rays = GeomLib.toListOfLineStrings(mls)
-        _rayDeltaAlts = asarray(
-            [max(ray.coords[-1][2]-ray.coords[0][2], 0) for ray in _rays])
+    def __from25DRaysToRayAlts(gid, nRays, ray_ids, mls, default_height):
+        try:
+            _rayalts = asarray(
+                [ray.coords[-1][2] for ray in GeomLib.toListOfLineStrings(mls)])
 
-        if (nRays == len(_rayDeltaAlts)):
-            return _rayDeltaAlts
+            if (nRays == len(_rayalts)):
+                return _rayalts
 
-        # The altitude of the building adjacent to the viewpoint should be assigned here.
-        # rayDeltaAlts = zeros(nRays)
-        alt0 = min([ray.coords[0][2] for ray in _rays], initial=0)
-        rayDeltaAlts = full(nRays, default_height-alt0)
-        for i, ray_id in enumerate(ray_ids):
-            rayDeltaAlts[ray_id] = _rayDeltaAlts[i]
-        return rayDeltaAlts
+            # The altitude of the building adjacent to the viewpoint should be assigned here.
+            # rayalts = zeros(nRays)
+            rayalts = full(nRays, default_height)
+            for i, ray_id in enumerate(ray_ids):
+                rayalts[ray_id] = _rayalts[i]
+            return rayalts
+        except Exception as e:
+            print(f"__from25DRaysToRayAlts[{gid}]: {e}")
+            return full(nRays, nan)
+
+    @staticmethod
+    def __from25DRaysToRayDeltaAlts(gid, nRays, ray_ids, mls, default_height):
+        try:
+            _rays = GeomLib.toListOfLineStrings(mls)
+            _rayDeltaAlts = asarray(
+                [max(ray.coords[-1][2]-ray.coords[0][2], 0) for ray in _rays])
+
+            if (nRays == len(_rayDeltaAlts)):
+                return _rayDeltaAlts
+
+            # The altitude of the building adjacent to the viewpoint should be assigned here.
+            # rayDeltaAlts = zeros(nRays)
+            alt0 = min([ray.coords[0][2] for ray in _rays], initial=0)
+            rayDeltaAlts = full(nRays, default_height-alt0)
+            for i, ray_id in enumerate(ray_ids):
+                rayDeltaAlts[ray_id] = _rayDeltaAlts[i]
+            return rayDeltaAlts
+        except Exception as e:
+            print(f"__from25DRaysToRayDeltaAlts[{gid}]: {e}")
+            return full(nRays, nan)
 
     @staticmethod
     def multipleRayCast25D(viewpoints, buildings, rays, nRays, elevationFieldName,
                            withIndices, h0=0.0, threshold=1e-9):
         if not GeoDataFrameLib.shareTheSameCrs(buildings, rays):
             raise Exception(
-                "Illegal argument: buildings and rays must share shames CRS!")
+                "Illegal argument: buildings and rays are expected to share the same crs!")
         # rays.to_csv("/tmp/1.csv", index=False) # DEBUG
 
         rays.geometry = rays.geometry.apply(lambda geom: GeomLib.forceZCoordinateToZ0(
@@ -204,20 +215,22 @@ class RayCasting25DLib(object):
                 aggfunc[f] = "first"
         smapRaysField = smapRaysField.dissolve(
             by="__VPT_ID__", as_index=False, aggfunc=aggfunc)
-        smapRaysField.drop(columns=["__VPT_ID__"], inplace=True)
+        # smapRaysField.drop(columns=["__VPT_ID__"], inplace=True)
         # smapRaysField.to_csv("/tmp/5.csv") # DEBUG
 
         if (0 < len(smapRaysField)):
             smapRaysField["__RAY_LEN__"] = smapRaysField.apply(
-                lambda row: RayCasting25DLib.__from25DRaysToRayLengths(nRays, row.__RAY_ID__, row.geometry), axis=1)
+                lambda row: RayCasting25DLib.__from25DRaysToRayLengths(row.__VPT_ID__, nRays, row.__RAY_ID__, row.geometry), axis=1)
             smapRaysField["__RAY_ALT__"] = smapRaysField.apply(
-                lambda row: RayCasting25DLib.__from25DRaysToRayAlts(nRays, row.__RAY_ID__, row.geometry, row.__HAUTEUR_VP__), axis=1)
+                lambda row: RayCasting25DLib.__from25DRaysToRayAlts(row.__VPT_ID__, nRays, row.__RAY_ID__, row.geometry, row.__HAUTEUR_VP__), axis=1)
             smapRaysField["__RAY_DELTA_ALT__"] = smapRaysField.apply(
-                lambda row: RayCasting25DLib.__from25DRaysToRayDeltaAlts(nRays, row.__RAY_ID__, row.geometry, row.__HAUTEUR_VP__), axis=1)
+                lambda row: RayCasting25DLib.__from25DRaysToRayDeltaAlts(row.__VPT_ID__, nRays, row.__RAY_ID__, row.geometry, row.__HAUTEUR_VP__), axis=1)
 
             if withIndices:
                 smapRaysField = RayCasting25DLib.__addIndicesToSkyMapRaysField25D(
                     smapRaysField)
+
+        smapRaysField.drop(columns=["__VPT_ID__"], inplace=True)
         # smapRaysField.to_csv("/tmp/6.csv") # DEBUG
 
         return smapRaysField
@@ -226,6 +239,10 @@ class RayCasting25DLib(object):
     def __addIndicesToSkyMapRaysField25D(smapRaysField):
         smapRaysField["w_mean"] = smapRaysField.__RAY_LEN__.apply(
             lambda raylens: float(raylens.mean()))
+        smapRaysField["w_median"] = smapRaysField.__RAY_LEN__.apply(
+            lambda raylens: float(median(raylens)))
+        smapRaysField["w_min"] = smapRaysField.__RAY_LEN__.apply(
+            lambda raylens: float(raylens.min()))
         smapRaysField["w_std"] = smapRaysField.__RAY_LEN__.apply(
             lambda raylens: float(raylens.std()))
         smapRaysField["h_mean"] = smapRaysField.__RAY_ALT__.apply(

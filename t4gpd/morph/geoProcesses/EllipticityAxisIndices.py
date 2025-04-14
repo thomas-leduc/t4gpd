@@ -1,4 +1,4 @@
-'''
+"""
 Created on 20 nov. 2024
 
 @author: tleduc
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from numpy import asarray, isnan, pi
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.ellipse.EllipseLib import EllipseLib
@@ -28,14 +29,14 @@ from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
 
 class EllipticityAxisIndices(AbstractGeoprocess):
-    '''
+    """
     classdocs
-    '''
+    """
 
     def __init__(self, threshold=None, debug=False, with_geom=False):
-        '''
+        """
         Constructor
-        '''
+        """
         self.mabe = EllipticHullLib(threshold, debug)
         self.with_geom = with_geom
 
@@ -43,41 +44,54 @@ class EllipticityAxisIndices(AbstractGeoprocess):
     def __sort_of_linear_regression(mainAxis, pts):
         ppts = [mainAxis.interpolate(mainAxis.project(pt)) for pt in pts]
         dists = asarray([p.distance(pp) for p, pp in zip(pts, ppts)])
-        mae, mse = dists.sum(), (dists ** 2).sum()
+        mae, mse = dists.sum(), (dists**2).sum()
         return mae, mse
 
     def runWithArgs(self, row):
         geom = row.geometry
-
         pts = GeomLib.getListOfShapelyPoints(geom, withoutClosingLoops=True)
         chull = geom.convex_hull
 
+        if GeomLib.isLineal(chull):
+            if self.with_geom:
+                return {
+                    "geometry": chull.minimum_rotated_rectangle,
+                    "flattening": 0,
+                    "ell_mae": 0,
+                    "ell_mse": 0,
+                }
+            return {
+                "flattening": 0,
+                "ell_mae": 0,
+                "ell_mse": 0,
+            }
+
+
         # [Point(centre), semiXAxis, semiYAxis, azim, nodes, methName]
-        centre, semiXAxis, semiYAxis, azim, _, _ = self.mabe.getMinimumAreaBoundingEllipse(
-            chull)
+        centre, semiXAxis, semiYAxis, azim, _, _ = (
+            self.mabe.getMinimumAreaBoundingEllipse(chull)
+        )
 
         geomArea = geom.area
         mabeArea = pi * semiXAxis * semiYAxis
         if (isnan(mabeArea)) or (mabeArea < geomArea):
             raise Exception(
-                f"Minimum-area bounding ellipse is {mabeArea} (input geom area: {geomArea:.1f})!")
+                f"Minimum-area bounding ellipse is {mabeArea} (input geom area: {geomArea:.1f})!"
+            )
 
-        mainAxis = EllipseLib.getEllipseMainAxis(
-            centre, semiXAxis, semiYAxis, azim)
-        flattening = min(semiXAxis, semiYAxis) / max(semiXAxis,
-                                                     semiYAxis) if (0.0 < max(semiXAxis, semiYAxis)) else None
-        mae, mse = EllipticityAxisIndices.__sort_of_linear_regression(
-            mainAxis, pts)
+        mainAxis = EllipseLib.getEllipseMainAxis(centre, semiXAxis, semiYAxis, azim)
+        flattening = (
+            min(semiXAxis, semiYAxis) / max(semiXAxis, semiYAxis)
+            if (0.0 < max(semiXAxis, semiYAxis))
+            else None
+        )
+        mae, mse = EllipticityAxisIndices.__sort_of_linear_regression(mainAxis, pts)
         if self.with_geom:
             return {
                 "geometry": mainAxis,
                 "flattening": flattening,
                 "ell_mae": mae,
-                "ell_mse": mse
+                "ell_mse": mse,
             }
 
-        return {
-            "flattening": flattening,
-            "ell_mae": mae,
-            "ell_mse": mse
-        }
+        return {"flattening": flattening, "ell_mae": mae, "ell_mse": mse}

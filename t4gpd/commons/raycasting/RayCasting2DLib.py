@@ -78,7 +78,7 @@ class RayCasting2DLib(object):
     def multipleRayCast2D(buildings, rays, withIndices, threshold=1e-3):
         if not GeoDataFrameLib.shareTheSameCrs(buildings, rays):
             raise Exception(
-                "Illegal argument: buildings and rays must share shames CRS!")
+                "Illegal argument: buildings and rays are expected to share the same crs!")
 
         nRays = len(rays)
         rays = overlay(rays, buildings, how="difference", keep_geom_type=False)
@@ -91,7 +91,9 @@ class RayCasting2DLib(object):
             lambda geom: geom.length > threshold)].index, :]
         isovRaysField = rays.dissolve(
             by="__VPT_ID__", as_index=False, aggfunc=list)
-        isovRaysField.drop(columns=["__VPT_ID__"], inplace=True)
+        isovRaysField.set_index("__VPT_ID__", drop=True, inplace=True)
+        isovRaysField.index.name = None
+        # isovRaysField.drop(columns=["__VPT_ID__"], inplace=True)
         for fieldname in isovRaysField.columns:
             if fieldname not in ["geometry", "__RAY_ID__"]:
                 isovRaysField[fieldname] = isovRaysField[fieldname].apply(

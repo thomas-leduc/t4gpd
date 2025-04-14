@@ -1,9 +1,9 @@
-'''
+"""
 Created on 6 dec. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,24 +19,22 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from pandas import concat
-from pytz import timezone
-from pandas import Timestamp, date_range
-from datetime import datetime, timedelta
+"""
 
+from datetime import datetime
+from numpy import cos, deg2rad, sin
+from pandas import DatetimeIndex, Series, concat, to_datetime
+from pandas.core.arrays.datetimes import DatetimeArray
+from t4gpd.commons.AngleLib import AngleLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.commons.LatLonLib import LatLonLib
-from t4gpd.commons.sun.PySolarSunLib import PySolarSunLib
-from t4gpd.commons.sun.SoleneSunLib import SoleneSunLib
-
-import matplotlib.pyplot as plt
 
 
 class SunModel(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
     class Pvlib(object):
         def __init__(self, gdf, altitude):
             from pvlib.location import Location
@@ -66,11 +64,17 @@ class SunModel(object):
             # http://www.heliodon.net/downloads/Beckers_2010_Helio_007_fr.pdf
             # Spencer formula
             from numpy import cos, pi, sin
+
             g = ((2 * pi) * (day_of_year - 1)) / 365
-            return (0.006918 +
-                    -0.399912 * cos(g) + 0.070257 * sin(g)
-                    - 0.006758 * cos(2 * g) + 0.000907 * sin(2 * g)
-                    - 0.002697 * cos(3 * g) + 0.00148 * sin(3 * g))
+            return (
+                0.006918
+                + -0.399912 * cos(g)
+                + 0.070257 * sin(g)
+                - 0.006758 * cos(2 * g)
+                + 0.000907 * sin(2 * g)
+                - 0.002697 * cos(3 * g)
+                + 0.00148 * sin(3 * g)
+            )
 
         @staticmethod
         def __hour_angle(dt):
@@ -81,6 +85,7 @@ class SunModel(object):
             # before solar noon is expressed as negative degrees.
             # 24hrs correspond to 360 degrees, 15 degrees per hour.
             from numpy import deg2rad
+
             return deg2rad(((dt.hour + (dt.minute / 60)) - 12) * 15)
 
         @staticmethod
@@ -99,8 +104,8 @@ class SunModel(object):
             # AZIMUTH
             azimuth = arctan2(
                 (-cos(declination) * sin(hour_angle)) / cos(elevation),
-                (sin(elevation) * sin(latitude) - sin(declination)) /
-                (cos(elevation) * cos(latitude))
+                (sin(elevation) * sin(latitude) - sin(declination))
+                / (cos(elevation) * cos(latitude)),
             )
             azimuth = AngleLib.southCCW2northCW(azimuth, degree=False)
 
@@ -108,26 +113,37 @@ class SunModel(object):
 
         def clearsky_irradiances(self, dts):
             from t4gpd.energy.PerrinDeBrichambaut import PerrinDeBrichambaut
+
             df = self.positions(dts)
 
             raise NotImplementedError("Must be implemented!")
 
         def positions(self, dts):
             from pandas import DataFrame
+
             df = DataFrame({"elevation": dts, "azimuth": dts}, index=dts)
             df = DataFrame(
-                columns=["day_of_year", "declination",
-                         "hour_angle", "elev_azim", "elevation", "azimuth"],
-                index=dts)
+                columns=[
+                    "day_of_year",
+                    "declination",
+                    "hour_angle",
+                    "elev_azim",
+                    "elevation",
+                    "azimuth",
+                ],
+                index=dts,
+            )
             df = df.assign(
                 day_of_year=df.index.day_of_year,
-                declination=lambda row: self.__solar_declination(
-                    row.day_of_year),
-                hour_angle=lambda row: self.__hour_angle(
-                    row.index),
+                declination=lambda row: self.__solar_declination(row.day_of_year),
+                hour_angle=lambda row: self.__hour_angle(row.index),
             )
-            df.elev_azim = df.apply(lambda row: self.__solar_angles(
-                self.lat, row.declination, row.hour_angle), axis=1)
+            df.elev_azim = df.apply(
+                lambda row: self.__solar_angles(
+                    self.lat, row.declination, row.hour_angle
+                ),
+                axis=1,
+            )
             df.elevation = df.elev_azim.apply(lambda ea: ea[0])
             df.azimuth = df.elev_azim.apply(lambda ea: ea[1])
             df.drop(columns=["elev_azim"], inplace=True)
@@ -137,300 +153,115 @@ class SunModel(object):
             return self.clearsky_irradiances(dts)
 
     def __init__(self, gdf=LatLonLib.NANTES, altitude=0, model="pvlib"):
-        '''
+        """
         Constructor
-        '''
+        """
         model_class = SunModel.model_switch(model)
         self.model = model_class(gdf, altitude)
         self.lat, self.lon = LatLonLib.fromGeoDataFrameToLatLon(gdf)
         self.altitude = altitude
 
-    @ staticmethod
-    def __check_DatetimeIndex(dts):
-        from pandas import DatetimeIndex
+    @staticmethod
+    def __to_DatetimeIndex(dts):
+        if isinstance(dts, (list, DatetimeArray, Series)):
+            dts = DatetimeIndex(to_datetime(dts))
         if not isinstance(dts, DatetimeIndex):
-            raise IllegalArgumentTypeException(
-                dts, "pandas.DatetimeIndex")
+            raise IllegalArgumentTypeException(dts, "pandas.DatetimeIndex")
+        return dts
 
-    @ staticmethod
+    @staticmethod
+    def is_a_leap_year(year):
+        if isinstance(year, datetime):
+            year = year.year
+        return (0 == year % 400) if (0 == year % 100) else (0 == year % 4)
+
+    @staticmethod
     def model_switch(modelName):
         modelName = modelName.lower()
-        if ("pvlib" == modelName):
+        if "pvlib" == modelName:
             return SunModel.Pvlib
-        elif ("circular" == modelName):
+        elif "circular" == modelName:
             return SunModel.CircularEarthOrbit
-        raise IllegalArgumentTypeException(
-            modelName, "model as 'pvlib' or 'circular'")
+        raise IllegalArgumentTypeException(modelName, "model as 'pvlib' or 'circular'")
+
+    @staticmethod
+    def ndays_per_year(year):
+        if isinstance(year, datetime):
+            year = year.year
+        return 366 if (SunModel.is_a_leap_year(year)) else 365
 
     def sun_rise_set(self, dts, tz="UTC"):
         from pandas import DataFrame
         from suntimes.suntimes import SunTimes
 
-        SunModel.__check_DatetimeIndex(dts)
+        dts = SunModel.__to_DatetimeIndex(dts)
         st = SunTimes(self.lon, self.lat, altitude=self.altitude)
         df = DataFrame({"sunrise": dts, "sunset": dts}, index=dts)
         df.sunrise = df.sunrise.apply(lambda dt: st.riseutc(dt))
         df.sunrise = df.sunrise.dt.tz_localize("UTC")
         df.sunset = df.sunset.apply(lambda dt: st.setutc(dt))
         df.sunset = df.sunset.dt.tz_localize("UTC")
-        if ("UTC" != tz):
+        if "UTC" != tz:
             df.sunrise = df.sunrise.dt.tz_convert(tz)
             df.sunset = df.sunset.dt.tz_convert(tz)
-        df = df.assign(daylength=df.sunset-df.sunrise)
+        df = df.assign(daylength=df.sunset - df.sunrise)
         # df.daylength = df.daylength.apply(lambda v: v.seconds//60)
         return df
 
     def clearsky_irradiances(self, dts):
-        SunModel.__check_DatetimeIndex(dts)
+        dts = SunModel.__to_DatetimeIndex(dts)
         return self.model.clearsky_irradiances(dts)
 
     def positions(self, dts):
-        SunModel.__check_DatetimeIndex(dts)
+        dts = SunModel.__to_DatetimeIndex(dts)
         return self.model.positions(dts)
 
+    def __get_sun_beam_direction(self, df):
+        def __to_sun_beam_direction(row):
+            x = row.cos_elevation * row.cos_azimuth
+            y = row.cos_elevation * row.sin_azimuth
+            z = row.sin_elevation
+            return x, y, z
+
+        df["azimuth_rad"] = deg2rad(AngleLib.northCW2eastCCW(df.azimuth, degree=True))
+        df["cos_azimuth"] = cos(df.azimuth_rad)
+        df["sin_azimuth"] = sin(df.azimuth_rad)
+        df["elevation_rad"] = deg2rad(df.elevation)
+        df["cos_elevation"] = cos(df.elevation_rad)
+        df["sin_elevation"] = sin(df.elevation_rad)
+        df["sun_beam_direction"] = df.apply(
+            lambda row: __to_sun_beam_direction(row),
+            axis=1,
+        )
+        df.drop(
+            columns=[
+                "azimuth_rad",
+                "cos_azimuth",
+                "sin_azimuth",
+                "elevation_rad",
+                "cos_elevation",
+                "sin_elevation",
+            ],
+            inplace=True,
+        )
+        return df
+
+    def positions_and_sun_beam_direction(self, dts):
+        result = self.__get_sun_beam_direction(self.positions(dts))
+        return result
+
     def positions_clearsky_irradiances(self, dts):
-        SunModel.__check_DatetimeIndex(dts)
+        dts = SunModel.__to_DatetimeIndex(dts)
         return self.model.positions_clearsky_irradiances(dts)
 
-    def getDayLengthInMinutes(self, dt):
-        return self.model.getDayLengthInMinutes(dt)
-
-    def getFractionalYear(self, dt):
-        return self.model.getFractionalYear(dt)
-
-    def getRadiationDirection(self, dt):
-        return self.model.getRadiationDirection(dt)
-
-    def getSolarAnglesInDegrees(self, dt):
-        return self.model.getSolarAnglesInDegrees(dt)
-
-    def getSolarAnglesInRadians(self, dt):
-        return self.model.getSolarAnglesInRadians(dt)
-
-    def getSolarDeclination(self, dayOfYear):
-        return self.model.getSolarDeclination(dayOfYear)
-
-    def getSunrise(self, dt):
-        return self.model.getSunrise(dt)
-
-    def getSunset(self, dt):
-        return self.model.getSunset(dt)
-
-    @staticmethod
-    def polarPlot(models=["circular", "pvlib"], year=2023):
-        from numpy import deg2rad
-        from pandas import DatetimeIndex, Timestamp
-
-        solstices_equinox = DatetimeIndex([
-            Timestamp(f"{year}-03-21"),
-            Timestamp(f"{year}-06-21"),
-            Timestamp(f"{year}-12-21"),
-        ])
-
-        ncols = len(models)
-        fig, axes = plt.subplots(figsize=(1.2*8.26, 0.5*8.26),
-                                 nrows=1, ncols=ncols, squeeze=False,
-                                 subplot_kw={"projection": "polar"})
-        for nc, model in enumerate(models):
-            sun_model = SunModel(model=model)
-            sun_rise_set = sun_model.sun_rise_set(solstices_equinox, tz="UTC")
-
-            ax = axes[0, nc]
-            # NORTH IS ON TOP
-            ax.set_theta_zero_location("N")
-            # CLOCKWISE
-            ax.set_theta_direction(-1)
-            # LABEL POSITIONS
-            # ax.set_rlabel_position(0)
-            ax.set_title(model)
-            ax.set_ylim(0, 90)
-
-            for month, color in [(3, "green"), (6, "red"), (12, "blue")]:
-                day = Timestamp(f"{year}-{month}-21")
-                sunrise = sun_rise_set.loc[day, "sunrise"]
-                sunset = sun_rise_set.loc[day, "sunset"]
-                dts = date_range(sunrise, sunset, freq="10min")
-                df = sun_model.positions(dts)
-                ax.plot(deg2rad(df.azimuth), 90-df.elevation, color=color)
-
-            for hour in range(6, 19, 2):
-                start = Timestamp(f"{year}-01-01 {hour:02d}:00")
-                end = Timestamp(f"{year}-12-31 {hour:02d}:00")
-                dts = date_range(start, end, freq="5    D")
-                df = sun_model.positions(dts)
-                ax.plot(deg2rad(df.azimuth), 90-df.elevation, color="brown",
-                        linewidth=0.75, linestyle="solid")
-
-            ax.set_rgrids(
-                range(0, 90, 10),
-                labels=[f"{a}°" for a in range(90, 0, -10)])
-            ax.set_thetagrids(
-                range(0, 360, 15),
-                labels=[f"{a}°" for a in range(0, 360, 15)])
-        plt.show()
-        plt.close(fig)
-
-    def plotDayLengths(self):
-        year = datetime.now().year
-        daysInYear = range(1, self.model.nDaysPerYear(year) + 1, 10)
-        dayLengths = []
-
-        for _dayOfYear in daysInYear:
-            _dt = datetime(year, 1, 1, 12, tzinfo=timezone.utc) + \
-                timedelta(days=_dayOfYear)
-            _dayLengthInMin = self.model.getDayLengthInMinutes(_dt)
-            dayLengths.append(_dayLengthInMin)
-
-        if (isinstance(self.model, SoleneSunLib)):
-            _title = "Solene model"
-        elif (isinstance(self.model, PySolarSunLib)):
-            _title = "PySolar implementation"
-
-        plt.title("%s: days lengths - Year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$" % (
-            _title, year, self.lat, self.lon))
-        plt.xlabel("Day of year")
-        plt.ylabel("Day length (min.)")
-        plt.grid()
-        plt.plot(daysInYear, dayLengths)
-        plt.show()
-
-    def plotSolarDeclination(self):
-        _year = datetime.now().year
-        _the1stOfJan = datetime(_year, 1, 1, 12, tzinfo=timezone.utc)
-
-        days = range(1, self.model.nDaysPerYear(_year) + 1)
-
-        declinations = [
-            self.model.getSolarDeclination(
-                _the1stOfJan + timedelta(days=dayOfYear))
-            for dayOfYear in days]
-
-        if (isinstance(self.model, SoleneSunLib)):
-            plt.title(
-                "Solar declination by Solene (Spencer, 1971) - year = %d" % _year)
-        elif (isinstance(self.model, PySolarSunLib)):
-            plt.title("Solar declination by PySolar - year = %d" % _year)
-
-        plt.xlabel("Day of year")
-        plt.ylabel("Solar declination")
-        plt.grid()
-        plt.plot(days, declinations)
-        plt.show()
-
-    def plotSunAltiAtNoon(self):
-        _year = datetime.now().year
-        _the1stOfJan = datetime(_year, 1, 1, 12, tzinfo=timezone.utc)
-
-        daysInYear = range(1, self.model.nDaysPerYear(_year) + 1, 10)
-        sunAltiAtNoon = []
-
-        for _dayOfYear in daysInYear:
-            _dt = _the1stOfJan + timedelta(days=_dayOfYear)
-            _alti, _ = self.model.getSolarAnglesInDegrees(_dt)
-            sunAltiAtNoon.append(_alti)
-
-        if (isinstance(self.model, SoleneSunLib)):
-            _title = "Solene model"
-        elif (isinstance(self.model, PySolarSunLib)):
-            _title = "PySolar implementation"
-
-        plt.title("%s: days lengths - Year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$" % (
-            _title, _year, self.lat, self.lon))
-        plt.xlabel("Day of year")
-        plt.ylabel("Solar altitude at noon (in degrees)")
-        plt.grid()
-        plt.plot(daysInYear, sunAltiAtNoon)
-        plt.show()
-
-    def plotSunriseSunset(self):
-        year = datetime.now().year
-        daysInYear = range(1, self.model.nDaysPerYear(year) + 1, 10)
-        sunrises, sunsets = [], []
-
-        for _dayOfYear in daysInYear:
-            _dt = datetime(year, 1, 1, 12, tzinfo=timezone.utc) + \
-                timedelta(days=_dayOfYear)
-
-            _sunrise = self.model.getTimeSpentSinceMidnight(
-                self.model.getSunrise(_dt))
-            _sunset = self.model.getTimeSpentSinceMidnight(
-                self.model.getSunset(_dt))
-
-            sunrises.append(_sunrise)
-            sunsets.append(_sunset)
-
-        if (isinstance(self.model, SoleneSunLib)):
-            _title = "Solene model"
-        elif (isinstance(self.model, PySolarSunLib)):
-            _title = "PySolar implementation"
-
-        plt.title("%s: sunrise/sunset - Year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$" % (
-            _title, year, self.lat, self.lon))
-        plt.xlabel("Day of year")
-        plt.ylabel("UTC Time (hr.)")
-        plt.grid()
-        plt.plot(daysInYear, sunrises, daysInYear, sunsets)
-        plt.show()
-
-    def plotSolarPanorama(self):
-        year = datetime.now().year
-        _, basemap = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
-
-        if (isinstance(self.model, SoleneSunLib)):
-            _title = "Solene model"
-        elif (isinstance(self.model, PySolarSunLib)):
-            _title = "PySolar implementation"
-        plt.title("%s: solar panorama - year %d\nLatitude: %.1f$^o$, Longitude: %.1f$^o$" % (
-            _title, year, self.lat, self.lon))
-        plt.xlabel("Azim. [$^0$]")
-        plt.ylabel("Alti. [$^0$]")
-
-        altis, azims = {}, {}
-        hrsAltis, hrsAzims = {}, {}
-
-        for hour in range(0, 24):
-            hrsAltis[hour], hrsAzims[hour] = [], []
-
-        for month in range(6, 13, 3):
-            altis[month], azims[month] = [], []
-            t0 = datetime(year, month, 21, tzinfo=timezone.utc)
-            _sunrise = self.model.getSunrise(t0)
-            _sunset = self.model.getSunset(t0)
-
-            for hour in range(0, 24):
-                for minute in range(0, 60, 10):
-                    _dt = t0 + timedelta(hours=hour) + \
-                        timedelta(minutes=minute)
-                    if True or (_sunrise < _dt < _sunset):
-                        _alti, _azim = self.model.getNativeSolarAnglesInDegrees(
-                            _dt)
-                        if (0 <= _alti):
-                            altis[month].append(_alti)
-                            azims[month].append(_azim)
-                        if (0 == minute):
-                            hrsAltis[hour].append(_alti)
-                            hrsAzims[hour].append(_azim)
-
-            basemap.plot(azims[month], altis[month],
-                         label=_dt.strftime("%b %d"))
-
-        for hour in range(5, 20, 1):
-            if (0 == (hour % 2)):
-                basemap.plot(hrsAzims[hour], hrsAltis[hour], "k-.")
-                basemap.text((3 * hrsAzims[hour][0] + hrsAzims[hour][-1]) / 4,
-                             (3 * hrsAltis[hour][0] + hrsAltis[hour][-1]) / 4,
-                             f"{hour}:00", fontsize=9).set_color("black")
-
-        for lbl, azim in [("East", 90), ("South", 180), ("West", 270)]:
-            basemap.axvline(x=azim, linestyle=":", color="black", linewidth=1)
-            basemap.text(azim, 70, lbl, fontsize=9).set_color("black")
-        basemap.set_ylim(0, 90)
-
-        basemap.legend()
-        plt.show()
+    def positions_clearsky_irradiances_and_sun_beam_direction(self, dts):
+        result = self.__get_sun_beam_direction(self.positions_clearsky_irradiances(dts))
+        return result
 
 
 """
+from pandas import Timestamp, date_range
+
 tz = "Europe/Paris"
 tz = "UTC"
 dt0 = Timestamp("2024-06-21 08:00", tz=tz)
@@ -456,6 +287,4 @@ print(
 
 model = "pvlib"
 df3 = SunModel(model=model).positions_clearsky_irradiances(dts)
-
-SunModel.polarPlot()
 """

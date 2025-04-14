@@ -46,7 +46,7 @@ class STIsovistField2D(GeoProcess):
 
         if not GeoDataFrameLib.shareTheSameCrs(buildings, viewpoints):
             raise Exception(
-                "Illegal argument: buildings and viewpoints must share shames CRS!")
+                "Illegal argument: buildings and viewpoints are expected to share the same crs!")
 
         self.buildings = buildings
         # CLEAN GEOMETRIES

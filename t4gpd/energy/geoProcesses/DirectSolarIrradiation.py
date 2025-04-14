@@ -63,7 +63,7 @@ class DirectSolarIrradiation(AbstractGeoprocess):
         self.maskElevationFieldname = maskElevationFieldname
 
         if not GeoDataFrameLib.shareTheSameCrs(sensorsGdf, masksGdf):
-            raise Exception(f'The sensors & masks GeoDataFrame must share same CRS!')
+            raise Exception(f'The sensors & masks GeoDataFrame are expected to share the same crs!')
 
         if not isinstance(dtStart, (date, datetime)):
             raise IllegalArgumentTypeException(dtStart, 'date or datetime')

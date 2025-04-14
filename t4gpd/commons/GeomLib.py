@@ -3,7 +3,7 @@ Created on 15 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -25,7 +25,8 @@ from functools import reduce
 from geopandas import GeoDataFrame, overlay, sjoin_nearest
 from numpy import cos, sin, sqrt, pi
 from pandas.core.common import flatten
-from shapely.geometry import CAP_STYLE, GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
+from shapely import GeometryCollection, LinearRing, LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon, get_geometry, get_num_geometries, get_num_interior_rings
+from shapely.geometry import CAP_STYLE
 from shapely.ops import nearest_points, transform, unary_union
 from shapely.prepared import prep
 from t4gpd.commons.AngleLib import AngleLib
@@ -267,6 +268,8 @@ class GeomLib(object):
                     ring, withoutClosingLoops)
             return result
         elif GeomLib.isMultipart(obj):
+            if 0 == get_num_geometries(obj):
+                return []
             return reduce(lambda a, b: a + b, [GeomLib.getListOfShapelyPoints(g, withoutClosingLoops) for g in obj.geoms])
         raise IllegalArgumentTypeException(obj, 'Shapely geometry')
 
@@ -371,6 +374,16 @@ class GeomLib(object):
             lambda g: isAnAnchoringPolygon(point, g))]
 
         return gdf.index[0] if (0 < len(gdf)) else None
+
+    @staticmethod
+    def getUniqueHoleAsPolygon(geom):
+        if isinstance(geom, Polygon) and (1 == len(geom.interiors)):
+            return Polygon(geom.interiors[0])
+        if (isinstance(geom, MultiPolygon) and
+            (1 == get_num_geometries(geom)) and
+            (1 == get_num_interior_rings(get_geometry(geom, 0)))):
+                return Polygon(get_geometry(geom, 0).interiors[0])
+        return Polygon()
 
     @staticmethod
     def isABorderPoint(point, buildings):
@@ -486,6 +499,29 @@ class GeomLib(object):
             for geom in obj.geoms:
                 result.append(GeomLib.normalizeRingOrientation(geom, ccw))
             return MultiPolygon(result)
+
+    @staticmethod
+    def projectOnEdges(point, polygon, distToEdge=0, exteriorOnly=False):
+        if not isinstance(point, Point):
+            raise IllegalArgumentTypeException(point, "Point")
+        if not isinstance(polygon, Polygon):
+            raise IllegalArgumentTypeException(polygon, "Polygon")
+
+        if not point.within(polygon):
+            return point
+        if exteriorOnly:
+            _, pp = nearest_points(point, polygon.exterior)
+        else:
+            _, pp = nearest_points(point, MultiLineString(GeomLib.toListOfLineStrings(polygon)))
+
+        if 0 == distToEdge:
+            return pp
+        d = point.distance(pp)
+        pp2 = Point(
+            pp.x + distToEdge * (pp.x - point.x) / d,
+            pp.y + distToEdge * (pp.y - point.y) / d
+        )
+        return pp2
 
     @staticmethod
     def projectOntoStraightLine(p, line):

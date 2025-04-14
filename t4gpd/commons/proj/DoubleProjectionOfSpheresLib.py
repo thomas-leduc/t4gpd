@@ -107,7 +107,7 @@ class DoubleProjectionOfSpheresLib(object):
               h0=0.0, size=1, projectionName="Stereographic", npts=4):
         if not GeoDataFrameLib.shareTheSameCrs(trees, sensors):
             raise Exception(
-                "Illegal argument: trees and sensors must share shames CRS!")
+                "Illegal argument: trees and sensors are expected to share the same crs!")
 
         prj = DoubleProjectionLib.projection_switch(projectionName)
 

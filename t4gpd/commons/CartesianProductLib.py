@@ -58,7 +58,7 @@ class CartesianProductLib(object):
             raise IllegalArgumentTypeException(gdf2, "GeoDataFrame")
         if not GeoDataFrameLib.shareTheSameCrs(gdf1, gdf2):
             raise Exception(
-                "Illegal argument: gdf1 and gdf2 must share shames CRS!")
+                "Illegal argument: gdf1 and gdf2 are expected to share the same crs!")
         result = CartesianProductLib.product(gdf1, gdf2)
         result = result.loc[result.apply(
             lambda row: row.geometry_x.distance(row.geometry_y), axis=1) <= distance]
@@ -73,7 +73,7 @@ class CartesianProductLib(object):
             raise IllegalArgumentTypeException(gdf2, "GeoDataFrame")
         if not GeoDataFrameLib.shareTheSameCrs(gdf1, gdf2):
             raise Exception(
-                "Illegal argument: gdf1 and gdf2 must share shames CRS!")
+                "Illegal argument: gdf1 and gdf2 are expected to share the same crs!")
 
         _gdf1 = gdf1.copy(deep=True)
         _gdf1["geometry_x"] = _gdf1.geometry

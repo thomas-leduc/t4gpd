@@ -1,9 +1,9 @@
-'''
+"""
 Created on 19 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from shapely.geometry import LineString, Point
 
 from t4gpd.commons.GeomLib import GeomLib
@@ -27,16 +28,17 @@ from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeExcept
 
 
 class DiameterLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
 
     @staticmethod
     def diameter(obj):
         if not GeomLib.isAShapelyGeometry(obj):
-            raise IllegalArgumentTypeException(obj, 'Shapely geometry')
-
-        vertices = [Point(c) for c in obj.convex_hull.exterior.coords]
+            raise IllegalArgumentTypeException(obj, "Shapely geometry")
+        chull = obj.convex_hull
+        chull = chull if GeomLib.isLineal(chull) else chull.exterior
+        vertices = [Point(c) for c in chull.coords]
         nVertices = len(vertices)
 
         maxDist, pairOfVertices = -1.0, None
@@ -48,9 +50,9 @@ class DiameterLib(object):
                 if maxDist < currDist:
                     maxDist = currDist
                     pairOfVertices = [v1, v2]
-        
+
         if pairOfVertices is None:
             return [None, None, None]
-        
+
         segment = LineString(pairOfVertices)
         return [segment, maxDist, GeomLib.getLineStringOrientation(segment)]

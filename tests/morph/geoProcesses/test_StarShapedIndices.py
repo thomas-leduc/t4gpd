@@ -1,9 +1,9 @@
-'''
+"""
 Created on 15 janv. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,11 +19,12 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 import unittest
 
-from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Point
+from geopandas import GeoDataFrame
+from shapely import Point, get_num_geometries
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.isovist.STIsovistField2D import STIsovistField2D
 from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
@@ -33,47 +34,59 @@ from t4gpd.morph.geoProcesses.StarShapedIndices import StarShapedIndices
 class StarShapedIndicesTest(unittest.TestCase):
 
     def setUp(self):
-        self.nRays, self.rayLength = 36, 50.0
+        self.nrays, self.raylen = 36, 50.0
         self.buildings = GeoDataFrameDemos.ensaNantesBuildings()
         self.viewpoints = GeoDataFrame(
-            [{'geometry': Point((355317.9, 6688409.5))}], crs=self.buildings.crs)
+            [{"geometry": Point((355317.9, 6688409.5))}], crs=self.buildings.crs
+        )
         self.isovRays, self.isov = STIsovistField2D(
-            self.buildings, self.viewpoints, self.nRays, self.rayLength).run()
+            self.buildings, self.viewpoints, self.nrays, self.raylen
+        ).run()
 
     def tearDown(self):
         pass
 
-    def testRun(self):
-        result = STGeoProcess(StarShapedIndices(precision=1.0, base=2), self.isovRays).run()
-
-        self.assertIsInstance(result, GeoDataFrame, 'Is a GeoDataFrame')
-        self.assertEqual(1, len(result), 'Count rows')
-        self.assertEqual(9, len(result.columns), 'Count columns')
-
-        for _, row in result.iterrows():
-            self.assertIsInstance(row['min_raylen'], float, 'Test min_raylen return type')
-            self.assertIsInstance(row['avg_raylen'], float, 'Test avg_raylen return type')
-            self.assertIsInstance(row['std_raylen'], float, 'Test std_raylen return type')
-            self.assertIsInstance(row['max_raylen'], float, 'Test max_raylen return type')
-            self.assertIsInstance(row['entropy'], float, 'Test entropy return type')
-            self.assertIsInstance(row['drift'], float, 'Test drift return type')
-
-            self.assertTrue(0 <= row['min_raylen'] <= self.rayLength, 'Test min_raylen attribute value')
-            self.assertTrue(0 <= row['avg_raylen'] <= self.rayLength, 'Test avg_raylen attribute value')
-            self.assertTrue(0 <= row['std_raylen'] <= self.rayLength, 'Test std_raylen attribute value')
-            self.assertTrue(0 <= row['max_raylen'] <= self.rayLength + 1e-6, 'Test max_raylen attribute value')
-            self.assertTrue(0 <= row['entropy'], 'Test entropy attribute value')
-            self.assertTrue(0 <= row['drift'] <= self.rayLength, 'Test drift attribute value')
-
-        '''
+    def __plot(self):
         import matplotlib.pyplot as plt
-        basemap = self.buildings.plot(color='lightgrey', edgecolor='black', linewidth=0.3)
-        self.isovRays.plot(ax=basemap, color='blue')
-        self.isov.boundary.plot(ax=basemap, color='red')
-        plt.show()
-        '''
 
-        # isovField.to_file('/tmp/xxx.shp')
+        fig, ax = plt.subplots(figsize=(8.26, 8.26))
+        self.buildings.plot(ax=ax, color="lightgrey", edgecolor="grey")
+        self.viewpoints.plot(ax=ax, color="red", marker="P")
+        self.isovRays.plot(ax=ax, color="blue")
+        self.isov.plot(ax=ax, color="yellow", alpha=0.5)
+        ax.axis("off")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+    def testRun(self):
+        op = StarShapedIndices(precision=1.0, base=2)
+        actual = STGeoProcess(op, self.isovRays).run()
+
+        self.assertIsInstance(actual, GeoDataFrame, "Is a GeoDataFrame")
+        self.assertEqual(len(self.viewpoints), len(actual), "Count rows")
+        self.assertEqual(len(self.viewpoints) + 8, len(actual.columns), "Count columns")
+
+        for _, row in actual.iterrows():
+            self.assertEqual(
+                self.nrays,
+                get_num_geometries(row.geometry),
+                f"Check number of rays",
+            )
+            self.assertGreaterEqual(row["entropy"], 0, "Test entropy attribute value")
+            for fieldname in [
+                "min_raylen",
+                "avg_raylen",
+                "std_raylen",
+                "max_raylen",
+                "med_raylen",
+                "drift",
+            ]:
+                self.assertTrue(
+                    0 <= row[fieldname] <= self.raylen + 1e-6, f"Check {fieldname} value"
+                )
+
+        # self.__plot()
 
 
 if __name__ == "__main__":

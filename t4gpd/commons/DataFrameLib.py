@@ -1,9 +1,9 @@
-'''
+"""
 Created on 26 oct. 2022
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,16 +19,17 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from datetime import timedelta
-from pandas import DataFrame
+from pandas import DataFrame, MultiIndex
 from random import choices
 
 
 class DataFrameLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
 
     @staticmethod
     def getNewColumnName(df):
@@ -41,15 +42,24 @@ class DataFrameLib(object):
                 return colname
 
     @staticmethod
+    def hasAMultiIndex(df):
+        return isinstance(df.index, MultiIndex)
+
+    @staticmethod
+    def hasAPrimaryKeyIndex(gdf):
+        return gdf.index.is_unique
+
+    @staticmethod
     def interpolate(df, xfieldname, yfieldname, x):
-        assert (df[xfieldname].is_monotonic_increasing or
-                df[xfieldname].is_monotonic_decreasing), \
-            f'Column "{xfieldname}" must be monotonic'
+        assert (
+            df[xfieldname].is_monotonic_increasing
+            or df[xfieldname].is_monotonic_decreasing
+        ), f'Column "{xfieldname}" must be monotonic'
 
         df.set_index(xfieldname, drop=False, inplace=True)
 
-        row0 = df.iloc[df.index.get_indexer([x], method='ffill')]
-        row1 = df.iloc[df.index.get_indexer([x], method='bfill')]
+        row0 = df.iloc[df.index.get_indexer([x], method="ffill")]
+        row1 = df.iloc[df.index.get_indexer([x], method="bfill")]
 
         x0, x1 = row0[xfieldname].squeeze(), row1[xfieldname].squeeze()
         y0, y1 = row0[yfieldname].squeeze(), row1[yfieldname].squeeze()
@@ -59,6 +69,10 @@ class DataFrameLib(object):
             delta = delta.seconds
             deltaX = deltaX.seconds
 
-        if (0 == deltaX):
+        if 0 == deltaX:
             return y0
         return y0 + (delta * (y1 - y0)) / deltaX
+
+    @staticmethod
+    def isAPrimaryKey(gdf, key):
+        return key in gdf.columns and gdf[key].is_unique

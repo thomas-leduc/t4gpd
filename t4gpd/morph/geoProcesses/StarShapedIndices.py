@@ -1,9 +1,9 @@
-'''
+"""
 Created on 15 janv. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,40 +19,24 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from numpy import mean, std
-from shapely.wkt import loads
-from t4gpd.commons.GeomLib import GeomLib
-from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
+"""
 
-from t4gpd.commons.Entropy import Entropy
+from t4gpd.commons.morph.StarShapedLib import StarShapedLib
+from t4gpd.morph.geoProcesses.AbstractGeoprocess import AbstractGeoprocess
 
 
 class StarShapedIndices(AbstractGeoprocess):
-    '''
+    """
     classdocs
-    '''
+    """
 
     def __init__(self, precision=1.0, base=2):
-        '''
+        """
         Constructor
-        '''
+        """
         self.precision = precision
         self.base = base
 
     def runWithArgs(self, row):
         geom = row.geometry
-
-        lengths = GeomLib.fromMultiLineStringToLengths(geom)
-
-        drift = loads(row['vect_drift']).length if ('vect_drift' in row) else None
-        h = Entropy.createFromDoubleValuesArray(lengths, self.precision).h(self.base)
-
-        return {
-            'min_raylen': min(lengths),
-            'avg_raylen': mean(lengths),
-            'std_raylen': std(lengths),
-            'max_raylen': max(lengths),
-            'entropy': h,
-            'drift': drift
-            }
+        return StarShapedLib.indices(geom, self.precision, self.base)

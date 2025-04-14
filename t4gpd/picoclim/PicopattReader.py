@@ -1,9 +1,9 @@
-'''
+"""
 Created on 3 dec. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,42 +19,59 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 import warnings
-from zoneinfo import ZoneInfo
-
 from pandas import read_csv
+from zoneinfo import ZoneInfo
 from t4gpd.commons.WarnUtils import WarnUtils
 from t4gpd.io.AbstractReader import AbstractReader
 
 
 class PicopattReader(AbstractReader):
-    '''
+    """
     classdocs
-    '''
-    COLUMNS = ["project_id", "track_id", "section_duration",
-               "section_speed", "section_warning", "section_weather",
-               "lon_rtk", "lat_rtk"]
+    """
 
-    def __init__(self, inputFile, tzinfo="Europe/Paris", ocrs="epsg:2154"):
-        '''
+    COLUMNS = [
+        "project_id",
+        "track_id",
+        "section_duration",
+        "section_speed",
+        "section_warning",
+        "section_weather",
+    ]
+
+    def __init__(self, inputFile, lat, lon, tzinfo="Europe/Paris", ocrs="epsg:2154"):
+        """
         Constructor
-        '''
+        """
         warnings.formatwarning = WarnUtils.format_Warning
         self.inputFile = inputFile
+        self.lat = lat
+        self.lon = lon
         self.tzinfo = ZoneInfo(tzinfo)
         self.ocrs = ocrs
 
-    def __get_version(self):
-        df = read_csv(PicopattReader.opener(self.inputFile), sep=";", nrows=0)
+    @staticmethod
+    def get_version(inputFile):
+        df = read_csv(PicopattReader.opener(inputFile), sep=";", nrows=0)
 
-        if ((37 == len(df.columns)) and
-                all([column in df for column in PicopattReader.COLUMNS])):
+        if (37 == len(df.columns)) and all(
+            [column in df for column in PicopattReader.COLUMNS]
+        ):
             return 1.0
-        elif ((38 == len(df.columns)) and
-                all([column in df for column in PicopattReader.COLUMNS]) and
-                ("gnss_accuracy" in df)):
+        elif (
+            (38 == len(df.columns))
+            and all([column in df for column in PicopattReader.COLUMNS])
+            and ("gnss_accuracy" in df)
+        ):
             return 2.0
+        elif (
+            (39 == len(df.columns))
+            and all([column in df for column in PicopattReader.COLUMNS])
+            and ("gnss_accuracy" in df)
+        ):
+            return 3.0
         raise Exception("File format not as expected!")
 
     def __fillna(self, df):
@@ -84,7 +101,7 @@ class PicopattReader(AbstractReader):
                     "section_duration": sduration,
                     "section_speed": sspeed,
                     "section_warning": swarning,
-                    "section_weather": sweather
+                    "section_weather": sweather,
                 }
             rows.append(row)
         return DataFrame(rows)
@@ -94,20 +111,19 @@ class PicopattReader(AbstractReader):
         from shapely import Point
 
         df["geometry"] = df.apply(
-            lambda row: Point(row.lon_rtk, row.lat_rtk), axis=1)
+            lambda row: Point(row[self.lon], row[self.lat]), axis=1
+        )
         gdf = GeoDataFrame(df, geometry="geometry", crs="epsg:4326")
         return gdf.to_crs(self.ocrs)
 
     def run(self):
-        version = self.__get_version()
-
-        if (version not in [1.0, 2.0]):
-            warnings.warn(
-                "Picopatt file format is expected to be equal to 1.0 or 2.0!")
+        version = PicopattReader.get_version(self.inputFile)
+        # warnings.warn(f"Picopatt file version is {version}")
 
         # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
-        df = read_csv(PicopattReader.opener(self.inputFile),
-                      parse_dates=["timestamp"], sep=";")
+        df = read_csv(
+            PicopattReader.opener(self.inputFile), parse_dates=["timestamp"], sep=";"
+        )
         # df.timestamp = df.timestamp.apply(lambda dt: dt.replace(tzinfo=self.tzinfo))
         # df.timestamp = df.timestamp.dt.tz_localize(self.tzinfo).dt.tz_convert("UTC")
         df.timestamp = df.timestamp.dt.tz_localize(self.tzinfo)
@@ -126,13 +142,22 @@ class PicopattReader(AbstractReader):
 
 
 """
-inputFile = "/media/tleduc/disk_20241128/uclimweb/data/picopatt_montpellier/picopatt_montpellier*antigone*20240710*1412.csv"
-df = PicopattReader(inputFile).run()
-df.to_csv("/tmp/1.csv", sep=";", index=False)
-print(df.head(3))
+idir = "/media/tleduc/disk_20241128/uclimweb/data"
+idir = "/home/tleduc/uclim/data"
 
-inputFile = "/media/tleduc/disk_20241128/uclimweb/data/picopatt_nantes/picopatt_nantes*loire*20240919*1829.csv"
-df = PicopattReader(inputFile).run()
+ifile = f"{idir}/picopatt_montpellier/picopatt_montpellier*antigone*20240710*1412.csv"
+df = PicopattReader(ifile, lat="lat_ontrack", lon="lon_ontrack").run()
+df.to_csv("/tmp/1.csv", sep=";", index=False)
+print(df.head(2))
+
+ifile = f"{idir}/picopatt_nantes/picopatt_nantes*loire*20240919*1829.csv"
+df = PicopattReader(ifile, lat="lat_ontrack", lon="lon_ontrack").run()
 df.to_csv("/tmp/2.csv", sep=";", index=False)
-print(df.head(3))
+print(df.head(2))
+
+idir = "/home/tleduc/uclim/data"
+ifile = f"{idir}/picopatt_nantes/picopatt_nantes*victor_hugo*20250205*1128.csv"
+df = PicopattReader(ifile, lat="lat_ontrack", lon="lon_ontrack").run()
+df.to_csv("/tmp/3.csv", sep=";", index=False)
+print(df.head(2))
 """

@@ -24,6 +24,7 @@ from geopandas import GeoDataFrame
 from numpy import arctan2, asarray, cos, full, linspace, pi, sqrt, sin
 from shapely import Polygon
 from t4gpd.commons.ArrayCoding import ArrayCoding
+from t4gpd.commons.DataFrameLib import DataFrameLib
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.GeomLib3D import GeomLib3D
@@ -54,13 +55,13 @@ class STSkyMap25D(GeoProcess):
         if not isinstance(viewpoints, GeoDataFrame):
             raise IllegalArgumentTypeException(
                 viewpoints, "viewpoints GeoDataFrame")
-        if not "gid" in viewpoints:
+        if not DataFrameLib.isAPrimaryKey(viewpoints, "gid"):
             raise Exception(
                 "viewpoints must have a 'gid' field name (with unique values)!")
 
         if not GeoDataFrameLib.shareTheSameCrs(buildings, viewpoints):
             raise Exception(
-                "Illegal argument: buildings and viewpoints must share shames CRS!")
+                "Illegal argument: buildings and viewpoints are expected to share the same crs!")
 
         self.viewpoints = viewpoints
         self.viewpoints.geometry = self.viewpoints.geometry.apply(
@@ -135,10 +136,14 @@ class STSkyMap25D(GeoProcess):
         return [arctan2(h, w) for h, w in zip(heights, widths)]
 
     def __buildSkyMap(self, viewpoint, lats, lons):
-        viewpoint = viewpoint.centroid
-        pnodes = [self.proj(lat, lon) for lat, lon in zip(lats, lons)]
-        pnodes = [(viewpoint.x + pp[0], viewpoint.y + pp[1]) for pp in pnodes]
-        return Polygon(viewpoint.buffer(self.size + self.epsilon).exterior.coords, [pnodes])
+        try:
+            viewpoint = viewpoint.centroid
+            pnodes = [self.proj(lat, lon) for lat, lon in zip(lats, lons)]
+            pnodes = [(viewpoint.x + pp[0], viewpoint.y + pp[1]) for pp in pnodes]
+            return Polygon(viewpoint.buffer(self.size + self.epsilon).exterior.coords, [pnodes])
+        except Exception as e:
+            print(f"__buildSkyMap: {e}")
+            return Polygon()
 
     def run(self):
         smapRaysField = RayCasting25DLib.multipleRayCast25D(

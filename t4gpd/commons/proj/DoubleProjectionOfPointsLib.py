@@ -36,7 +36,7 @@ class DoubleProjectionOfPointsLib(object):
                encode=True):
         if not GeoDataFrameLib.shareTheSameCrs(sensors, streetlights):
             raise Exception(
-                "Illegal argument: sensors and streetlights must share shames CRS!")
+                "Illegal argument: sensors and streetlights are expected to share the same crs!")
 
         prj = DoubleProjectionLib.projection_switch(projectionName)
 

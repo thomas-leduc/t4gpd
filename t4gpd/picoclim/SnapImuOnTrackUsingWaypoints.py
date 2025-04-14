@@ -57,8 +57,8 @@ class SnapImuOnTrackUsingWaypoints(GeoProcess):
             raise Exception(f"'id' is not a relevant field name!")
         self.waypoints = waypoints
 
-        assert GeoDataFrameLib.shareTheSameCrs(dfImu, tracks), "dfImu and tracks must share the same crs!"
-        assert GeoDataFrameLib.shareTheSameCrs(tracks, waypoints), "tracks and waypoints must share the same crs!"
+        assert GeoDataFrameLib.shareTheSameCrs(dfImu, tracks), "dfImu and tracks are expected to share the same crs!"
+        assert GeoDataFrameLib.shareTheSameCrs(tracks, waypoints), "tracks and waypoints are expected to share the same crs!"
         self.crs = tracks.crs
 
     def run(self):

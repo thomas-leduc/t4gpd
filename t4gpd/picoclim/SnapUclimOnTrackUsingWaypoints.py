@@ -62,7 +62,7 @@ class SnapUclimOnTrackUsingWaypoints(GeoProcess):
         self.waypoints = waypoints
 
         assert GeoDataFrameLib.shareTheSameCrs(
-            tracks, waypoints), "tracks and waypoints must share the same crs!"
+            tracks, waypoints), "tracks and waypoints are expected to share the same crs!"
         self.crs = tracks.crs
 
     def _buildIntervalIndex(self):
