@@ -35,7 +35,7 @@ class LinearRegressionLib(AbstractIndicesLib):
     """
 
     @staticmethod
-    def _getColumns(with_geom=False):
+    def _getColumns():
         return ["slope", "intercept", "score", "mae", "mse"]
 
     @staticmethod
@@ -75,7 +75,7 @@ class LinearRegressionLib(AbstractIndicesLib):
                 geom = LineString(
                     [
                         (X_minmax[0, 0], y_minmax_pred[0]),
-                        (X_minmax[1, 0], y_minmax_pred[0]),
+                        (X_minmax[1, 0], y_minmax_pred[1]),
                     ]
                 )
                 result.update({"geometry": geom})
@@ -85,3 +85,46 @@ class LinearRegressionLib(AbstractIndicesLib):
         if with_geom:
             result.update({"geometry": LineString()})
         return result
+
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        from numpy.random import default_rng
+        from shapely import MultiPoint
+        from shapely.affinity import rotate
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        rng = default_rng(1234)
+        from geopandas import GeoDataFrame
+
+        gdf = GeoDataFrame(
+            {
+                "geometry": [
+                    MultiPoint(
+                        rng.normal(
+                            loc=[(i, i) for i in range(10)], scale=0.5, size=(10, 2)
+                        )
+                    )
+                ]
+            }
+        )
+
+        # gdf = GeoDataFrameDemos.theChineseCharacterForReach()
+        # gdf = GeoDataFrameDemos.singleBuildingInNantes()
+        # gdf.geometry = gdf.geometry.apply(
+        #     lambda geom: rotate(geom, angle=-45, origin="center", use_radians=False)
+        # )
+        lrl = LinearRegressionLib.indices(gdf, with_geom=True, merge_by_index=True)
+
+        fig, ax = plt.subplots()
+        gdf.plot(ax=ax, color="grey")
+        lrl.plot(ax=ax, color="red")
+        ax.axis("square")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+        return lrl
+
+
+# lrl = LinearRegressionLib.test()

@@ -1,9 +1,9 @@
-'''
+"""
 Created on 24 jul. 2023
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,10 +19,11 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from geopandas import GeoDataFrame
-from numpy import arctan2, asarray, cos, full, linspace, pi, sqrt, sin
-from shapely import Polygon
+from numpy import arctan2, asarray, linspace, pi
+from shapely import Point, Polygon
 from t4gpd.commons.ArrayCoding import ArrayCoding
 from t4gpd.commons.DataFrameLib import DataFrameLib
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
@@ -30,143 +31,148 @@ from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.GeomLib3D import GeomLib3D
 from t4gpd.commons.GeoProcess import GeoProcess
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.commons.proj.AEProjectionLib import AEProjectionLib
 from t4gpd.commons.raycasting.RayCasting25DLib import RayCasting25DLib
 
 
 class STSkyMap25D(GeoProcess):
-    '''
+    """
     classdocs
-    '''
-    PIDIV2 = 0.5 * pi
+    """
 
-    def __init__(self, buildings, viewpoints, nRays=64, rayLength=100.0,
-                 elevationFieldname="HAUTEUR", h0=0.0, size=4.0, epsilon=1e-2,
-                 projectionName="Stereographic", withIndices=False, withAngles=False,
-                 encode=False, threshold=1e-6):
-        '''
+    def __init__(
+        self,
+        buildings,
+        viewpoints,
+        nRays=64,
+        rayLength=100.0,
+        elevationFieldname="HAUTEUR",
+        h0=0.0,
+        size=4.0,
+        epsilon=1e-2,
+        projectionName="Stereographic",
+        withIndices=False,
+        withAngles=False,
+        encode=False,
+        threshold=1e-6,
+    ):
+        """
         Constructor
-        '''
+        """
         if not isinstance(buildings, GeoDataFrame):
-            raise IllegalArgumentTypeException(
-                buildings, "buildings GeoDataFrame")
+            raise IllegalArgumentTypeException(buildings, "buildings GeoDataFrame")
         if not elevationFieldname in buildings:
-            raise Exception(
-                f"{elevationFieldname} is not a relevant field name!")
+            raise Exception(f"{elevationFieldname} is not a relevant field name!")
         if not isinstance(viewpoints, GeoDataFrame):
-            raise IllegalArgumentTypeException(
-                viewpoints, "viewpoints GeoDataFrame")
+            raise IllegalArgumentTypeException(viewpoints, "viewpoints GeoDataFrame")
         if not DataFrameLib.isAPrimaryKey(viewpoints, "gid"):
             raise Exception(
-                "viewpoints must have a 'gid' field name (with unique values)!")
+                "viewpoints must have a 'gid' field name (with unique values)!"
+            )
 
         if not GeoDataFrameLib.shareTheSameCrs(buildings, viewpoints):
             raise Exception(
-                "Illegal argument: buildings and viewpoints are expected to share the same crs!")
+                "Illegal argument: buildings and viewpoints are expected to share the same crs!"
+            )
 
         self.viewpoints = viewpoints
         self.viewpoints.geometry = self.viewpoints.geometry.apply(
             lambda geom: GeomLib.forceZCoordinateToZ0(
-                geom, z0=GeomLib3D.centroid(geom).z if geom.has_z else h0))
+                geom, z0=GeomLib3D.centroid(geom).z if geom.has_z else h0
+            )
+        )
 
         self.buildings = buildings
         self.elevationFieldname = elevationFieldname
 
         # CHECK IF buildings IS NOT EMPTY
-        if (0 < len(self.buildings)):
+        if 0 < len(self.buildings):
             # CHECK IF ANY elevationFieldname VALUE IS NULL OR NaN
-            if (any(self.buildings[self.elevationFieldname].isna()) or
-                    any(self.buildings[self.elevationFieldname].isnull())):
+            if any(self.buildings[self.elevationFieldname].isna()) or any(
+                self.buildings[self.elevationFieldname].isnull()
+            ):
                 raise Exception(
-                    "There is at least one NaN value in the elevation column of the buildings dataframe!")
+                    "There is at least one NaN value in the elevation column of the buildings dataframe!"
+                )
 
             # CLEAN GEOMETRIES
             self.buildings.geometry = self.buildings.geometry.apply(
-                lambda g: g.buffer(0))
+                lambda g: g.buffer(0)
+            )
             self.buildings.geometry = self.buildings.apply(
                 lambda row: GeomLib.forceZCoordinateToZ0(
-                    row.geometry, row[self.elevationFieldname]),
-                axis=1
+                    row.geometry, row[self.elevationFieldname]
+                ),
+                axis=1,
             )
 
         self.nRays = nRays
         self.rayLength = rayLength
         self.rays = RayCasting25DLib.get25DPanopticRaysGeoDataFrame(
-            self.viewpoints, rayLength, nRays, h0)
+            self.viewpoints, rayLength, nRays, h0
+        )
 
         self.size = size
         self.epsilon = epsilon
-        projectionName = projectionName.lower()
-        if (projectionName in ["equiareal", "isoaire"]):
-            self.proj = self.__isoaire
-        elif ("orthogonal" == projectionName):
-            self.proj = self.__orthogonal
-        elif ("polar" == projectionName):
-            self.proj = self.__polar
-        elif ("stereographic" == projectionName):
-            self.proj = self.__stereographic
-        else:
-            raise IllegalArgumentTypeException(
-                projectionName, "spherical projection as 'Stereographic', 'Orthogonal', 'Isoaire', 'Polar'")
+
+        self.proj = AEProjectionLib.projection_switch(projectionName)
 
         self.withIndices = withIndices
         self.withAngles = withAngles
         self.encode = encode
         self.threshold = threshold
 
-    def __isoaire(self, lat, lon):
-        radius = sqrt((1 - sin(lat)) / ((cos(lat)*cos(lon))
-                      ** 2 + (cos(lat)*sin(lon))**2))
-        radius *= (self.size * cos(lat))
-        return (radius * cos(lon), radius * sin(lon))
-
-    def __orthogonal(self, lat, lon):
-        radius = (self.size * cos(lat))
-        return (radius * cos(lon), radius * sin(lon))
-
-    def __polar(self, lat, lon):
-        radius = (self.size * (pi - 2 * lat)) / pi
-        return (radius * cos(lon), radius * sin(lon))
-
-    def __stereographic(self, lat, lon):
-        radius = 1.0 / (1.0 + sin(lat))
-        radius *= (self.size * cos(lat))
-        return (radius * cos(lon), radius * sin(lon))
-
     def __angles(self, heights, widths):
         return [arctan2(h, w) for h, w in zip(heights, widths)]
 
     def __buildSkyMap(self, viewpoint, lats, lons):
         try:
+            origin = Point(0, 0)
             viewpoint = viewpoint.centroid
-            pnodes = [self.proj(lat, lon) for lat, lon in zip(lats, lons)]
+            pnodes = [self.proj(origin, lon, lat) for lat, lon in zip(lats, lons)]
             pnodes = [(viewpoint.x + pp[0], viewpoint.y + pp[1]) for pp in pnodes]
-            return Polygon(viewpoint.buffer(self.size + self.epsilon).exterior.coords, [pnodes])
+            return Polygon(
+                viewpoint.buffer(self.size + self.epsilon).exterior.coords, [pnodes]
+            )
         except Exception as e:
             print(f"__buildSkyMap: {e}")
             return Polygon()
 
     def run(self):
         smapRaysField = RayCasting25DLib.multipleRayCast25D(
-            self.viewpoints, self.buildings, self.rays, self.nRays,
-            self.elevationFieldname, self.withIndices, h0=0.0, threshold=self.threshold)
+            self.viewpoints,
+            self.buildings,
+            self.rays,
+            self.nRays,
+            self.elevationFieldname,
+            self.withIndices,
+            h0=0.0,
+            threshold=self.threshold,
+        )
         # smapRaysField.to_csv("/tmp/7.csv") # DEBUG
 
-        if (0 < len(smapRaysField)):
+        if 0 < len(smapRaysField):
             smapRaysField["angles"] = smapRaysField.apply(
-                lambda row: self.__angles(
-                    row.__RAY_DELTA_ALT__, row.__RAY_LEN__),
-                axis=1
+                lambda row: self.__angles(row.__RAY_DELTA_ALT__, row.__RAY_LEN__),
+                axis=1,
             )
             # smapRaysField.to_csv("/tmp/8.csv") # DEBUG
-            lons = linspace(0, 2*pi, self.nRays, endpoint=False)
-            smapRaysField.geometry = smapRaysField.apply(lambda row: self.__buildSkyMap(
-                row.viewpoint, row.angles, lons), axis=1)
+            lons = linspace(0, 2 * pi, self.nRays, endpoint=False)
+            smapRaysField.geometry = smapRaysField.apply(
+                lambda row: self.__buildSkyMap(row.viewpoint, row.angles, lons), axis=1
+            )
             smapRaysField.angles = smapRaysField.angles.apply(
-                lambda v: (180/pi) * asarray(v))
+                lambda v: (180 / pi) * asarray(v)
+            )
             # smapRaysField.to_csv("/tmp/9.csv") # DEBUG
 
         fields = ["__RAY_ID__"]
-        for field in ["__RAY_LEN__", "__RAY_ALT__", "__RAY_DELTA_ALT__", "__HAUTEUR_VP__"]:
+        for field in [
+            "__RAY_LEN__",
+            "__RAY_ALT__",
+            "__RAY_DELTA_ALT__",
+            "__HAUTEUR_VP__",
+        ]:
             if field in smapRaysField.columns:
                 fields.append(field)
 
@@ -176,17 +182,18 @@ class STSkyMap25D(GeoProcess):
         smapRaysField.drop(columns=fields, inplace=True)
 
         if self.encode:
-            smapRaysField.viewpoint = smapRaysField.viewpoint.apply(
-                lambda vp: vp.wkt)
+            smapRaysField.viewpoint = smapRaysField.viewpoint.apply(lambda vp: vp.wkt)
             if "angles" in smapRaysField:
                 smapRaysField.angles = smapRaysField.angles.apply(
-                    lambda a: ArrayCoding.encode(a))
+                    lambda a: ArrayCoding.encode(a)
+                )
 
         return smapRaysField
 
 
 """
 import matplotlib.pyplot as plt
+from geopandas import GeoDataFrame
 from shapely import Point
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 
@@ -200,7 +207,7 @@ fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(1.2 * 8.26, 1.2 * 8.26))
 for i, projection in enumerate(["Stereographic", "Isoaire", "Orthogonal", "Polar"]):
     skymaps = STSkyMap25D(buildings, sensors, projectionName=projection,
                           withIndices=True).run()
-    ax = axes[i//2, i%2]
+    ax = axes[divmod(i, 2)]
 
     minx, miny, maxx, maxy = skymaps.total_bounds
     ax.set_title(projection, fontsize=20)
@@ -211,7 +218,7 @@ for i, projection in enumerate(["Stereographic", "Isoaire", "Orthogonal", "Polar
     ax.axis("off")
 
 fig.tight_layout()
-plt.savefig("prj.pdf", bbox_inches="tight")
+# plt.savefig("prj.pdf", bbox_inches="tight")
 plt.show()
 """
 

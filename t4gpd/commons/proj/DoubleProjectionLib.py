@@ -1,9 +1,9 @@
-'''
+"""
 Created on 22 mar. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from numpy import asarray, cos, pi, sin, sqrt
 from shapely import Point
 from shapely.coords import CoordinateSequence
@@ -28,14 +29,15 @@ from t4gpd.commons.SphericalCartesianCoordinates import SphericalCartesianCoordi
 
 
 class DoubleProjectionLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
     @staticmethod
     def __to_pair_of_arrays(vp, rp):
-        if (isinstance(vp, Point) and isinstance(rp, Point)):
+        if isinstance(vp, Point) and isinstance(rp, Point):
             vp, rp = vp.coords, rp.coords
-        if (isinstance(vp, CoordinateSequence) and isinstance(rp, CoordinateSequence)):
+        if isinstance(vp, CoordinateSequence) and isinstance(rp, CoordinateSequence):
             vp, rp = vp[0], rp[0]
         vp, rp = asarray(vp), asarray(rp)
         return vp, rp
@@ -53,80 +55,75 @@ class DoubleProjectionLib(object):
 
     @staticmethod
     def isoaire_projection(vp, rp, size=1):
-        viewpoint, pp, D = DoubleProjectionLib.__first_projection(
-            vp, rp)
+        viewpoint, pp, D = DoubleProjectionLib.__first_projection(vp, rp)
 
-        tmp = pp[0]**2 + pp[1]**2
-        if (0 == tmp):
+        tmp = pp[0] ** 2 + pp[1] ** 2
+        if 0 == tmp:
             # Projection of a point above the viewpoint
-            return Point([
-                viewpoint[0],
-                viewpoint[1],
-                D  # viewpoint[2]
-            ])
+            return Point([viewpoint[0], viewpoint[1], D])  # viewpoint[2]
 
-        magn = size * sqrt((1-pp[2]) / tmp)
-        return Point([
-            viewpoint[0] + magn * pp[0],
-            viewpoint[1] + magn * pp[1],
-            D  # viewpoint[2]
-        ])
+        magn = size * sqrt((1 - pp[2]) / tmp)
+        return Point(
+            [
+                viewpoint[0] + magn * pp[0],
+                viewpoint[1] + magn * pp[1],
+                D,  # viewpoint[2]
+            ]
+        )
 
     @staticmethod
     def orthogonal_projection(vp, rp, size=1):
-        viewpoint, pp, D = DoubleProjectionLib.__first_projection(
-            vp, rp)
-        return Point([
-            viewpoint[0] + size * pp[0],
-            viewpoint[1] + size * pp[1],
-            D  # viewpoint[2]
-        ])
+        viewpoint, pp, D = DoubleProjectionLib.__first_projection(vp, rp)
+        return Point(
+            [
+                viewpoint[0] + size * pp[0],
+                viewpoint[1] + size * pp[1],
+                D,  # viewpoint[2]
+            ]
+        )
 
     @staticmethod
     def polar_projection(vp, rp, size=1):
-        viewpoint, pp, D = DoubleProjectionLib.__first_projection(
-            vp, rp)
+        viewpoint, pp, D = DoubleProjectionLib.__first_projection(vp, rp)
         _, lon, lat = SphericalCartesianCoordinates.fromCartesianToSphericalCoordinates(
-            *pp)
+            *pp
+        )
         magn = (size * (pi - 2 * lat)) / pi
-        return Point([
-            viewpoint[0] + magn * cos(lon),
-            viewpoint[1] + magn * sin(lon),
-            D  # viewpoint[2]
-        ])
+        return Point(
+            [
+                viewpoint[0] + magn * cos(lon),
+                viewpoint[1] + magn * sin(lon),
+                D,  # viewpoint[2]
+            ]
+        )
 
     @staticmethod
     def stereographic_projection(vp, rp, size=1):
-        viewpoint, pp, D = DoubleProjectionLib.__first_projection(
-            vp, rp)
+        viewpoint, pp, D = DoubleProjectionLib.__first_projection(vp, rp)
         magn = size / (1.0 + pp[2])
-        return Point([
-            viewpoint[0] + magn * pp[0],
-            viewpoint[1] + magn * pp[1],
-            D  # viewpoint[2]
-        ])
+        return Point(
+            [
+                viewpoint[0] + magn * pp[0],
+                viewpoint[1] + magn * pp[1],
+                D,  # viewpoint[2]
+            ]
+        )
 
     @staticmethod
     def reverse_isoaire_projection(vp, pp, size=1):
         vp, pp = DoubleProjectionLib.__to_pair_of_arrays(vp, pp)
-        pp = (pp - vp)/size
-        tmp1 = 1 - pp[0]**2 - pp[1]**2
+        pp = (pp - vp) / size
+        tmp1 = 1 - pp[0] ** 2 - pp[1] ** 2
         tmp2 = sqrt(1 + tmp1)
-        return Point([
-            vp[0] + pp[0] * tmp2,
-            vp[1] + pp[1] * tmp2,
-            vp[2] + tmp1
-        ])
+        return Point([vp[0] + pp[0] * tmp2, vp[1] + pp[1] * tmp2, vp[2] + tmp1])
 
     @staticmethod
     def reverse_orthogonal_projection(vp, pp, size=1):
         vp, pp = DoubleProjectionLib.__to_pair_of_arrays(vp, pp)
-        pp = (pp - vp)/size
-        return Point([
-            vp[0] + pp[0],
-            vp[1] + pp[1],
-            vp[2] + sqrt(1.0 - pp[0]**2 - pp[1]**2)
-        ])
+        pp = (pp - vp) / size
+        return Point(
+            [vp[0] + pp[0], vp[1] + pp[1], vp[2] + sqrt(1.0 - pp[0] ** 2 - pp[1] ** 2)]
+        )
 
     @staticmethod
     def reverse_polar_projection(vp, pp, size=1):
@@ -135,38 +132,40 @@ class DoubleProjectionLib(object):
     @staticmethod
     def reverse_stereographic_projection(vp, pp, size=1):
         vp, pp = DoubleProjectionLib.__to_pair_of_arrays(vp, pp)
-        pp = (pp - vp)/size
-        magn = 2 / (1.0 + pp[0]**2 + pp[1]**2)
-        return Point([
-            vp[0] + magn * pp[0],
-            vp[1] + magn * pp[1],
-            vp[2] + magn - 1
-        ])
+        pp = (pp - vp) / size
+        magn = 2 / (1.0 + pp[0] ** 2 + pp[1] ** 2)
+        return Point([vp[0] + magn * pp[0], vp[1] + magn * pp[1], vp[2] + magn - 1])
 
-    @ staticmethod
+    @staticmethod
     def projection_switch(projectionName):
-        projectionName = projectionName.lower()
-        if ("stereographic" == projectionName):
-            return DoubleProjectionLib.stereographic_projection
-        elif ("orthogonal" == projectionName):
-            return DoubleProjectionLib.orthogonal_projection
-        elif ("polar" == projectionName):
-            return DoubleProjectionLib.polar_projection
-        elif ("isoaire" == projectionName):
-            return DoubleProjectionLib.isoaire_projection
-        raise IllegalArgumentTypeException(
-            projectionName, "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'")
+        match projectionName.lower():
+            case "stereographic":
+                return DoubleProjectionLib.stereographic_projection
+            case "orthogonal":
+                return DoubleProjectionLib.orthogonal_projection
+            case "polar":
+                return DoubleProjectionLib.polar_projection
+            case "isoaire" | "equiareal":
+                return DoubleProjectionLib.isoaire_projection
+            case _:
+                raise IllegalArgumentTypeException(
+                    projectionName,
+                    "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'",
+                )
 
-    @ staticmethod
+    @staticmethod
     def reverse_projection_switch(projectionName):
-        projectionName = projectionName.lower()
-        if ("stereographic" == projectionName):
-            return DoubleProjectionLib.reverse_stereographic_projection
-        elif ("orthogonal" == projectionName):
-            return DoubleProjectionLib.reverse_orthogonal_projection
-        elif ("polar" == projectionName):
-            return DoubleProjectionLib.reverse_polar_projection
-        elif ("isoaire" == projectionName):
-            return DoubleProjectionLib.reverse_isoaire_projection
-        raise IllegalArgumentTypeException(
-            projectionName, "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'")
+        match projectionName.lower():
+            case "stereographic":
+                return DoubleProjectionLib.reverse_stereographic_projection
+            case "orthogonal":
+                return DoubleProjectionLib.reverse_orthogonal_projection
+            case "polar":
+                return DoubleProjectionLib.reverse_polar_projection
+            case "isoaire" | "equiareal":
+                return DoubleProjectionLib.reverse_isoaire_projection
+            case _:
+                raise IllegalArgumentTypeException(
+                    projectionName,
+                    "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'",
+                )

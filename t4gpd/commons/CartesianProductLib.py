@@ -1,9 +1,9 @@
-'''
+"""
 Created on 30 jan. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,36 +19,22 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from geopandas import GeoDataFrame, overlay
-from numpy.random import default_rng
-from pandas import DataFrame, merge
+from pandas import merge
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class CartesianProductLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
     @staticmethod
     def product(df1, df2):
-        if not isinstance(df1, DataFrame):
-            raise IllegalArgumentTypeException(df1, "DataFrame")
-        if not isinstance(df2, DataFrame):
-            raise IllegalArgumentTypeException(df2, "DataFrame")
-
-        _df1, _df2 = df1.copy(deep=True), df2.copy(deep=True)
-        rng = default_rng()
-
-        while True:
-            fieldname = str(rng.integers(low=0, high=1e12, size=1)[0])
-            if (not (fieldname in df1) and not (fieldname in df2)):
-                _df1[fieldname] = 0
-                _df2[fieldname] = 0
-                result = merge(_df1, _df2, on=fieldname)
-                result.drop(columns=[fieldname], inplace=True)
-                return result
+        return merge(df1, df2, how="cross")
 
     @staticmethod
     def product_within_distance(gdf1, gdf2, distance):
@@ -58,22 +44,27 @@ class CartesianProductLib(object):
             raise IllegalArgumentTypeException(gdf2, "GeoDataFrame")
         if not GeoDataFrameLib.shareTheSameCrs(gdf1, gdf2):
             raise Exception(
-                "Illegal argument: gdf1 and gdf2 are expected to share the same crs!")
+                "Illegal argument: gdf1 and gdf2 are expected to share the same crs!"
+            )
         result = CartesianProductLib.product(gdf1, gdf2)
-        result = result.loc[result.apply(
-            lambda row: row.geometry_x.distance(row.geometry_y), axis=1) <= distance]
+        result = result.loc[
+            result.apply(lambda row: row.geometry_x.distance(row.geometry_y), axis=1)
+            <= distance
+        ]
         result.reset_index(drop=True, inplace=True)
         return result
 
     @staticmethod
     def product_within_distance2(gdf1, gdf2, distance):
+        # product_within_distance2(...) is more efficient for large data volumes
         if not isinstance(gdf1, GeoDataFrame):
             raise IllegalArgumentTypeException(gdf1, "GeoDataFrame")
         if not isinstance(gdf2, GeoDataFrame):
             raise IllegalArgumentTypeException(gdf2, "GeoDataFrame")
         if not GeoDataFrameLib.shareTheSameCrs(gdf1, gdf2):
             raise Exception(
-                "Illegal argument: gdf1 and gdf2 are expected to share the same crs!")
+                "Illegal argument: gdf1 and gdf2 are expected to share the same crs!"
+            )
 
         _gdf1 = gdf1.copy(deep=True)
         _gdf1["geometry_x"] = _gdf1.geometry
@@ -85,53 +76,74 @@ class CartesianProductLib(object):
 
         args = {}
         for fieldname in gdf1.columns:
-            if (fieldname in gdf2.columns):
-                args.update({f"{fieldname}_1": f"{fieldname}_x",
-                             f"{fieldname}_2": f"{fieldname}_y"})
+            if fieldname in gdf2.columns:
+                args.update(
+                    {
+                        f"{fieldname}_1": f"{fieldname}_x",
+                        f"{fieldname}_2": f"{fieldname}_y",
+                    }
+                )
 
         _gdf1.rename(columns=args, inplace=True)
         _gdf1.drop(columns="geometry", inplace=True)
         return _gdf1
 
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        from t4gpd.morph.STGrid import STGrid
+        from shapely import box
 
-"""
-from t4gpd.morph.STGrid import STGrid
-from shapely import box
+        gdf = GeoDataFrame([{"geometry": box(0, 0, 100, 100)}])
+        gdf1 = STGrid(
+            gdf,
+            dx=50,
+            dy=None,
+            indoor=None,
+            intoPoint=True,
+            encode=True,
+            withDist=False,
+        ).run()
+        gdf2 = STGrid(
+            gdf, dx=2, dy=None, indoor=None, intoPoint=True, encode=True, withDist=False
+        ).run()
 
-gdf = GeoDataFrame([{"geometry": box(0, 0, 100, 100)}])
-gdf1 = STGrid(gdf, dx=50, dy=None, indoor=None, intoPoint=True,
-              encode=True, withDist=False).run()
-gdf2 = STGrid(gdf, dx=2, dy=None, indoor=None, intoPoint=True,
-              encode=True, withDist=False).run()
-actual = CartesianProductLib.product_within_distance(gdf1, gdf2, distance=5)
-# actual.rename(columns={"geometry_y": "geometry"}, inplace=True)
+        actual1 = CartesianProductLib.product_within_distance(gdf1, gdf2, distance=5)
+        actual1.rename(columns={"geometry_y": "geometry"}, inplace=True)
 
-actual2 = CartesianProductLib.product_within_distance2(gdf1, gdf2, distance=5)
-# actual2.rename(columns={"geometry_y": "geometry"}, inplace=True)
+        actual2 = CartesianProductLib.product_within_distance2(gdf1, gdf2, distance=5)
+        actual2.rename(columns={"geometry_y": "geometry"}, inplace=True)
 
-actual.to_csv("/tmp/1.csv", index=False, sep=";")
-actual2.to_csv("/tmp/2.csv", index=False, sep=";")
+        """
+        gdf1 = STGrid(..., dx=5, ...)
 
-import matplotlib.pyplot as plt
-fig, ax = plt.subplots(figsize=(1*8.26, 1*8.26))
-gdf1.plot(ax=ax, marker="v")
-gdf2.plot(ax=ax, marker="+")
-actual.plot(ax=ax, marker=".")
-plt.show()
-plt.close(fig)
+        %timeit actual1 = CartesianProductLib.product_within_distance(gdf1, gdf2, distance=5)
+        7.44 s ± 80.2 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
 
-import matplotlib.pyplot as plt
-fig, ax = plt.subplots(figsize=(1*8.26, 1*8.26))
-gdf1.plot(ax=ax, marker="v")
-gdf2.plot(ax=ax, marker="+")
-actual2.plot(ax=ax, marker=".")
-plt.show()
-plt.close(fig)
-"""
+        %timeit actual2 = CartesianProductLib.product_within_distance2(gdf1, gdf2, distance=5)
+        117 ms ± 374 μs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+        """
 
-"""
-a = DataFrame(["a%d" % i for i in range(1, 4)], columns=["chpA"])
-b = DataFrame(["b%d" % i for i in range(1, 3)], columns=["chpB"])
-c = CartesianProductLib.product(a, b)
-print(f"{a}\n{b}\n\n{c}")
-"""
+        assert actual1.equals(actual2), "BIG BUG"
+
+        fig, axes = plt.subplots(ncols=2, figsize=(1.9 * 8.26, 1 * 8.26), squeeze=False)
+
+        ax = axes[0, 0]
+        ax.set_title("product_within_distance(...)")
+        gdf1.plot(ax=ax, marker="o", color="red")
+        gdf2.plot(ax=ax, marker=".", color="lightgrey")
+        actual1.plot(ax=ax, marker="+", color="green")
+
+        ax = axes[0, 1]
+
+        ax.set_title("product_within_distance2(...)")
+        gdf1.plot(ax=ax, marker="o", color="red")
+        gdf2.plot(ax=ax, marker=".", color="lightgrey")
+        actual2.plot(ax=ax, marker="+", color="green")
+
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+
+# CartesianProductLib.test()

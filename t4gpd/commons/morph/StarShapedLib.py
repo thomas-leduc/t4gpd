@@ -35,7 +35,7 @@ class StarShapedLib(AbstractIndicesLib):
     """
 
     @staticmethod
-    def _getColumns(with_geom=False):
+    def _getColumns():
         return [
             "min_raylen",
             "avg_raylen",
@@ -89,3 +89,31 @@ class StarShapedLib(AbstractIndicesLib):
         if with_geom:
             result.update({"geometry": MultiLineString()})
         return result
+
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        from shapely import get_coordinates
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        gdf = GeoDataFrameDemos.theChineseCharacterForReach()
+        # gdf = GeoDataFrameDemos.singleBuildingInNantes()
+        gdf.geometry = gdf.geometry.apply(
+            lambda geom: MultiLineString(
+                [(geom.centroid.coords[0], rp) for rp in get_coordinates(geom)]
+            )
+        )
+        ssl = StarShapedLib.indices(gdf, with_geom=True, merge_by_index=True)
+
+        fig, ax = plt.subplots()
+        gdf.plot(ax=ax, color="grey")
+        ssl.plot(ax=ax, color="red")
+        ax.axis("square")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+        return ssl
+
+
+# ssl = StarShapedLib.test()

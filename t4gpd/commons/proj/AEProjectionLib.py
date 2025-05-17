@@ -1,9 +1,9 @@
-'''
+"""
 Created on 25 sep. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from numpy import cos, ndarray, pi, sin, sqrt
 from shapely import Point
 from shapely.coords import CoordinateSequence
@@ -27,32 +28,36 @@ from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeExcept
 
 
 class AEProjectionLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
     @staticmethod
     def __to_point(vp):
         if isinstance(vp, (CoordinateSequence, list, ndarray, tuple)):
             vp = Point(vp)
         if not isinstance(vp, Point):
             raise IllegalArgumentTypeException(
-                vp, "CoordinateSequence, list, ndarray, Point, or tuple")
+                vp, "CoordinateSequence, list, ndarray, Point, or tuple"
+            )
         return vp
 
     @staticmethod
     def isoaire_projection(vp, azim, elev, size=1):
         # azim == lon, elev == lat
         vp = AEProjectionLib.__to_point(vp)
-        radius = sqrt((1 - sin(elev)) / ((cos(elev)*cos(azim))
-                      ** 2 + (cos(elev)*sin(azim))**2))
-        radius *= (size * cos(elev))
+        radius = sqrt(
+            (1 - sin(elev))
+            / ((cos(elev) * cos(azim)) ** 2 + (cos(elev) * sin(azim)) ** 2)
+        )
+        radius *= size * cos(elev)
         return (vp.x + radius * cos(azim), vp.y + radius * sin(azim))
 
     @staticmethod
     def orthogonal_projection(vp, azim, elev, size=1):
         # azim == lon, elev == lat
         vp = AEProjectionLib.__to_point(vp)
-        radius = (size * cos(elev))
+        radius = size * cos(elev)
         return (vp.x + radius * cos(azim), vp.y + radius * sin(azim))
 
     @staticmethod
@@ -85,30 +90,36 @@ class AEProjectionLib(object):
     def reverse_stereographic_projection(vp, pp, size=1):
         raise NotImplementedError("Must be implemented!")
 
-    @ staticmethod
+    @staticmethod
     def projection_switch(projectionName):
-        projectionName = projectionName.lower()
-        if ("stereographic" == projectionName):
-            return AEProjectionLib.stereographic_projection
-        elif ("orthogonal" == projectionName):
-            return AEProjectionLib.orthogonal_projection
-        elif ("polar" == projectionName):
-            return AEProjectionLib.polar_projection
-        elif ("isoaire" == projectionName):
-            return AEProjectionLib.isoaire_projection
-        raise IllegalArgumentTypeException(
-            projectionName, "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'")
+        match projectionName.lower():
+            case "stereographic":
+                return AEProjectionLib.stereographic_projection
+            case "orthogonal":
+                return AEProjectionLib.orthogonal_projection
+            case "polar":
+                return AEProjectionLib.polar_projection
+            case "isoaire" | "equiareal":
+                return AEProjectionLib.isoaire_projection
+            case _:
+                raise IllegalArgumentTypeException(
+                    projectionName,
+                    "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'",
+                )
 
-    @ staticmethod
+    @staticmethod
     def reverse_projection_switch(projectionName):
-        projectionName = projectionName.lower()
-        if ("stereographic" == projectionName):
-            return AEProjectionLib.reverse_stereographic_projection
-        elif ("orthogonal" == projectionName):
-            return AEProjectionLib.reverse_orthogonal_projection
-        elif ("polar" == projectionName):
-            return AEProjectionLib.reverse_polar_projection
-        elif ("isoaire" == projectionName):
-            return AEProjectionLib.reverse_isoaire_projection
-        raise IllegalArgumentTypeException(
-            projectionName, "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'")
+        match projectionName.lower():
+            case "stereographic":
+                return AEProjectionLib.reverse_stereographic_projection
+            case "orthogonal":
+                return AEProjectionLib.reverse_orthogonal_projection
+            case "polar":
+                return AEProjectionLib.reverse_polar_projection
+            case "isoaire" | "equiareal":
+                return AEProjectionLib.reverse_isoaire_projection
+            case _:
+                raise IllegalArgumentTypeException(
+                    projectionName,
+                    "spherical projection as 'Stereographic', 'Orthogonal', 'Polar', or 'Isoaire'",
+                )

@@ -73,13 +73,7 @@ class ConvexityLibTest(unittest.TestCase):
         for geom, expected in self.duos:
             geom = Series(geom, index=["geometry"])
             actual = ConvexityLib._indices(geom, with_geom=False)
-            for indice in [
-                "n_con_comp",
-                "a_conv_def",
-                "p_conv_def",
-                "big_concav",
-                "small_conc",
-            ]:
+            for indice in ConvexityLib._getColumns():
                 if isnan(expected[indice]):
                     self.assertTrue(isnan(actual[indice]), f"Test {indice}")
                 else:

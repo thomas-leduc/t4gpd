@@ -111,6 +111,7 @@ class FelixMarboutin(GeoProcess):
         labels=["Roof", "N", "S", "E", "W"],
         gdf=LatLonLib.NANTES,
         model="pvlib",
+        pivot=False,
         ofile=None,
     ):
         freq = "10min"
@@ -121,14 +122,18 @@ class FelixMarboutin(GeoProcess):
 
         # PLOTTING
         magn = 0.9
-        ncols = len(days)
+        nrows, ncols = (len(days), 1) if pivot else (1, len(days))
         fig, axes = plt.subplots(
-            ncols=ncols, figsize=(ncols * magn * 8.26, 0.8 * magn * 8.26), squeeze=False
+            ncols=ncols,
+            nrows=nrows,
+            figsize=(ncols * magn * 8.26, nrows * 0.8 * magn * 8.26),
+            squeeze=False,
         )
         fig.suptitle(f"Direct Solar Irradiance, lat. {lat:+.1f}°N", size=20)
 
-        for nc, day in enumerate(days):
-            ax = axes[0, nc]
+        for n, day in enumerate(days):
+            nr, nc = divmod(n, ncols)
+            ax = axes[nr, nc]
 
             dts = date_range(
                 start=day.normalize(),
@@ -155,7 +160,8 @@ class FelixMarboutin(GeoProcess):
                     label=f"{label} {kwh:.1f} kWh/m$^2$",
                 )
             ax.set_ylim([0, 1000])
-            ax.set_xlabel("Hour (UTC)", fontsize=14)
+            if (nrows - 1) == nr:
+                ax.set_xlabel("Hour (UTC)", fontsize=14)
             if 0 == nc:
                 ax.set_ylabel("Instantaneous irradiance [W.m$^{-2}$]", fontsize=14)
             xticks = linspace(0, 60 * 24, 24 // 4, endpoint=False, dtype=int)
@@ -270,6 +276,7 @@ labels=["Roof", "N", "S", "E", "W"]
 labels=["Roof", "NE", "NW", "SW", "SE"]
 labels=["Roof", "N", "S", "E", "W", "NE", "NW", "SW", "SE"]
 
-di = FelixMarboutin.daily(days, labels, ofile=None)
+di = FelixMarboutin.daily(days, labels, pivot=False, ofile=None)
+di = FelixMarboutin.daily(days, labels, pivot=True, ofile=None)
 di = FelixMarboutin.annual(labels, ofile=None)
 """

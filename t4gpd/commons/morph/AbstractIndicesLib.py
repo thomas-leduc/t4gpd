@@ -49,8 +49,13 @@ class AbstractIndicesLib(object):
             )
 
         if merge_by_index:
-            df = concat([gdf, df], axis=1)
+            if with_geom:
+                df = concat([gdf.drop(columns=["geometry"]), df], axis=1)
+            else:
+                df = concat([gdf, df], axis=1)
 
+        if with_geom:
+            df = GeoDataFrame(df, crs=gdf.crs)
         return df
 
     def indices2(self, merge_by_index=False):
@@ -75,7 +80,7 @@ class AbstractIndicesLib(object):
         return columns
 
     @staticmethod
-    def _getColumns(geom, with_geom=False):
+    def _getColumns():
         raise NotImplementedError("_getColumns(...) must be overridden!")
 
     @staticmethod

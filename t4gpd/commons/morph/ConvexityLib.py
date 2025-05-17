@@ -33,7 +33,7 @@ class ConvexityLib(AbstractIndicesLib):
     """
 
     @staticmethod
-    def _getColumns(with_geom=False):
+    def _getColumns():
         return ["n_con_comp", "a_conv_def", "p_conv_def", "big_concav", "small_conc"]
 
     @staticmethod
@@ -65,7 +65,7 @@ class ConvexityLib(AbstractIndicesLib):
         perimConvexityDefect = chullPerim / geomPerim if (0.0 < geomPerim) else nan
 
         bigConcavities = (
-            sum([g.area ** 2 for g in connectedComponents]) / nConnectedComponents
+            sum([g.area**2 for g in connectedComponents]) / nConnectedComponents
             if (0 < nConnectedComponents)
             else nan
         )
@@ -86,3 +86,25 @@ class ConvexityLib(AbstractIndicesLib):
         if with_geom:
             result.update({"geometry": chull})
         return result
+
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        gdf = GeoDataFrameDemos.theChineseCharacterForReach()
+        # gdf = GeoDataFrameDemos.singleBuildingInNantes()
+        chull = ConvexityLib.indices(gdf, with_geom=True, merge_by_index=True)
+
+        fig, ax = plt.subplots()
+        gdf.plot(ax=ax, color="grey")
+        chull.boundary.plot(ax=ax, color="red")
+        ax.axis("square")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+        return chull
+
+
+# chull = ConvexityLib.test()

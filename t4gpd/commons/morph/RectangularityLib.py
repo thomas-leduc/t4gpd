@@ -33,7 +33,7 @@ class RectangularityLib(AbstractIndicesLib):
     """
 
     @staticmethod
-    def _getColumns(with_geom=False):
+    def _getColumns():
         return ["stretching", "a_rect_def", "p_rect_def"]
 
     @staticmethod
@@ -65,3 +65,25 @@ class RectangularityLib(AbstractIndicesLib):
         if with_geom:
             result.update({"geometry": mabr})
         return result
+
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        gdf = GeoDataFrameDemos.theChineseCharacterForReach()
+        # gdf = GeoDataFrameDemos.singleBuildingInNantes()
+        mabr = RectangularityLib.indices(gdf, with_geom=True, merge_by_index=True)
+
+        fig, ax = plt.subplots()
+        gdf.plot(ax=ax, color="grey")
+        mabr.boundary.plot(ax=ax, color="red")
+        ax.axis("square")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+        return mabr
+
+
+# mabr = RectangularityLib.test()

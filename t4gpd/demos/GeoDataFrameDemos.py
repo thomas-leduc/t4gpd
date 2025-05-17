@@ -1,9 +1,9 @@
-'''
+"""
 Created on 26 janv. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,9 +19,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from io import StringIO
+"""
 
+from io import StringIO
 from geopandas import clip, GeoDataFrame
 from shapely import union_all
 from shapely.affinity import rotate, translate
@@ -35,58 +35,85 @@ from t4gpd.demos.NantesBDT import NantesBDT
 
 
 class GeoDataFrameDemos(AbstractGeoDataFrameDemos):
-    '''
+    """
     classdocs
-    '''
+    """
 
     @staticmethod
     def coursCambronneInNantes():
-        _sio = StringIO("""gid;geometry
+        _sio = StringIO(
+            """gid;geometry
 1;POLYGON ((354726 6689012, 354744 6689026.908633, 354750 6689031.3, 354756 6689036.858278, 354781 6689058.025785, 354791 6689065.9, 354799 6689072.434249, 354805 6689078.221882, 354811 6689083.2, 354827 6689096.035821, 354833 6689101.518421, 354843 6689109.9, 354851 6689116.727514, 354866 6689129.3, 354869 6689126.7, 354875 6689119.2, 354893 6689097.6, 354900 6689090.3, 354888 6689081, 354890 6689078.8, 354762 6688970.8, 354750 6688984.484763, 354752 6688985.6, 354750 6688987.5, 354749 6688986.317651, 354739 6688997.550236, 354740 6688998.7, 354739 6689000.8, 354737 6688999.498647, 354726 6689012))
-""")
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def coursCambronneInNantesPath():
-        _sio = StringIO("""gid;geometry
+        _sio = StringIO(
+            """gid;geometry
 3;LINESTRING (354889.6539526054 6689114.132124912, 354814.56995984557 6689050.854184258, 354820.1086015744 6689043.566497771, 354836.516307147 6689057.017484827, 354888.7377863045 6689100.74360374)
-""")
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def coursCambronneInNantesStatue():
         p = Point((354811.71902931662043557, 6689048.83510754629969597))
-        gdf = GeoDataFrame([
-            {"ID": 1, "HAUTEUR": 2.5, "geometry": rotate(
-                p.buffer(0.7, cap_style=CAP_STYLE.square), angle=40)},
-            {"ID": 2, "HAUTEUR": 4.5, "geometry": p.buffer(
-                0.3, cap_style=CAP_STYLE.round)},
-        ], crs="epsg:2154")
+        gdf = GeoDataFrame(
+            [
+                {
+                    "ID": 1,
+                    "HAUTEUR": 2.5,
+                    "geometry": rotate(
+                        p.buffer(0.7, cap_style=CAP_STYLE.square), angle=40
+                    ),
+                },
+                {
+                    "ID": 2,
+                    "HAUTEUR": 4.5,
+                    "geometry": p.buffer(0.3, cap_style=CAP_STYLE.round),
+                },
+            ],
+            crs="epsg:2154",
+        )
         return gdf
 
     @staticmethod
     def coursCambronneInNantesWaypoints():
-        _sio = StringIO("""id;geometry
+        _sio = StringIO(
+            """id;geometry
 31;POINT (354883.61460777454 6689109.0379019305)
 32;POINT (354814.5715865625 6689050.853533585)
 33;POINT (354820.1102282914 6689043.567148477)
 34;POINT (354836.6077285727 6689057.040258871)
 35;POINT (354886.3305723633 6689098.725825567)
-""")
+"""
+        )
+        return GeoDataFrameLib.read_csv(_sio)
+
+    @staticmethod
+    def coursConanMeriadec():
+        _sio = StringIO(
+            """gid;label;geometry
+BATIMENT0000000302929690;Cour résidence Conan-Mériadec;POLYGON ((355735.5 6688371.3 19.7, 355744.6 6688370.9 19.7, 355744.1 6688361.8 19.7, 355769.8 6688363.8 19.7, 355768.1 6688386 19.7, 355747.4 6688386.6 19.7, 355745.3 6688385.2 19.7, 355744.9 6688378.8 19.7, 355735.9 6688379.2 19.7, 355735.5 6688371.3 19.7))
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def districtGraslinInNantesBuildings():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
-        '''
+        """
         roi = box(354680, 6688870, 355020, 6689270)
         return NantesBDT.buildings(roi)
 
     @staticmethod
     def districtGraslinInNantesTrees():
-        _sio = StringIO("""osm_id;geometry
+        _sio = StringIO(
+            """osm_id;geometry
 1655091483;POINT (354695.2113528537 6689168.569643417)
 1655091542;POINT (354692.8245936075 6689179.989896608)
 1655091603;POINT (354688.5791650632 6689186.410727716)
@@ -185,87 +212,93 @@ class GeoDataFrameDemos(AbstractGeoDataFrameDemos):
 5578627658;POINT (354832.967569707 6689072.956537222)
 5578627659;POINT (354842.5630037121 6689081.035477702)
 5788113829;POINT (354766.3568106871 6689268.049965823)
-""")
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def districtRoyaleInNantesBuildings():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
-        '''
+        """
         roi = box(355038, 6689157, 355338, 6689457)
         return NantesBDT.buildings(roi)
 
     @staticmethod
     def districtRoyaleInNantesBuildings2():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
-        '''
+        """
         roi = box(354958, 6689077, 355397, 6689537)
         return NantesBDT.buildings(roi)
 
     @staticmethod
     def districtRoyaleInNantesPaths():
-        _sio = StringIO("""gid;geometry
+        _sio = StringIO(
+            """gid;geometry
 1;LINESTRING Z (355194 6689177 0, 355217 6689206 0, 355212 6689220 0, 355174 6689238 0, 355161 6689243 0, 355159 6689258 0, 355126 6689273 0, 355119 6689356 0, 355156 6689428 0)
 2;LINESTRING Z (355194 6689177 0, 355217 6689206 0, 355203 6689246 0, 355190 6689270 0, 355144 6689372 0, 355147 6689379 0, 355177 6689410 0, 355169 6689426 0, 355160 6689428 0)
 3;LINESTRING Z (355194 6689177 0, 355217 6689206 0, 355203 6689246 0, 355190 6689270 0, 355199 6689329 0, 355202 6689350 0, 355177 6689410 0, 355169 6689426 0, 355160 6689428 0)
-""")
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def districtRoyaleInNantesPaths2():
-        _sio = StringIO("""gid;geometry
+        _sio = StringIO(
+            """gid;geometry
 1;LINESTRING Z (355153.8641448712 6689313.891951761 0, 355138.85615811433 6689324.684929472 0, 355137.06797245814 6689352.018624502 0, 355144.7316252702 6689373.987762564 0, 355190.7135421426 6689424.056960936 0, 355199.1435602359 6689420.991499811 0, 355199.39901532966 6689364.280469002 0, 355205.5299375793 6689345.376792066 0, 355235.1627284526 6689353.295899971 0, 355277.31281891896 6689350.485893941 0, 355287.8503415355 6689354.637039212 0, 355322.656098057 6689387.399154986 0, 355339.5161342435 6689388.420975361 0, 355339.5161342435 6689388.420975361 0, 355329.55338558793 6689436.318805436 0, 355367.3607394608 6689440.789269576 0, 355384.9871409285 6689444.748823529 0, 355436.5890698631 6689433.636526953 0, 355457.66411509627 6689423.929233391 0)
 2;LINESTRING Z (355157.1211973164 6689309.485351397 0, 355170.14940709685 6689277.2980095865 0, 355150.2239097855 6689216.244242184 0, 355141.53843659855 6689180.225073966 0, 355172.959413128 6689159.533211374 0, 355116.5038374124 6689095.66943794 0, 355099.1328910384 6689051.22025163 0, 355081.76194466447 6689007.7928856965 0, 354929.51070879813 6688933.199998326 0, 354908.05248092435 6688949.549124325 0)
 3;LINESTRING Z (355167.59485615947 6689308.2080759285 0, 355203.35856928246 6689284.195297117 0, 355615.6630905715 6689475.275707231 0)
 4;LINESTRING Z (355163.5075746598 6689307.69716574 0, 355173.72577840916 6689277.298009585 0, 355161.4639339099 6689242.556116837 0, 355184.96580253355 6689233.359733462 0, 355200.5485632514 6689224.674260275 0, 355232.73590506206 6689208.58058937 0, 355256.49322877947 6689181.246894341 0, 355287.6587502152 6689200.661481464 0, 355258.7923246231 6689246.643398337 0, 355276.6741811846 6689257.627967368 0, 355285.87056455907 6689243.833392305 0, 355378.08985339757 6689276.787099398 0, 355383.9653205534 6689283.428931834 0, 355367.1052843669 6689316.893549114 0, 355459.8354833929 6689353.679082612 0)
-""")
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def districtRoyaleInNantesRoads():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
-        '''
+        """
         roi = box(355038, 6689157, 355338, 6689457)
         return NantesBDT.roads(roi)
 
     @staticmethod
     def districtRoyaleInNantesRoads2():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
-        '''
+        """
         roi = box(354958, 6689077, 355397, 6689537)
         return NantesBDT.roads(roi)
 
     @staticmethod
     def ensaNantesBuildings():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
-        '''
+        """
         roi = box(355189, 6688332, 355395, 6688542)
         # roi = box(355190, 6688334, 355395, 6688542)
         return NantesBDT.buildings(roi)
 
     @staticmethod
     def ensaNantesRoads():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
-        '''
+        """
         roi = box(355189, 6688332, 355395, 6688542)
         # roi = box(355190, 6688334, 355395, 6688542)
         return NantesBDT.roads(roi)
 
     @staticmethod
     def ensaNantesTrees():
-        _sio = StringIO("""genre;espece;hauteurFut;hauteur;DIAMETRE;MI_PRINX;geometry
+        _sio = StringIO(
+            """genre;espece;hauteurFut;hauteur;DIAMETRE;MI_PRINX;geometry
 Larix;decidua;5.5 m;6-10 m;17.0;6503094;POINT (355345.4265547934 6688506.44948356)
 Betula;verrucosa;5.5 m;0-5 m;5.0;6503455;POINT (355258.844440129 6688500.961984504)
 Quercus;robur;5.5 m;0-5 m;4.0;6504443;POINT (355342.703136137 6688410.522459004)
@@ -382,12 +415,14 @@ Acer;negundo;5.5 m;6-10 m;17.0;6504907;POINT (355180.5280265937 6688540.87338926
 Acer;negundo;5.5 m;11-15 m;16.0;6504908;POINT (355181.1513268879 6688534.003352175)
 Acer;negundo;5.5 m;6-10 m;14.0;6504909;POINT (355181.5194927157 6688527.704981425)
 Acer;negundo;5.5 m;6-10 m;17.0;6504910;POINT (355182.1627771702 6688520.834780996)
-""")
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def squaresInNantes(filter=None):
-        _sio = StringIO("""gid;label;type;civel_nm;geometry
+        _sio = StringIO(
+            """gid;label;type;civel_nm;geometry
 1;Place du Sanitat;semicircular;1092437;POLYGON ((354394.17522472894 6688887.16606739, 354394.7186726339 6688888.155835198, 354395.5 6688888.4, 354395.31041625945 6688888.94260174, 354405.731971105 6688888.857399379, 354406.3 6688887.2, 354407.3316453444 6688887.561075871, 354409.9781013671 6688878.703061079, 354410.2150705666 6688878.024087492, 354409.3 6688877.7, 354412.7 6688867.1, 354413 6688867.1, 354414.1 6688862.2, 354414.6 6688857.8, 354414.7 6688856.3, 354414.6 6688854.7, 354414.5 6688853.1, 354414.3 6688851.8, 354414 6688850.6, 354413.7 6688849.7, 354413.4 6688848.6, 354412.9 6688847.2, 354412.3 6688845.8, 354411.7 6688844.5, 354411 6688843.2, 354410.3 6688841.9, 354409.5 6688840.7, 354409.2 6688840.3, 354408.6 6688839.4, 354407.7 6688838.3, 354406.7 6688837.1, 354405.5 6688836, 354404.3 6688834.9, 354403 6688833.9, 354401.7 6688833, 354400.3 6688832.2, 354400.44542722096 6688831.793659235, 354400.1857475141 6688831.594705168, 354388.71601196943 6688828.048291013, 354388.0904273217 6688828.028718035, 354388 6688828.3, 354387.9 6688828.5, 354387.7 6688828.7, 354387.5 6688828.8, 354387.3 6688828.8, 354387.1 6688828.8, 354386.9 6688828.8, 354386.7 6688828.8, 354386 6688828.6, 354385.3 6688828.4, 354385.1 6688828.3, 354384.6 6688828.3, 354384.4 6688828.2, 354384.2 6688828.2, 354383.9 6688828.2, 354383.4 6688828.2, 354382.9 6688828.2, 354381.7 6688828.2, 354381.5 6688828.2, 354381.2 6688828.2, 354380.7 6688828.3, 354380.3 6688828.4, 354380 6688828.4, 354379.7 6688828.5, 354373.6 6688830.4, 354373.4 6688830.5, 354372.6 6688830.9, 354371.8 6688831.3, 354371.4 6688831.5, 354371.2 6688831.6, 354370.1 6688832.2, 354370 6688832.3, 354369.1 6688832.9, 354368.9 6688833, 354368.8 6688833.1, 354368.1 6688833.6, 354367.4 6688834.1, 354366 6688835.1, 354365.1 6688835.8, 354364.6 6688836.3, 354364.4 6688836.4, 354363.6 6688837.2, 354363.3 6688837.5, 354363.1 6688837.7, 354361.2 6688840, 354359.4 6688843.9, 354356.8 6688848.1, 354357.3 6688848.4, 354353.7 6688859.1, 354352.5577846434 6688858.703479643, 354352.31974487845 6688859.518916151, 354349.0492688113 6688867.893030189, 354350.6 6688868.4, 354349.99784332694 6688870.154856591, 354357.2714406123 6688876.536015063, 354358.66342137015 6688876.590897458, 354358.8 6688876.2, 354360.25119884376 6688876.653499639, 354360.41414440586 6688876.659924184, 354361 6688875, 354369.9 6688878, 354370.6 6688876, 354386 6688881.2, 354385.4 6688883.2, 354394.5 6688886.3, 354394.17522472894 6688887.16606739))
 2;Place Graslin;semicircular;1091190;POLYGON ((354878.4803403586 6689205.148994912, 354878.555177892 6689205.144901542, 354878.5 6689204.4, 354878.9 6689204.4, 354883 6689204.1, 354882.8 6689201, 354882.4 6689201, 354882.4 6689199.6, 354905.9 6689197.7, 354905.9 6689199.1, 354905.7 6689199.2, 354906 6689202.2, 354910.1 6689201.9, 354910.5 6689201.9, 354910.5821626755 6689203.009196119, 354918.16667298286 6689203.2351559475, 354918.53467195795 6689203.2058448, 354918.4 6689201.5, 354928.6 6689200.6, 354930.9183377604 6689201.548410902, 354929.53010050807 6689190.853760232, 354928.1 6689190.2, 354927.7 6689186.2, 354927.4 6689186.1, 354926.4 6689175.9, 354925.8 6689169.2, 354926.1 6689169.1, 354925.7 6689165.1, 354927.3306120192 6689164.080867488, 354926.18891967053 6689153.802724456, 354925 6689154.6, 354914.4 6689155.4, 354912.8 6689150.7, 354910.8 6689147.4, 354908.3 6689144.4, 354907.8 6689143.9, 354906 6689142, 354902.3 6689139.4, 354897.5 6689137.5, 354894.1 6689136.8, 354893.9848295276 6689135.575004975, 354884.07921662426 6689136.4820678765, 354883.46360747854 6689136.7265794845, 354883.5 6689137.6, 354883.5 6689137.9, 354883.4 6689138.1, 354883.2 6689138.2, 354883 6689138.3, 354882.9 6689138.4, 354882.5 6689138.5, 354882 6689138.6, 354881.8 6689138.6, 354880.9 6689138.8, 354880.7 6689138.8, 354880.3 6689139, 354879.2 6689139.6, 354878.1 6689140.2, 354878 6689140.3, 354877.3 6689140.8, 354876.9 6689141, 354876.7 6689141.2, 354876.2 6689141.6, 354875.8 6689141.9, 354875.6 6689142.1, 354875.3 6689142.3, 354874.8 6689142.8, 354874.6 6689142.9, 354874.1 6689143.4, 354873.6 6689143.8, 354873.5 6689144, 354873.4 6689144.2, 354873.1 6689144.5, 354870.7 6689147.8, 354870.6 6689148.1, 354870.1 6689149, 354870 6689149.2, 354869.4 6689150.3, 354869.2 6689150.7, 354868.9 6689151.2, 354868.7 6689151.6, 354868.2 6689152.6, 354867.8 6689153.3, 354867.7 6689153.7, 354867.6 6689154.2, 354866.8 6689158.8, 354856.7 6689159.3, 354854.9268408875 6689157.804983493, 354855.668250929 6689169.054594965, 354857.4 6689169.8, 354859.1 6689194.9, 354857.8487552211 6689195.6827692455, 354858.97216106753 6689206.821995529, 354860.3 6689206, 354870.6 6689205.2, 354870.7420101468 6689206.880453404, 354878.4803403586 6689205.148994912))
 3;Cours Cambronne;mails;1090437;POLYGON ((354876.6541341984 6689120.523307359, 354877.0277306325 6689120.11154799, 354894.1458408228 6689098.578906121, 354894.29134326783 6689098.413789249, 354893.3 6689097.6, 354899.5 6689090.3, 354888.5 6689081, 354890.5 6689078.8, 354870.3 6689061.7, 354845 6689040.4, 354822.1 6689021.1, 354810.8 6689011.6, 354792.5 6688996.2, 354781 6688986.5, 354762.3 6688970.8, 354763.2539877639 6688969.717960187, 354761.7936346251 6688968.489783026, 354724.2698823869 6689011.0991791515, 354725.9474622012 6689012.51922758, 354726.4 6689012, 354737.9 6689021.7, 354749.5 6689031.3, 354759.9 6689040.1, 354770 6689048.6, 354790.8 6689065.9, 354800.5 6689074.1, 354811.4 6689083.2, 354831.9 6689100.4, 354843.3 6689109.9, 354854.8 6689119.6, 354866.4 6689129.3, 354868.6 6689126.7, 354875 6689119.2, 354876.6541341984 6689120.523307359))
@@ -410,11 +445,13 @@ Acer;negundo;5.5 m;6-10 m;17.0;6504910;POINT (355182.1627771702 6688520.83478099
 20;Place du Bouffay;;1090370;POLYGON ((355551.6 6689329.5, 355550.07485454605 6689336.585296951, 355558.7 6689335.1, 355558.8 6689334.5, 355572.2 6689337.8, 355572.4 6689337.2, 355582.7 6689339.8, 355582.6 6689340.4, 355595.9 6689343.8, 355596.4 6689345.3, 355606 6689348.7, 355607.63678646943 6689341.152595725, 355607.4 6689341, 355607.8 6689340.4, 355605.4 6689338.8, 355607.4 6689330.8, 355609.8 6689331.4, 355609.9 6689331.1, 355616.8 6689320.6, 355617.4 6689319.7, 355619.5956994446 6689316.607465571, 355611.4 6689314.5, 355613.4 6689306.5, 355560.4 6689294.1, 355551.6 6689329.5))
 21;Place Rene Bouhier;;1092281;POLYGON ((354233.6 6688855, 354256.5 6688849.9, 354273.3 6688842, 354278.4 6688833.2, 354273 6688821.3, 354268.2 6688805.7, 354262.2 6688804.3, 354259.5 6688798.3, 354264.1 6688772.6, 354266.2 6688761, 354270.9 6688752.8, 354271.5 6688752.4, 354256.9 6688733.5, 354228.3 6688749.7, 354217.7 6688755.2, 354206.9 6688761.5, 354191.1 6688770.5, 354172.7 6688781, 354171.19495327084 6688781.889345794, 354171.2 6688781.9, 354168.3 6688783.6, 354201.2 6688814.3, 354215.1 6688819.9, 354219.5 6688828.8, 354229.0818319158 6688846.604538737, 354229.5 6688846.4, 354233.6 6688855, 354233.6 6688855, 354233.6 6688855, 354233.6 6688855, 354233.6 6688855, 354233.6 6688855, 354233.6 6688855, 354233.6 6688855), (354201.7 6688792.8, 354209.4 6688796.1, 354207.9 6688799.6, 354200.2 6688796.4, 354201.7 6688792.8, 354201.7 6688792.8, 354201.7 6688792.8, 354201.7 6688792.8, 354201.7 6688792.8, 354201.7 6688792.8, 354201.7 6688792.8, 354201.7 6688792.8))
 22;Place du Change;;1090504;POLYGON ((355432.5 6689425.6, 355434.3 6689439, 355447.5 6689442.4, 355457.7015006621 6689445.4527217895, 355459.3 6689437.7, 355463.1 6689438.9, 355466 6689428.6, 355468.9 6689417.2, 355474 6689414.7, 355477 6689404.3, 355470.5 6689401.2, 355469.1 6689398.5, 355459.9 6689395.5, 355457.6 6689396.5, 355453.1 6689405, 355454.4 6689407.7, 355452.8 6689415.3, 355451.9 6689419.5, 355451.6 6689419.8, 355445.9 6689421.5, 355442.1 6689422.7, 355436.8 6689424.3, 355432.5 6689425.6))
-""")
+"""
+        )
         squares = GeoDataFrameLib.read_csv(_sio)
         if not filter is None:
-            squares = squares.loc[squares[squares.label.apply(
-                lambda v: filter in v)].index]
+            squares = squares.loc[
+                squares[squares.label.apply(lambda v: filter in v)].index
+            ]
         return squares
 
     @staticmethod
@@ -425,29 +462,39 @@ Acer;negundo;5.5 m;6-10 m;17.0;6504910;POINT (355182.1627771702 6688520.83478099
             rows = []
             for _gid, _geom in enumerate(geoms.geoms):
                 _geom = GeomLib.normalizeRingOrientation(_geom, ccw=True)
-                rows.append({'gid': _gid, 'geometry': _geom})
+                rows.append({"gid": _gid, "geometry": _geom})
             return GeoDataFrame(rows)
-        raise IllegalArgumentTypeException(geoms, 'MultiPolygon')
+        raise IllegalArgumentTypeException(geoms, "MultiPolygon")
 
     @staticmethod
     def regularGridOfPlots(nlines, ncols, dw=5.0):
         _unit = Point((dw, dw)).buffer(dw, cap_style=CAP_STYLE.square)
         _dw = 4.0 * dw
-        geoms = MultiPolygon([translate(_unit, xoff=_c * _dw, yoff=_l * _dw)
-                              for _c in range(ncols) for _l in range(nlines)])
+        geoms = MultiPolygon(
+            [
+                translate(_unit, xoff=_c * _dw, yoff=_l * _dw)
+                for _c in range(ncols)
+                for _l in range(nlines)
+            ]
+        )
         return GeoDataFrameDemos.__regularGridOfPlots_aux(geoms)
 
     @staticmethod
     def regularGridOfPlots2(nlines, ncols, bdx=150, bdy=50, sdx=10, sdy=20):
         _unit = Polygon([(0, 0), (bdx, 0), (bdx, bdy), (0, bdy)])
         _dx, _dy = bdx + sdx, bdy + sdy
-        geoms = MultiPolygon([translate(_unit, xoff=_c * _dx, yoff=_l * _dy)
-                              for _c in range(ncols) for _l in range(nlines)])
+        geoms = MultiPolygon(
+            [
+                translate(_unit, xoff=_c * _dx, yoff=_l * _dy)
+                for _c in range(ncols)
+                for _l in range(nlines)
+            ]
+        )
         return GeoDataFrameDemos.__regularGridOfPlots_aux(geoms)
 
     @staticmethod
     def singleBuildingInNantes():
-        '''
+        """
         # SOURCE:
         # https://geoservices.ign.fr/bdtopo
 
@@ -456,22 +503,25 @@ BDTOPO_3-0_TOUSTHEMES_SHP_LAMB93_D044_2021-12-15/BDTOPO/1_DONNEES_LIVRAISON_2021
 BDT_3-0_SHP_LAMB93_D044-ED2021-12-15/BATI/BATIMENT.shp')
         _building = buildings.loc[ buildings[buildings.ID == 'BATIMENT0000000302909608'].index ]
         _building.to_csv('/tmp/building.csv', sep=';', index=False)
-        '''
-        _sio = StringIO("""ID;NATURE;USAGE1;USAGE2;LEGER;ETAT;DATE_CREAT;DATE_MAJ;DATE_APP;DATE_CONF;SOURCE;ID_SOURCE;PREC_PLANI;PREC_ALTI;NB_LOGTS;NB_ETAGES;MAT_MURS;MAT_TOITS;HAUTEUR;Z_MIN_SOL;Z_MIN_TOIT;Z_MAX_TOIT;Z_MAX_SOL;ORIGIN_BAT;APP_FF;geometry
+        """
+        _sio = StringIO(
+            """ID;NATURE;USAGE1;USAGE2;LEGER;ETAT;DATE_CREAT;DATE_MAJ;DATE_APP;DATE_CONF;SOURCE;ID_SOURCE;PREC_PLANI;PREC_ALTI;NB_LOGTS;NB_ETAGES;MAT_MURS;MAT_TOITS;HAUTEUR;Z_MIN_SOL;Z_MIN_TOIT;Z_MAX_TOIT;Z_MAX_SOL;ORIGIN_BAT;APP_FF;geometry
 BATIMENT0000000302909608;Indifférenciée;Commercial et services;;Non;En service;2012-06-19 17:58:16;2019-07-01 11:16:34;;;;;3.0;2.5;;;;;4.1;42.1;46.2;;;Cadastre;;POLYGON Z ((353904.8 6695053.6 46.2, 353898.4 6695053.2 46.2, 353896.7 6695050.7 46.2, 353884 6695049.8 46.2, 353880.9 6695052.6 46.2, 353880.6 6695054.3 46.2, 353872.8 6695053.5 46.2, 353871.9 6695061 46.2, 353868.6 6695060.9 46.2, 353868.9 6695065.8 46.2, 353869 6695068.4 46.2, 353869.6 6695075.7 46.2, 353872 6695075.9 46.2, 353872.4 6695074 46.2, 353874.2 6695074.2 46.2, 353874.2 6695075.4 46.2, 353880.2 6695076 46.2, 353880.4 6695074.8 46.2, 353891 6695075.8 46.2, 353891.4 6695074 46.2, 353894.3 6695074.3 46.2, 353894.1 6695076.1 46.2, 353901.3 6695076.9 46.2, 353900.9 6695079.8 46.2, 353908.7 6695080.5 46.2, 353908.7 6695081.3 46.2, 353911.2 6695081.5 46.2, 353911.3 6695080.8 46.2, 353917.8 6695081.6 46.2, 353918.7 6695073.6 46.2, 353917 6695073.4 46.2, 353917.1 6695071.3 46.2, 353918.9 6695071.5 46.2, 353919.2 6695068.4 46.2, 353918.3 6695068.2 46.2, 353919.1 6695060.8 46.2, 353920.2 6695060.9 46.2, 353920.5 6695058.5 46.2, 353917.2 6695058.2 46.2, 353917.7 6695053.9 46.2, 353919.3 6695054 46.2, 353919.7 6695052 46.2, 353927.3 6695052.6 46.2, 353927.9 6695043.3 46.2, 353922.4 6695040.6 46.2, 353923.7 6695038.8 46.2, 353930.1 6695038.4 46.2, 353932.9 6695031.7 46.2, 353930 6695030.5 46.2, 353932.1 6695025.5 46.2, 353941.2 6695028.9 46.2, 353943.2 6695022.3 46.2, 353939.9 6695021.1 46.2, 353942.6 6695014 46.2, 353934.8 6695011.1 46.2, 353933.6 6695013.9 46.2, 353926.8 6695011.2 46.2, 353925.4 6695014.9 46.2, 353918.5 6695012.3 46.2, 353916.9 6695013.2 46.2, 353916.1 6695011.7 46.2, 353914.5 6695012.4 46.2, 353909.3 6695001 46.2, 353902 6695004.3 46.2, 353902.4 6695005.1 46.2, 353894.5 6695008.9 46.2, 353897.8 6695015.9 46.2, 353896.2 6695016.7 46.2, 353897.6 6695019.9 46.2, 353899.3 6695019.2 46.2, 353902 6695025.3 46.2, 353906.9 6695023.1 46.2, 353908.3 6695026 46.2, 353911.8 6695024.4 46.2, 353917.4 6695026.8 46.2, 353911.7 6695040.1 46.2, 353911.6 6695040.1 46.2, 353911.6 6695040.2 46.2, 353911.7 6695040.3 46.2, 353911.8 6695040.3 46.2, 353911.9 6695040.4 46.2, 353912 6695040.4 46.2, 353912.3 6695040.4 46.2, 353912.5 6695040.4 46.2, 353912.8 6695040.4 46.2, 353912.8 6695040.3 46.2, 353913.2 6695040.3 46.2, 353913.2 6695040.4 46.2, 353913.3 6695040.4 46.2, 353913.4 6695040.4 46.2, 353913.5 6695040.4 46.2, 353913.6 6695040.4 46.2, 353913.7 6695040.5 46.2, 353913.8 6695040.6 46.2, 353914 6695040.6 46.2, 353914 6695040.7 46.2, 353914.1 6695040.8 46.2, 353914.2 6695040.8 46.2, 353914.5 6695041 46.2, 353914.5 6695041.1 46.2, 353914.7 6695041.3 46.2, 353914.8 6695041.3 46.2, 353914.8 6695041.4 46.2, 353915 6695041.6 46.2, 353915 6695041.7 46.2, 353915.1 6695041.8 46.2, 353915.2 6695042 46.2, 353915.2 6695042.1 46.2, 353915.2 6695042.2 46.2, 353915.3 6695042.2 46.2, 353915.3 6695042.3 46.2, 353915.3 6695042.4 46.2, 353915.4 6695042.6 46.2, 353915.4 6695042.7 46.2, 353915.4 6695042.9 46.2, 353915.4 6695043.2 46.2, 353915.4 6695043.3 46.2, 353915.4 6695043.4 46.2, 353915.4 6695043.5 46.2, 353915.4 6695043.6 46.2, 353915.3 6695043.7 46.2, 353915.3 6695043.8 46.2, 353915.3 6695044 46.2, 353915.2 6695044.1 46.2, 353915.2 6695044.2 46.2, 353915.1 6695044.3 46.2, 353915 6695044.4 46.2, 353914.9 6695044.5 46.2, 353914.8 6695044.6 46.2, 353913.7 6695044.9 46.2, 353905.3 6695049.2 46.2, 353904.8 6695053.6 46.2))
-""")
+"""
+        )
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def theChineseCharacterForReach():
         # The Chinese character for "reach" mentioned in (Avis and Toussaint, 1981)
-        wkt = 'POLYGON ((62 92, 65 80, 46 77, 33 64, 52 66, 50 73, 66 71, 70 52, 52 56, 45 44, 60 42, 64 35, 42 29, 40 15, 70 18, 80 8, 7 0, 0 9, 25 14, 28 29, 17 28, 14 39, 28 38, 35 53, 17 48, 9 56, 24 64, 31 76, 17 75, 16 84, 62 92))'
-        return GeoDataFrame(data=[{'geometry': loads(wkt)}])
+        wkt = "POLYGON ((62 92, 65 80, 46 77, 33 64, 52 66, 50 73, 66 71, 70 52, 52 56, 45 44, 60 42, 64 35, 42 29, 40 15, 70 18, 80 8, 7 0, 0 9, 25 14, 28 29, 17 28, 14 39, 28 38, 35 53, 17 48, 9 56, 24 64, 31 76, 17 75, 16 84, 62 92))"
+        return GeoDataFrame(data=[{"geometry": loads(wkt)}])
 
     @staticmethod
     def simpleUrbanGraph(choice=1):
-        if (1 == choice):
-            _sio = StringIO("""gid;geometry
+        if 1 == choice:
+            _sio = StringIO(
+                """gid;geometry
 1;LINESTRING(0 0, 0 3, 1 3, 1 2)
 2;LINESTRING(1 3, 3 3, 3 1)
 3;LINESTRING(1 3, 1 2, 2 2, 3 3)
@@ -479,11 +529,13 @@ BATIMENT0000000302909608;Indifférenciée;Commercial et services;;Non;En service
 5;LINESTRING(0 0, 4 0, 4 4, 2 4, 1 3)
 6;LINESTRING(1 3, 1 5, 3 5)
 7;LINESTRING(1 3, 0 4, 1 6, 3 5, 3 6)
-""")
+"""
+            )
             return GeoDataFrameLib.read_csv(_sio)
 
-        elif (2 == choice):
-            _sio = StringIO("""gid;geometry
+        elif 2 == choice:
+            _sio = StringIO(
+                """gid;geometry
 1;LINESTRING(0 0, 0 3, 1 3)
 2;LINESTRING(0 0, 0 3, 1 3, 1 2)
 3;LINESTRING(0 0, 0 3, 1 3, 1 2, 1 1, 3 1)
@@ -494,43 +546,56 @@ BATIMENT0000000302909608;Indifférenciée;Commercial et services;;Non;En service
 8;LINESTRING(0 0, 4 0, 4 4, 2 4, 1 3)
 9;LINESTRING(2 2, 3 1, 3 3, 2 2)
 10;LINESTRING(0 0, 0 3, 1 3, 0 4, 1 6, 3 5, 3 6)
-""")
+"""
+            )
             return GeoDataFrameLib.read_csv(_sio)
 
-        elif (3 == choice):
+        elif 3 == choice:
             gdf = GeoDataFrameDemos.simpleUrbanGraph(choice=1)
             return GeoDataFrame([{"geometry": union_all(gdf.geometry)}])
 
-        elif (4 == choice):
+        elif 4 == choice:
             gdf = GeoDataFrameDemos.simpleUrbanGraph(choice=3)
-            gdf = gdf.explode(ignore_index=True).reset_index().rename(
-                columns={"index": "gid"})
+            gdf = (
+                gdf.explode(ignore_index=True)
+                .reset_index()
+                .rename(columns={"index": "gid"})
+            )
             return gdf
 
         return GeoDataFrameLib.read_csv(_sio)
 
     @staticmethod
     def plot(sector="Royale2", oFile=None):
+        from t4gpd.morph.STBBox import STBBox
+
         paths, roads, trees, squares = None, None, None, None
 
-        if sector == "Royale":
-            buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
-            paths = GeoDataFrameDemos.districtRoyaleInNantesPaths()
-            roads = GeoDataFrameDemos.districtRoyaleInNantesRoads()
-        elif sector == "Royale2":
-            buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings2()
-            paths = GeoDataFrameDemos.districtRoyaleInNantesPaths2()
-            roads = GeoDataFrameDemos.districtRoyaleInNantesRoads2()
-        elif sector == "Graslin":
-            buildings = GeoDataFrameDemos.districtGraslinInNantesBuildings()
-            trees = GeoDataFrameDemos.districtGraslinInNantesTrees()
-        elif sector == "ensan":
-            buildings = GeoDataFrameDemos.ensaNantesBuildings()
-            roads = GeoDataFrameDemos.ensaNantesRoads()
-            trees = GeoDataFrameDemos.ensaNantesTrees()
-        elif sector == "squares":
-            buildings = NantesBDT.buildings()
-            squares = GeoDataFrameDemos.squaresInNantes()
+        match sector.lower():
+            case "ensan":
+                buildings = GeoDataFrameDemos.ensaNantesBuildings()
+                roads = GeoDataFrameDemos.ensaNantesRoads()
+                trees = GeoDataFrameDemos.ensaNantesTrees()
+            case "graslin":
+                buildings = GeoDataFrameDemos.districtGraslinInNantesBuildings()
+                trees = GeoDataFrameDemos.districtGraslinInNantesTrees()
+            case "meriadec":
+                meriadec = STBBox(
+                    GeoDataFrameDemos.coursConanMeriadec(), buffDist=35
+                ).run()
+                buildings = NantesBDT.buildings(meriadec)
+                roads = NantesBDT.roads(meriadec)
+            case "royale":
+                buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings()
+                paths = GeoDataFrameDemos.districtRoyaleInNantesPaths()
+                roads = GeoDataFrameDemos.districtRoyaleInNantesRoads()
+            case "royale2":
+                buildings = GeoDataFrameDemos.districtRoyaleInNantesBuildings2()
+                paths = GeoDataFrameDemos.districtRoyaleInNantesPaths2()
+                roads = GeoDataFrameDemos.districtRoyaleInNantesRoads2()
+            case "squares":
+                buildings = NantesBDT.buildings()
+                squares = GeoDataFrameDemos.squaresInNantes()
 
         import matplotlib.pyplot as plt
 

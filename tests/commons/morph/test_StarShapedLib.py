@@ -83,15 +83,7 @@ class StarShapedLibTest(unittest.TestCase):
             actual = StarShapedLib._indices(
                 geom, precision=1.0, base=2, with_geom=False
             )
-            for indice in [
-                "min_raylen",
-                "avg_raylen",
-                "std_raylen",
-                "max_raylen",
-                "med_raylen",
-                "entropy",
-                "drift",
-            ]:
+            for indice in StarShapedLib._getColumns():
                 if isnan(expected[indice]):
                     self.assertTrue(isnan(actual[indice]), f"Test {indice}")
                 else:

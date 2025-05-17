@@ -35,7 +35,7 @@ class CircularityLib(AbstractIndicesLib):
     """
 
     @staticmethod
-    def _getColumns(with_geom=False):
+    def _getColumns():
         return ["gravelius", "jaggedness", "miller", "morton", "a_circ_def"]
 
     @staticmethod
@@ -77,3 +77,25 @@ class CircularityLib(AbstractIndicesLib):
         if with_geom:
             result.update({"geometry": mbc})
         return result
+
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        gdf = GeoDataFrameDemos.theChineseCharacterForReach()
+        # gdf = GeoDataFrameDemos.singleBuildingInNantes()
+        mbc = CircularityLib.indices(gdf, with_geom=True, merge_by_index=True)
+
+        fig, ax = plt.subplots()
+        gdf.plot(ax=ax, color="grey")
+        mbc.boundary.plot(ax=ax, color="red")
+        ax.axis("square")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+        return mbc
+
+
+# mbc = CircularityLib.test()

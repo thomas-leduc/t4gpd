@@ -30,7 +30,7 @@ setup_args = dict(
     author_email='thomas.leduc@crenau.archi.fr',
     keywords=['Geospatial analysis', 'Urban form', 'Urban morphology', 'Isovist'],
     url='https://t4gpd-docs.readthedocs.io',
-    download_url='https://sourcesup.renater.fr/frs/?group_id=463',
+    download_url='https://pypi.org/project/t4gpd',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
@@ -45,7 +45,7 @@ setup_args = dict(
         'Topic :: Education',
         'Topic :: Scientific/Engineering :: GIS',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.10',
 )
 
 install_requires = [

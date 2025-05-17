@@ -73,7 +73,7 @@ class CircularityLibTest(unittest.TestCase):
         for geom, expected in self.duos:
             geom = Series(geom, index=["geometry"])
             actual = CircularityLib._indices(geom, with_geom=False)
-            for indice in ["gravelius", "jaggedness", "miller", "morton", "a_circ_def"]:
+            for indice in CircularityLib._getColumns():
                 if isnan(expected[indice]):
                     self.assertTrue(isnan(actual[indice]), f"Test {indice}")
                 else:

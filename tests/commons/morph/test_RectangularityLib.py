@@ -55,7 +55,7 @@ class RectangularityLibTest(unittest.TestCase):
         for geom, expected in self.duos:
             geom = Series(geom, index=["geometry"])
             actual = RectangularityLib._indices(geom, with_geom=False)
-            for indice in ["stretching", "a_rect_def", "p_rect_def"]:
+            for indice in RectangularityLib._getColumns():
                 if isnan(expected[indice]):
                     self.assertTrue(isnan(actual[indice]), f"Test {indice}")
                 else:

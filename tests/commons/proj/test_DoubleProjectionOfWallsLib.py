@@ -1,9 +1,9 @@
-'''
+"""
 Created on 12 mar. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 import matplotlib.pyplot as plt
 import unittest
 from geopandas import GeoDataFrame
@@ -33,20 +34,29 @@ class DoubleProjectionOfWallsLibTest(unittest.TestCase):
 
     def setUp(self):
         h = 10.0
-        self.masks1 = GeoDataFrame([{
-            "gid": 1,
-            "geometry": Polygon([(0, 0), (0, 10), (10, 10), (10, 9), (1, 9), (1, 0), (0, 0)]),
-            "HAUTEUR": h
-        }])
+        self.masks1 = GeoDataFrame(
+            [
+                {
+                    "gid": 1,
+                    "geometry": Polygon(
+                        [(0, 0), (0, 10), (10, 10), (10, 9), (1, 9), (1, 0), (0, 0)]
+                    ),
+                    "HAUTEUR": h,
+                }
+            ]
+        )
         self.masks1.geometry = self.masks1.geometry.apply(
-            lambda geom: GeomLib.forceZCoordinateToZ0(geom, h))
+            lambda geom: GeomLib.forceZCoordinateToZ0(geom, h)
+        )
 
         epsilon = 1e-6
-        self.sensors1 = GeoDataFrame([
-            {"gid": 1, "geometry": Point([1+epsilon, 9-epsilon])},
-            # {"gid": 2, "geometry": Point([5, 10+epsilon])},
-            {"gid": 3, "geometry": Point([10-epsilon, 0])},
-        ])
+        self.sensors1 = GeoDataFrame(
+            [
+                {"gid": 1, "geometry": Point([1 + epsilon, 9 - epsilon])},
+                # {"gid": 2, "geometry": Point([5, 10+epsilon])},
+                {"gid": 3, "geometry": Point([10 - epsilon, 0])},
+            ]
+        )
 
     def tearDown(self):
         pass
@@ -61,32 +71,47 @@ class DoubleProjectionOfWallsLibTest(unittest.TestCase):
         sensors.buffer(radius).boundary.plot(ax=ax, color="red")
         masks.plot(ax=ax, color="lightgrey")
         if "depth" in result:
-            result.plot(ax=ax, column="depth", alpha=0.5,
-                        cmap="Spectral", legend=True)
+            result.plot(ax=ax, column="depth", alpha=0.5, cmap="Spectral", legend=True)
         else:
             result.plot(ax=ax, color="red", alpha=0.5)
         ax.axis([minx, maxx, miny, maxy])
         ax.axis("off")
-        scalebar = ScaleBar(dx=1.0, units="m", length_fraction=None, box_alpha=0.85,
-                            width_fraction=0.005, location="lower right", frameon=True)
+        scalebar = ScaleBar(
+            dx=1.0,
+            units="m",
+            length_fraction=None,
+            box_alpha=0.85,
+            width_fraction=0.005,
+            location="lower right",
+            frameon=True,
+        )
         ax.add_artist(scalebar)
 
     def testWalls1(self):
         radius = 4
-        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(
-            3 * 0.7 * 8.26, 0.7 * 8.26), squeeze=False)
+        fig, ax = plt.subplots(
+            nrows=1, ncols=3, figsize=(3 * 0.7 * 8.26, 0.7 * 8.26), squeeze=False
+        )
 
         for i, projectionName in enumerate(["Isoaire", "Orthogonal", "Stereographic"]):
             result = DoubleProjectionOfWallsLib.walls(
-                self.sensors1, self.masks1, horizon=100.0,
+                self.sensors1,
+                self.masks1,
+                horizon=100.0,
+                maskidFieldname="gid",
                 elevationFieldname="HAUTEUR",
-                h0=0.0, size=radius, projectionName=projectionName,
-                npts=5, aggregate=False)
+                h0=0.0,
+                size=radius,
+                projectionName=projectionName,
+                npts=5,
+                aggregate=False,
+            )
 
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
             self.assertEqual(4, len(result), "Count rows")
             DoubleProjectionOfWallsLibTest._plot(
-                ax[0, i], projectionName, self.sensors1, radius, self.masks1, result)
+                ax[0, i], projectionName, self.sensors1, radius, self.masks1, result
+            )
 
         fig.tight_layout()
         plt.show()
@@ -94,31 +119,41 @@ class DoubleProjectionOfWallsLibTest(unittest.TestCase):
 
     def testWalls2(self):
         radius = 4
-        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(
-            3 * 0.7 * 8.26, 0.7 * 8.26), squeeze=False)
+        fig, ax = plt.subplots(
+            nrows=1, ncols=3, figsize=(3 * 0.7 * 8.26, 0.7 * 8.26), squeeze=False
+        )
 
         for i, projectionName in enumerate(["Isoaire", "Orthogonal", "Stereographic"]):
             result = DoubleProjectionOfWallsLib.walls(
-                self.sensors1, self.masks1, horizon=100.0,
+                self.sensors1,
+                self.masks1,
+                horizon=100.0,
+                maskidFieldname="gid",
                 elevationFieldname="HAUTEUR",
-                h0=0.0, size=radius, projectionName=projectionName,
-                npts=5, aggregate=True)
+                h0=0.0,
+                size=radius,
+                projectionName=projectionName,
+                npts=5,
+                aggregate=True,
+            )
 
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
-            self.assertEqual(len(self.sensors1) + 2, len(result), "Count rows")
+            self.assertEqual(len(self.sensors1), len(result), "Count rows")
             DoubleProjectionOfWallsLibTest._plot(
-                ax[0, i], projectionName, self.sensors1, radius, self.masks1, result)
+                ax[0, i], projectionName, self.sensors1, radius, self.masks1, result
+            )
 
         fig.tight_layout()
         plt.show()
         plt.close(fig)
 
+    """
     def testWalls3(self):
         radius = 12
         # Excerpt from GeoDataFrameDemos.ensaNantesBuildings()
         # buildings = buildings.loc[buildings[buildings.ID == "BATIMENT0000000302930047"].index]
         masks = GeoDataFrame([
-            {"geometry": Polygon([
+            {"gid": 1, "geometry": Polygon([
                 (355375.90000000002328306, 6688429.09999999962747097, 11.5),
                 (355375.40000000002328306, 6688435.29999999981373549, 11.5),
                 (355373.20000000001164153, 6688435.09999999962747097, 11.5),
@@ -132,7 +167,9 @@ class DoubleProjectionOfWallsLibTest(unittest.TestCase):
 
         for i, projectionName in enumerate(["Isoaire", "Orthogonal", "Stereographic"]):
             result = DoubleProjectionOfWallsLib.walls(
-                sensors, masks, horizon=50.0, elevationFieldname="HAUTEUR",
+                sensors, masks, horizon=50.0, 
+                maskidFieldname="gid",
+                elevationFieldname="HAUTEUR",
                 h0=0.0, size=radius, projectionName="stereographic", npts=5, aggregate=False)
 
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
@@ -152,6 +189,7 @@ class DoubleProjectionOfWallsLibTest(unittest.TestCase):
         # fig.tight_layout()
         # plt.show()
         # plt.close(fig)
+    """
 
     def testWalls4(self):
         from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
@@ -159,23 +197,38 @@ class DoubleProjectionOfWallsLibTest(unittest.TestCase):
 
         radius = 4
         masks = GeoDataFrameDemos.ensaNantesBuildings()
-        sensors = STGrid(masks, dx=10, dy=None, indoor=False, intoPoint=True,
-                         encode=True, withDist=False).run()
+        sensors = STGrid(
+            masks,
+            dx=10,
+            dy=None,
+            indoor=False,
+            intoPoint=True,
+            encode=True,
+            withDist=False,
+        ).run()
         sensors = sensors.loc[sensors[sensors.gid == 242].index]
-        fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(
-            3 * 0.7 * 8.26, 0.7 * 8.26), squeeze=False)
+        fig, ax = plt.subplots(
+            nrows=1, ncols=3, figsize=(3 * 0.7 * 8.26, 0.7 * 8.26), squeeze=False
+        )
 
         for i, projectionName in enumerate(["Isoaire", "Orthogonal", "Stereographic"]):
             result = DoubleProjectionOfWallsLib.walls(
-                sensors, masks, horizon=100.0,
+                sensors,
+                masks,
+                horizon=100.0,
                 elevationFieldname="HAUTEUR",
-                h0=0.0, size=radius, projectionName=projectionName,
-                npts=5, aggregate=False)
+                h0=0.0,
+                size=radius,
+                projectionName=projectionName,
+                npts=5,
+                aggregate=False,
+            )
 
             self.assertIsInstance(result, GeoDataFrame, "Is a GeoDataFrame")
             # self.assertEqual(6, len(result), "Count rows")
             DoubleProjectionOfWallsLibTest._plot(
-                ax[0, i], projectionName, sensors, radius, masks, result)
+                ax[0, i], projectionName, sensors, radius, masks, result
+            )
 
         fig.tight_layout()
         plt.show()

@@ -3,7 +3,7 @@ Created on 20 nov. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from numpy import asarray, isnan, pi
+from numpy import abs, asarray, isnan, pi
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.ellipse.EllipseLib import EllipseLib
 from t4gpd.commons.ellipse.EllipticHullLib import EllipticHullLib
@@ -44,7 +44,7 @@ class EllipticityAxisIndices(AbstractGeoprocess):
     def __sort_of_linear_regression(mainAxis, pts):
         ppts = [mainAxis.interpolate(mainAxis.project(pt)) for pt in pts]
         dists = asarray([p.distance(pp) for p, pp in zip(pts, ppts)])
-        mae, mse = dists.sum(), (dists**2).sum()
+        mae, mse = abs(dists).mean(), (dists**2).mean()
         return mae, mse
 
     def runWithArgs(self, row):

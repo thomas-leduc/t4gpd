@@ -62,13 +62,7 @@ class LinearRegressionLibTest(unittest.TestCase):
         for geom, expected in self.duos:
             geom = Series(geom, index=["geometry"])
             actual = LinearRegressionLib._indices(geom, with_geom=False)
-            for indice in [
-                "slope",
-                "intercept",
-                "score",
-                "mae",
-                "mse",
-            ]:
+            for indice in LinearRegressionLib._getColumns():
                 if isnan(expected[indice]):
                     self.assertTrue(isnan(actual[indice]), f"Test {indice}")
                 else:

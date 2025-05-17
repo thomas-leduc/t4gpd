@@ -1,5 +1,14 @@
 # Package t4gpd history
 
+## Version 0.9.8 - rev. 15206 - 17 May 2025
+* Add new commons.morph.EllipticityLib class
+* Add new skymap.STBodyMaskMap25D class
+* Refactoring of skymap and tests.skymap directories
+* Refactoring of parts of commons, energy and demos directories
+* Refactoring of commons.proj and tests.commons.proj directories
+* Update setup.py
+* Update .github/workflows/python-package.yml
+
 ## Version 0.9.7 - rev. 15137 - 14 Apr. 2025
 * Add new tests.shadow.STSunMapTest class
 * Add new t4gpd.shadow.STSunMap class
