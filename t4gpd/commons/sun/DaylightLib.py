@@ -1,9 +1,9 @@
-'''
+"""
 Created on 8 dec. 2022
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,21 +19,23 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from datetime import date, datetime, timedelta, timezone
+"""
+
+from datetime import timedelta
 
 from t4gpd.commons.LatLonLib import LatLonLib
 from t4gpd.commons.sun.SunLib import SunLib
 
 
 class DaylightLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
 
     @staticmethod
-    def generate(dt, dtDelta=timedelta(minutes=15), gdf=LatLonLib.NANTES,
-                 model='pysolar'):
+    def generate(
+        dt, dtDelta=timedelta(minutes=15), gdf=LatLonLib.NANTES, model="pysolar"
+    ):
         sunlib = SunLib(gdf, model)
         sunrise, sunset = sunlib.getSunrise(dt), sunlib.getSunset(dt)
         dts = []
@@ -42,6 +44,7 @@ class DaylightLib(object):
             dts.append(dt)
             dt += dtDelta
         return dts
+
 
 """
 dt = date(2020, 12, 21)

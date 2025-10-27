@@ -22,13 +22,12 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import unittest
-from numpy import pi, sqrt
+from numpy import cos, pi, sin, sqrt
 from shapely import Point
 from t4gpd.commons.proj.AEProjectionLib import AEProjectionLib
 
 
 class AEProjectionLibTest(unittest.TestCase):
-
     def setUp(self):
         self.vp = (0, 0, 0)
         self.epsilon = 1e-9
@@ -60,6 +59,22 @@ class AEProjectionLibTest(unittest.TestCase):
             result = AEProjectionLib.reverse_projection_switch(projectionName)
             self.assertEqual(
                 expected, result.__name__, "Test reverse_projection_switch"
+            )
+
+    def test_isoaire_projection(self):
+        trios = (
+            (0, pi / 4, Point(sqrt(2) * sin(pi / 8), 0)),
+            (pi / 4, pi / 4, Point(sin(pi / 8), sin(pi / 8))),
+            (pi / 2, pi / 4, Point(0, sqrt(2) * sin(pi / 8))),
+        )
+        for azim, elev, expected in trios:
+            actual = AEProjectionLib.isoaire_projection(self.vp, azim, elev, size=1)
+            self.assertAlmostEqual(
+                expected.distance(Point(actual)),
+                0,
+                None,
+                "Test isoaire projection",
+                self.epsilon,
             )
 
     def test_orthogonal_projection(self):

@@ -1,9 +1,9 @@
-'''
+"""
 Created on 11 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,56 +19,57 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 from geopandas.geodataframe import GeoDataFrame
-from shapely.geometry import Point, Polygon
+from shapely import Point, box
 from t4gpd.commons.GeomLib import GeomLib
 from numpy import ndarray
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class BoundingBox(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
+    __slots__ = ("minx", "miny", "maxx", "maxy", "__center")
 
     def __init__(self, obj):
-        '''
+        """
         Constructor
-        '''
+        """
         if isinstance(obj, GeoDataFrame):
             self.minx, self.miny, self.maxx, self.maxy = obj.total_bounds
         elif GeomLib.isAShapelyGeometry(obj):
             self.minx, self.miny, self.maxx, self.maxy = obj.bounds
-        elif (isinstance(obj, (ndarray, list, tuple)) and (4 == len(obj))):
+        elif isinstance(obj, (ndarray, list, tuple)) and (4 == len(obj)):
             self.minx, self.miny, self.maxx, self.maxy = obj
         else:
-            raise IllegalArgumentTypeException(obj, 'GeoDataFrame, a Shapely geometry or a 4-uple')
+            raise IllegalArgumentTypeException(
+                obj, "GeoDataFrame, a Shapely geometry or a 4-uple"
+            )
         self.__center = None
 
     def center(self):
         if self.__center is None:
             cx, cy = (self.minx + self.maxx) / 2.0, (self.miny + self.maxy) / 2.0
-            self.__center = Point(cx, cy) 
+            self.__center = Point(cx, cy)
         return self.__center
 
     def height(self):
-        return (self.maxy - self.miny)
+        return self.maxy - self.miny
 
     def width(self):
-        return (self.maxx - self.minx)
-    
+        return self.maxx - self.minx
+
     def asPolygon(self):
-        return Polygon([
-            (self.minx, self.miny),
-            (self.minx, self.maxy),
-            (self.maxx, self.maxy),
-            (self.maxx, self.miny)
-            ])
+        return box(self.minx, self.miny, self.maxx, self.maxy)
 
     def __str__(self):
-        return '%s:: (%f, %f) -> (%f, %f)' % (
+        return "%s:: (%f, %f) -> (%f, %f)" % (
             __name__,
-            self.minx, self.miny,
-            self.maxx, self.maxy
-            )
+            self.minx,
+            self.miny,
+            self.maxx,
+            self.maxy,
+        )

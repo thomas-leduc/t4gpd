@@ -30,8 +30,6 @@ from t4gpd.commons.morph.ConvexityLib import ConvexityLib
 from t4gpd.commons.morph.LinearRegressionLib import LinearRegressionLib
 from t4gpd.commons.morph.RectangularityLib import RectangularityLib
 from t4gpd.commons.morph.StarShapedLib import StarShapedLib
-from t4gpd.morph.geoProcesses.OrientedSVF import OrientedSVF
-from t4gpd.morph.geoProcesses.STGeoProcess import STGeoProcess
 
 
 class IsovistIndices(object):

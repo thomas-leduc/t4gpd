@@ -22,6 +22,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 '''
 from geopandas import GeoDataFrame, overlay, sjoin_nearest
 from numpy import asarray, full, median, min, nan, zeros
+from pandas import DataFrame, concat
 from shapely import LineString, Point
 from shapely.ops import nearest_points
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
@@ -237,6 +238,11 @@ class RayCasting25DLib(object):
 
     @staticmethod
     def __addIndicesToSkyMapRaysField25D(smapRaysField):
+        df = DataFrame(columns=["w_mean", "w_median", "w_min", "w_std",
+                               "h_mean", "h_over_w", "svf_geom", "svf_rad", "svf"],
+                       index=smapRaysField.index)
+        smapRaysField = concat([smapRaysField, df], axis=1)
+
         smapRaysField["w_mean"] = smapRaysField.__RAY_LEN__.apply(
             lambda raylens: float(raylens.mean()))
         smapRaysField["w_median"] = smapRaysField.__RAY_LEN__.apply(
@@ -250,7 +256,10 @@ class RayCasting25DLib(object):
 
         smapRaysField["h_over_w"] = smapRaysField.apply(
             lambda row: row.__RAY_DELTA_ALT__.mean() / (2 * row.w_mean), axis=1)
-        smapRaysField["svf"] = smapRaysField.apply(
+        smapRaysField["svf_geom"] = smapRaysField.apply(
             lambda row: SVFLib.svf2018(row.__RAY_DELTA_ALT__, row.__RAY_LEN__), axis=1)
+        smapRaysField["svf_rad"] = smapRaysField.apply(
+            lambda row: SVFLib.svf1981(row.__RAY_DELTA_ALT__, row.__RAY_LEN__), axis=1)
+        smapRaysField["svf"] = smapRaysField.svf_geom
 
         return smapRaysField

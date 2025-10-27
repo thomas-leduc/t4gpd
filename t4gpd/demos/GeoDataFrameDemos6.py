@@ -331,7 +331,7 @@ NA;NA;NA;NA;NA;9999994;POINT (355682.97153285 6688288.47887796)
         for k in ['h_arbre', 'h_houppier', 'r_houppier', 'up_rad', 'down_rad']:
             trees[k] = trees['MI_PRINX'].apply(
                 lambda idx: GeoDataFrameDemos6.__addAttributesToTree(idx)[k])
-        return trees
+        return GeoDataFrame(trees, geometry="geometry", crs="epsg:2154")
 
     @staticmethod
     def __addAttributesToTree(idx):
@@ -558,26 +558,27 @@ N;TOPO;O;LINESTRING (355838 6688313.658252633, 355833.3759439519 6688313.9691582
         # MAPPING
         minx, miny, maxx, maxy = corridor.buffer(10).total_bounds
 
-        fig, basemap = plt.subplots(figsize=(0.7 * 8.26, 1 * 8.26))
-        roi.boundary.plot(ax=basemap, color='blue')
-        buildings.plot(ax=basemap, color='lightgrey')
-        # roads.plot(ax=basemap, color='black', linewidth=0.3)
-        sidewalks.plot(ax=basemap, color='black', linewidth=0.3)
-        crosswalks.plot(ax=basemap, color='orange', linewidth=0.3)
-        crosswalk_surf.plot(ax=basemap, color='yellow', alpha=0.3)
-        trees.plot(ax=basemap, color='green', marker='^', markersize=2)
-        path1.plot(ax=basemap, color='green', linewidth=0.3)
-        waypoints1.plot(ax=basemap, color='green', marker='^', markersize=2)
-        path2.plot(ax=basemap, color='blue', linewidth=0.3)
-        waypoints2.plot(ax=basemap, color='blue', marker='^', markersize=2)
-        corridor.boundary.plot(ax=basemap, color='red')
-        trees.apply(lambda x: basemap.annotate(
+        fig, ax = plt.subplots(figsize=(1.2 * 8.26, 1.2 * 8.26))
+        roi.boundary.plot(ax=ax, color='blue')
+        buildings.plot(ax=ax, color='lightgrey')
+        # roads.plot(ax=ax, color='black', linewidth=0.3)
+        sidewalks.plot(ax=ax, color='black', linewidth=0.3)
+        crosswalks.plot(ax=ax, color='orange', linewidth=0.3)
+        crosswalk_surf.plot(ax=ax, color='yellow', alpha=0.3)
+        trees.plot(ax=ax, color='green', marker='^', markersize=5)
+        path1.plot(ax=ax, color='green', linewidth=0.3)
+        waypoints1.plot(ax=ax, color='green', marker='^', markersize=2)
+        path2.plot(ax=ax, color='blue', linewidth=0.3)
+        waypoints2.plot(ax=ax, color='blue', marker='^', markersize=2)
+        corridor.boundary.plot(ax=ax, color='red')
+        trees.apply(lambda x: ax.annotate(
             text=x.ID, xy=x.geometry.coords[0],
             color='black', size=7, ha='center'), axis=1)
-        streetlight.plot(ax=basemap, color='brown', linewidth=0.3)
-        # streetsanitation.plot(ax=basemap, color='cyan', linewidth=0.3)
-        basemap.axis('off')
-        # basemap.axis([minx, maxx, miny, maxy])
+        streetlight.plot(ax=ax, color='brown', linewidth=0.3)
+        # streetsanitation.plot(ax=ax, color='cyan', linewidth=0.3)
+        ax.axis('off')
+        # ax.axis([minx, maxx, miny, maxy])
+        fig.tight_layout()
         if oFile is None:
             plt.show()
         else:

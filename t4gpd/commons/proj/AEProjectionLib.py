@@ -46,11 +46,13 @@ class AEProjectionLib(object):
     def isoaire_projection(vp, azim, elev, size=1):
         # azim == lon, elev == lat
         vp = AEProjectionLib.__to_point(vp)
-        radius = sqrt(
-            (1 - sin(elev))
-            / ((cos(elev) * cos(azim)) ** 2 + (cos(elev) * sin(azim)) ** 2)
-        )
-        radius *= size * cos(elev)
+        # radius = sqrt(
+        #     (1 - sin(elev))
+        #     / ((cos(elev) * cos(azim)) ** 2 + (cos(elev) * sin(azim)) ** 2)
+        # )
+        # radius *= size * cos(elev)
+        radius = size * cos(elev) / sqrt(1 + sin(elev))
+        # radius = size * sqrt(2) * sin(0.5 * (pi / 2 - elev))
         return (vp.x + radius * cos(azim), vp.y + radius * sin(azim))
 
     @staticmethod

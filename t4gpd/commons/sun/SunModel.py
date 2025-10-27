@@ -40,7 +40,7 @@ class SunModel(object):
             from pvlib.location import Location
 
             lat, lon = LatLonLib.fromGeoDataFrameToLatLon(gdf)
-            self.location = Location(lat, lon, altitude)
+            self.location = Location(lat, lon, altitude=altitude)
 
         def clearsky_irradiances(self, dts, model="ineichen"):
             return self.location.get_clearsky(dts, model)

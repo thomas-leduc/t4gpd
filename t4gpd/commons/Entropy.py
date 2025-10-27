@@ -3,7 +3,7 @@ Created on 15 janv. 2021
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -29,6 +29,8 @@ class Entropy(object):
     """
     classdocs
     """
+
+    __slots__ = "probs"
 
     def __init__(self, probs):
         """

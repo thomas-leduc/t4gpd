@@ -1,4 +1,4 @@
-'''
+"""
 Created on 23 aug. 2024
 
 @author: tleduc
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from pandas import DatetimeIndex, to_datetime
 from geopandas import GeoDataFrame
 from pvlib.location import Location
@@ -29,19 +30,18 @@ from t4gpd.commons.LatLonLib import LatLonLib
 
 
 class STPvlibIrradiances(GeoProcess):
-    '''
+    """
     classdocs
-    '''
+    """
 
     def __init__(self, gdf, dts, altitude=0, model="ineichen"):
-        '''
+        """
         Constructor
-        '''
+        """
         if not isinstance(gdf, GeoDataFrame):
             raise IllegalArgumentTypeException(gdf, "GeoDataFrame")
 
-        self.dts = to_datetime(dts) if not isinstance(
-            dts, DatetimeIndex) else dts
+        self.dts = to_datetime(dts) if not isinstance(dts, DatetimeIndex) else dts
         lat, lon = LatLonLib.fromGeoDataFrameToLatLon(gdf)
         self.location = Location(lat, lon, altitude)
 
@@ -56,7 +56,7 @@ class STPvlibIrradiances(GeoProcess):
     @staticmethod
     def test():
         import matplotlib.pyplot as plt
-        from datetime import date, datetime, timedelta, timezone
+        from datetime import date, timezone
         from locale import LC_ALL, setlocale
         from pandas import date_range
         from t4gpd.commons.sun.SunLib import SunLib
@@ -64,9 +64,13 @@ class STPvlibIrradiances(GeoProcess):
         sunModel = SunLib(LatLonLib.NANTES, model="pysolar")
         day = date(2023, 6, 21)
         sunrise, sunset = sunModel.getSunrise(day), sunModel.getSunset(day)
-        dts = date_range(start=sunrise, end=sunset,
-                         freq=f"60min", inclusive="neither",
-                         tz=timezone.utc)
+        dts = date_range(
+            start=sunrise,
+            end=sunset,
+            freq=f"60min",
+            inclusive="neither",
+            tz=timezone.utc,
+        )
 
         # dt = datetime(*sunrise.timetuple()[:-3], tzinfo=timezone.utc)
         # dts = []
@@ -85,7 +89,7 @@ class STPvlibIrradiances(GeoProcess):
         df.plot("time", "dhi", ax=ax, grid=True, label="DHI")
         df.plot("time", "ghi", ax=ax, grid=True, label="GHI")
         ax1.set_xlabel("Timestamp (UTC)", fontdict={"fontsize": 16})
-        ax1.set_ylabel("[W.m$^{-2}$]", fontdict={'fontsize': 16})
+        ax1.set_ylabel("[W.m$^{-2}$]", fontdict={"fontsize": 16})
         fig.tight_layout()
         plt.show()
 

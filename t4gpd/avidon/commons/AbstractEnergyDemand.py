@@ -3,7 +3,7 @@ Created on 4 mars 2022
 
 @author: tleduc
 
-Copyright 2020-2022 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -24,7 +24,7 @@ from io import StringIO
 from re import sub
 
 import matplotlib.pyplot as plt
-from numpy import float64, linspace, ndarray, vectorize
+from numpy import float64, ndarray, vectorize
 from pandas import DataFrame, read_csv
 from scipy.stats import norm
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException

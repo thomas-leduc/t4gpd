@@ -1,4 +1,4 @@
-'''
+"""
 Created on 10 nov. 2023
 
 @author: tleduc
@@ -19,18 +19,20 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from numpy import cos, linspace, pi, sin, stack
-from shapely import MultiLineString
+from shapely import multilinestrings
 from shapely.affinity import translate
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.GeomLib3D import GeomLib3D
 
 
 class PanopticRaysLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
     """
     NORTH, WEST, SOUTH, EAST = 1, 2, 3, 4
     NE = pi / 4
@@ -60,58 +62,51 @@ class PanopticRaysLib(object):
         return "east"
 
     """
+
     @staticmethod
     def __get2DMultiLineString(rayLength, nRays):
         angles = linspace(0, 2.0 * pi, nRays, endpoint=False)
         shootingDirs = rayLength * stack([cos(angles), sin(angles)], axis=1)
-        return MultiLineString(
-            [([(0, 0), xy]) for xy in shootingDirs])
-        """
-        shootingDirs = hstack([
-            rayLength * stack([cos(angles), sin(angles)], axis=1),
-            vectorize(PanopticRaysLib.__fromRadiansToCompassCode)(
-                angles).reshape(-1, 1)
-        ])
-        return MultiLineString(
-            [([(0, 0, xyz[2]), xyz]) for xyz in shootingDirs])
-        """
+        return multilinestrings([[(0, 0), xy] for xy in shootingDirs])
 
     @staticmethod
     def get2DGeoDataFrame(sensors, rayLength=100.0, nRays=64):
         rays2D = sensors.copy(deep=True)
         rays2D["viewpoint"] = rays2D.loc[:, "geometry"]
-        rays2D.geometry = rays2D.geometry.apply(
-            lambda geom: geom.centroid)
+        rays2D.geometry = rays2D.geometry.apply(lambda geom: geom.centroid)
 
         if (rayLength in sensors) and (nRays in sensors):
             rays2D.geometry = rays2D.apply(
                 lambda row: translate(
-                    PanopticRaysLib.__get2DMultiLineString(
-                        row[rayLength], row[nRays]),
+                    PanopticRaysLib.__get2DMultiLineString(row[rayLength], row[nRays]),
                     xoff=row.geometry.x,
-                    yoff=row.geometry.y),
-                axis=1)
+                    yoff=row.geometry.y,
+                ),
+                axis=1,
+            )
         elif rayLength in sensors:
             rays2D.geometry = rays2D.apply(
                 lambda row: translate(
-                    PanopticRaysLib.__get2DMultiLineString(
-                        row[rayLength], nRays),
+                    PanopticRaysLib.__get2DMultiLineString(row[rayLength], nRays),
                     xoff=row.geometry.x,
-                    yoff=row.geometry.y),
-                axis=1)
+                    yoff=row.geometry.y,
+                ),
+                axis=1,
+            )
         elif nRays in sensors:
             rays2D.geometry = rays2D.apply(
                 lambda row: translate(
-                    PanopticRaysLib.__get2DMultiLineString(
-                        rayLength, row[nRays]),
+                    PanopticRaysLib.__get2DMultiLineString(rayLength, row[nRays]),
                     xoff=row.geometry.x,
-                    yoff=row.geometry.y),
-                axis=1)
+                    yoff=row.geometry.y,
+                ),
+                axis=1,
+            )
         else:
-            shootingDirs = PanopticRaysLib.__get2DMultiLineString(
-                rayLength, nRays)
+            shootingDirs = PanopticRaysLib.__get2DMultiLineString(rayLength, nRays)
             rays2D.geometry = rays2D.geometry.apply(
-                lambda geom: translate(shootingDirs, xoff=geom.x, yoff=geom.y))
+                lambda geom: translate(shootingDirs, xoff=geom.x, yoff=geom.y)
+            )
 
         rays2D = rays2D.explode(index_parts=True)
         """
@@ -128,9 +123,14 @@ class PanopticRaysLib(object):
         rays25D = PanopticRaysLib.get2DGeoDataFrame(sensors, rayLength, nRays)
         rays25D.geometry = rays25D.apply(
             lambda row: GeomLib.forceZCoordinateToZ0(
-                row.geometry, z0=GeomLib3D.centroid(
-                    row.viewpoint).z if row.viewpoint.has_z else h0), axis=1)
+                row.geometry,
+                z0=GeomLib3D.centroid(row.viewpoint).z if row.viewpoint.has_z else h0,
+            ),
+            axis=1,
+        )
         rays25D.viewpoint = rays25D.viewpoint.apply(
             lambda vp: GeomLib.forceZCoordinateToZ0(
-                vp, z0=GeomLib3D.centroid(vp).z if vp.has_z else h0))
+                vp, z0=GeomLib3D.centroid(vp).z if vp.has_z else h0
+            )
+        )
         return rays25D

@@ -125,17 +125,17 @@ class STSkyMap25D(GeoProcess):
     def __angles(self, heights, widths):
         return [arctan2(h, w) for h, w in zip(heights, widths)]
 
-    def __buildSkyMap(self, viewpoint, lats, lons):
+    def __buildSkyMap(self, viewpoint, lats, lons, size):
         try:
             origin = Point(0, 0)
             viewpoint = viewpoint.centroid
-            pnodes = [self.proj(origin, lon, lat) for lat, lon in zip(lats, lons)]
+            pnodes = [self.proj(origin, lon, lat, size) for lat, lon in zip(lats, lons)]
             pnodes = [(viewpoint.x + pp[0], viewpoint.y + pp[1]) for pp in pnodes]
             return Polygon(
                 viewpoint.buffer(self.size + self.epsilon).exterior.coords, [pnodes]
             )
         except Exception as e:
-            print(f"__buildSkyMap: {e}")
+            print(f"__buildSkyMap viewpoint {viewpoint}: {e}")
             return Polygon()
 
     def run(self):
@@ -159,7 +159,10 @@ class STSkyMap25D(GeoProcess):
             # smapRaysField.to_csv("/tmp/8.csv") # DEBUG
             lons = linspace(0, 2 * pi, self.nRays, endpoint=False)
             smapRaysField.geometry = smapRaysField.apply(
-                lambda row: self.__buildSkyMap(row.viewpoint, row.angles, lons), axis=1
+                lambda row: self.__buildSkyMap(
+                    row.viewpoint, row.angles, lons, self.size
+                ),
+                axis=1,
             )
             smapRaysField.angles = smapRaysField.angles.apply(
                 lambda v: (180 / pi) * asarray(v)

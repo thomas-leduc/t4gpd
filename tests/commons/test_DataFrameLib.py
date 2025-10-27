@@ -23,6 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 from datetime import datetime, timedelta
+from numpy import nan
 from numpy.random import default_rng
 from pandas import DataFrame
 from t4gpd.commons.DataFrameLib import DataFrameLib
@@ -46,6 +47,31 @@ class DataFrameLibTest(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def testEquals(self):
+        df1 = DataFrame({"A": [1, 2, 3]})
+        df2 = df1.sample(frac=1, random_state=0)
+        self.assertFalse(df1.equals(df2), "Test simple DataFrame equality")
+        self.assertTrue(DataFrameLib.equals(df1, df2), "Test DataFrameLib.equals()")
+
+    def testFillWithMissingRows(self):
+        expected = DataFrame(
+            {
+                "A": [1, 2, 3],
+                "B": ["x", "y", "z"],
+                "C": [True, True, nan],
+                "D": [nan, nan, False],
+            }
+        )
+        #
+        df1 = DataFrame({"A": [1, 2], "B": ["x", "y"], "C": True})
+        df2 = DataFrame({"A": [1, 3], "B": ["x", "z"], "D": False})
+        #
+        actual = DataFrameLib.fillWithMissingRows(df1, df2, on=["A", "B"])
+        self.assertTrue(expected.equals(actual), "Test simple DataFrame equality")
+        #
+        actual = DataFrameLib.fillWithMissingRows(df1, df2, on=["A"])
+        self.assertTrue(expected.equals(actual), "Test simple DataFrame equality")
 
     def testGetNewColumnName(self):
         result = DataFrameLib.getNewColumnName(self.df1)

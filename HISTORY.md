@@ -1,5 +1,33 @@
 # Package t4gpd history
 
+## Version 0.9.9 - rev. 15517 - 27 Oct 2025
+* Add new tests.commons.encoding.IsovistBuilderTest class
+* Add new tests.commons.encoding.SensorBasedEncodingLibTest class
+* Add new commons.encoding.SkymapBuilder class
+* Add new commons.encoding.IsovistBuilder class
+* Add new commons.encoding.SensorBasedEncodingLib class
+* Add new commons.OverlayLib class
+* Add new tests.commons.PointsInPolygonsLibTest class
+* Add new commons.PointsInPolygonsLib class
+* Add new tests.commons.raster.RasterLibTest class
+* Add new tests.commons.grid.FastGridLibTest class
+* Add new commons.raster.RasterLib class
+* Add new commons.grid.FastGridLib class
+* Add new morph.STPathOrientedSVF class
+* Add new skymap.STFromSkyMapToEquirectangularMap class
+* Add new osm.OSMOverpassGetter class
+* Add new tests.commons.grid.DichotomizedGridTest class
+* Add new commons.grid.DichotomizedGrid class
+* Add new morph.STHexagonalGrid class
+* Add new tests.commons.grid.HexagonalTilingLibTest class
+* Add new commons.grid.HexagonalTilingLib class
+* Add new tests.commons.DiameterLibTest class
+* Add new resilientgaia.STSP3GnssReader class
+* Add new tests.commons.ArrayLibTest class
+* Add new commons.ArrayLib class
+* Add new skymap.STSphericalTreeMaskMap25D class
+* From setup.py + t4gpd/_version.py to pyproject.toml
+
 ## Version 0.9.8 - rev. 15206 - 17 May 2025
 * Add new commons.morph.EllipticityLib class
 * Add new skymap.STBodyMaskMap25D class

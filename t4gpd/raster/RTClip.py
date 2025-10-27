@@ -1,9 +1,9 @@
-'''
+"""
 Created on 22 aug. 2023
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,25 +19,29 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from geopandas import read_file
+"""
+
+import warnings
 import json
 from geopandas import GeoDataFrame
 from rasterio.io import DatasetReader
 from rasterio.mask import mask
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
+from t4gpd.commons.WarnUtils import WarnUtils
 from t4gpd.raster.AbstractRasterGeoProcess import AbstractRasterGeoProcess
 
 
 class RTClip(AbstractRasterGeoProcess):
-    '''
+    """
     classdocs
-    '''
+    """
 
     def __init__(self, raster, roi, debug=False):
-        '''
+        """
         Constructor
-        '''
+        """
+        warnings.formatwarning = WarnUtils.format_Warning_alt
+        warnings.warn("Deprecated class: Use t4gpd.commons.raster.RasterLib instead")
         if not isinstance(roi, GeoDataFrame):
             raise IllegalArgumentTypeException(roi, "GeoDataFrame")
         self.roi = roi
@@ -49,29 +53,50 @@ class RTClip(AbstractRasterGeoProcess):
 
     @staticmethod
     def __getFeatures(gdf):
-        '''
+        """
         Function to parse features from GeoDataFrame in such a manner that rasterio expects them
-        '''
+        """
         return [json.loads(gdf.to_json())["features"][0]["geometry"]]
 
     def run(self):
         out_img, out_transform = mask(
-            self.raster, shapes=self.__getFeatures(self.roi), crop=True)
+            self.raster, shapes=self.__getFeatures(self.roi), crop=True
+        )
         out_meta = self.raster.meta.copy()
-        out_meta.update({
-            "driver": "GTiff",
-            "height": out_img.shape[1],
-            "width": out_img.shape[2],
-            "transform": out_transform,
-            "crs": self.roi.crs
-        })
+        out_meta.update(
+            {
+                "driver": "GTiff",
+                "height": out_img.shape[1],
+                "width": out_img.shape[2],
+                "transform": out_transform,
+                "crs": self.roi.crs,
+            }
+        )
         result = self._write_and_load(out_img, out_meta, self.debug, indexes=None)
         return result
 
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        import rasterio
+        from rasterio.plot import show
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+        from t4gpd.morph.STBBox import STBBox
 
-"""
-roi = read_file("/home/tleduc/prj/uenv_aau_msc_course/tps/data/roi.shp")
-raster = rasterio.open("/home/tleduc/data/mnt_asc/mnt_nantes_2005_1m/MNT_L93_0354_6690.asc")
-r = RTClip(raster, roi).run()
-print(type(r))
-"""
+        buildings = GeoDataFrameDemos.ensaNantesBuildings()
+        roi = STBBox(buildings, buffDist=0).run()
+        raster = rasterio.open(
+            "/home/tleduc/data/mnt_asc/mnt_nantes_2005_1m/MNT_L93_0354_6690.asc"
+        )
+        r = RTClip(raster, roi).run()
+
+        # MAPPING
+        fig, ax = plt.subplots(figsize=(8, 8))
+        buildings.boundary.plot(ax=ax, color="red")
+        show(r, ax=ax, cmap="Blues_r", alpha=0.8)
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+
+# RTClip.test()

@@ -1,9 +1,9 @@
-'''
+"""
 Created on 27 mai 2021
 
 @author: tleduc
 
-Copyright 2020-2021 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,14 +19,13 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from random import choice, randrange
+"""
 
 
 class Wh(object):
-    '''
+    """
     classdocs
-    '''
+    """
 
     @staticmethod
     def computer():

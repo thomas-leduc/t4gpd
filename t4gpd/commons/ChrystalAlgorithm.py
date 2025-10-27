@@ -1,9 +1,9 @@
-'''
+"""
 Created on 15 dec. 2020
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,31 +19,35 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 from numpy import inf, pi
-from shapely.geometry import Point
+from shapely import Point
 
 from t4gpd.commons.AngleLib import AngleLib
 from t4gpd.commons.GeomLib import GeomLib
 
 
 class ChrystalAlgorithm(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
     DPI = 2.0 * pi
     PI_DIV_2 = pi / 2.0
 
+    __slots__ = ("coords", "ncoords")
+
     def __init__(self, geom):
-        '''
+        """
         Constructor
-        '''
+        """
         self.coords = list(geom.convex_hull.exterior.coords)[:-1]
         self.ncoords = len(self.coords)
 
     def __angleBetweenNodes(self, i, j, k):
         result = AngleLib.angleBetweenNodes(
-            self.coords[i], self.coords[j], self.coords[k])
+            self.coords[i], self.coords[j], self.coords[k]
+        )
         return result if (result <= pi) else self.DPI - result
 
     def __getThirdNodeWithLowestAngleValue(self, idA, idB):
@@ -80,7 +84,8 @@ class ChrystalAlgorithm(object):
             if self.PI_DIV_2 > maxAngle:
                 # Un triangle acutangle est un triangle dont tous les angles sont aigus
                 center, radius = GeomLib.getCircumcircle(
-                    self.coords[idA], self.coords[idB], self.coords[idC])
+                    self.coords[idA], self.coords[idB], self.coords[idC]
+                )
                 return self.__getCircleViaCenterRadius(center, radius)
 
             elif self.PI_DIV_2 <= abc_angle:

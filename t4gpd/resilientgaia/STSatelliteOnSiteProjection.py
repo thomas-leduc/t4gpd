@@ -175,6 +175,7 @@ class STSatelliteOnSiteProjection(GeoProcess):
         df = df.loc[df[df.geometry.apply(lambda g: g.is_valid)].index]
         df = df.set_crs(self.sensors.crs, allow_override=True)
 
+        df.sort_values(by=self.timestamp, inplace=True)
         return df
 
 

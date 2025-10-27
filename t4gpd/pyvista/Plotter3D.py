@@ -1,9 +1,9 @@
-'''
+"""
 Created on 24 juin 2023
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from geopandas import clip, GeoDataFrame
 from datetime import datetime, timedelta, timezone
 import pyvista
@@ -39,19 +40,25 @@ from zoneinfo import ZoneInfo
 
 
 class Plotter3D(GeoProcess):
-    '''
+    """
     classdocs
-    '''
+    """
 
-    def __init__(self, window_size=(1100, 1100), theme=themes.ParaViewTheme(),
-                 show_axes=True, ofile=None):
-        '''
+    def __init__(
+        self,
+        window_size=(1100, 1100),
+        theme=themes.ParaViewTheme(),
+        show_axes=True,
+        ofile=None,
+    ):
+        """
         Constructor
-        '''
+        """
         self.ofile = ofile
 
-        self.plotter = Plotter(off_screen=(ofile is not None), lighting="none",
-                               window_size=window_size)
+        self.plotter = Plotter(
+            off_screen=(ofile is not None), lighting="none", window_size=window_size
+        )
         if show_axes:
             self.plotter.show_axes()
         # pyvista.set_plot_theme(themes.DarkTheme())
@@ -59,57 +66,100 @@ class Plotter3D(GeoProcess):
         # pyvista.set_plot_theme(themes.ParaViewTheme())
         pyvista.set_plot_theme(theme)
 
-    def add_mesh(self, scene, color=None, opacity=1.0, show_edges=False,
-                 show_scalar_bar=False):
-        self.plotter.add_mesh(scene, color=color, opacity=opacity, show_edges=show_edges,
-                              show_scalar_bar=show_scalar_bar, smooth_shading=True)
+    def add_mesh(
+        self, scene, color=None, opacity=1.0, show_edges=False, show_scalar_bar=False
+    ):
+        self.plotter.add_mesh(
+            scene,
+            color=color,
+            opacity=opacity,
+            show_edges=show_edges,
+            show_scalar_bar=show_scalar_bar,
+            smooth_shading=True,
+        )
 
-    def add_buildings(self, buildings, color="grey", opacity=1.0, show_edges=False,
-                      show_scalar_bar=False, elevationFieldname='HAUTEUR',
-                      forceZCoordToZero=True, withoutBuildingFloors=False):
+    def add_buildings(
+        self,
+        buildings,
+        color="grey",
+        opacity=1.0,
+        show_edges=False,
+        show_scalar_bar=False,
+        elevationFieldname="HAUTEUR",
+        forceZCoordToZero=True,
+        withoutBuildingFloors=False,
+    ):
         _buildings = buildings.explode(ignore_index=True)
 
-        op = FootprintExtruder(_buildings, elevationFieldname,
-                               forceZCoordToZero, withoutBuildingFloors)
+        op = FootprintExtruder(
+            _buildings, elevationFieldname, forceZCoordToZero, withoutBuildingFloors
+        )
         buildingsIn3d = STGeoProcess(op, _buildings).run()
 
         # scene = ToUnstructuredGrid([buildingsIn3d], fieldname=None).run()
         scene = ToPolyData([buildingsIn3d], fieldname=None).run()
-        self.add_mesh(scene, color=color, show_edges=show_edges,
-                      show_scalar_bar=show_scalar_bar)
+        self.add_mesh(
+            scene, color=color, show_edges=show_edges, show_scalar_bar=show_scalar_bar
+        )
 
-    def add_ground_surface(self, length=None, npts=64, color=None, opacity=1.0,
-                           show_edges=False, show_scalar_bar=False):
+    def add_ground_surface(
+        self,
+        length=None,
+        npts=64,
+        color=None,
+        opacity=1.0,
+        show_edges=False,
+        show_scalar_bar=False,
+    ):
         xmin, xmax, ymin, ymax, zmin, zmax = self.plotter.bounds
         xc, yc, zc = self.plotter.center
 
         if length is None:
             length = self.plotter.length
-            ground = Plane(center=[xc, yc, zmin],
-                           i_size=length, j_size=length,
-                           i_resolution=10, j_resolution=10)
+            ground = Plane(
+                center=[xc, yc, zmin],
+                i_size=length,
+                j_size=length,
+                i_resolution=10,
+                j_resolution=10,
+            )
         else:
-            ground = Disc(center=[xc, yc, zmin], inner=0.0,
-                          outer=length, normal=(0.0, 0.0, 1.0),
-                          r_res=1, c_res=npts)
+            ground = Disc(
+                center=[xc, yc, zmin],
+                inner=0.0,
+                outer=length,
+                normal=(0.0, 0.0, 1.0),
+                r_res=1,
+                c_res=npts,
+            )
 
-        self.add_mesh(ground, color=color, opacity=opacity,
-                      show_edges=show_edges, show_scalar_bar=show_scalar_bar)
+        self.add_mesh(
+            ground,
+            color=color,
+            opacity=opacity,
+            show_edges=show_edges,
+            show_scalar_bar=show_scalar_bar,
+        )
 
     def add_general_lighting(self, color="grey", intensity=0.95):
         xmin, xmax, ymin, ymax, zmin, zmax = self.plotter.bounds
         xc, yc, zc = self.plotter.center
         light = Light(
-            position=(xc, yc, zmax+100),
+            position=(xc, yc, zmax + 100),
             focal_point=(xc, yc, zc),
             color=color,  # "blue"
-            intensity=intensity
+            intensity=intensity,
         )
         self.plotter.add_light(light)
 
-    def add_streetlights(self, streetlights, generalLighting=True,
-                         color=[1.0, 0.83921, 0.6666, 1.0],
-                         aperture=75.5, show_actor=False):
+    def add_streetlights(
+        self,
+        streetlights,
+        generalLighting=True,
+        color=[1.0, 0.83921, 0.6666, 1.0],
+        aperture=75.5,
+        show_actor=False,
+    ):
         # https://docs.pyvista.org/version/stable/examples/04-lights/actors.html
         # https://docs.pyvista.org/version/stable/api/core/_autosummary/pyvista.Light.html#pyvista.Light
         # https://docs.pyvista.org/version/stable/examples/04-lights/shadows.html
@@ -125,13 +175,13 @@ class Plotter3D(GeoProcess):
             # is known as a spotlight
             light = Light(
                 position=(x0, y0, z0),
-                focal_point=(x0, y0, z0-1),
+                focal_point=(x0, y0, z0 - 1),
                 color=color,
                 intensity=1,  # brightness of the light (between 0 and 1)
                 positional=True,
                 cone_angle=aperture,
                 exponent=10,
-                show_actor=show_actor
+                show_actor=show_actor,
             )
             self.plotter.add_light(light)
 
@@ -145,8 +195,10 @@ class Plotter3D(GeoProcess):
         sunModel = SunLib(gdf, model)
 
         if colors is None:
-            colors = [ColorTemperature.convert_K_to_RGB(
-                2850 + 1000*i) for i in range(len(dts))]
+            colors = [
+                ColorTemperature.convert_K_to_RGB(2850 + 1000 * i)
+                for i in range(len(dts))
+            ]
 
         for i, dt in enumerate(dts):
             solarAlti, solarAzim = sunModel.getSolarAnglesInDegrees(dt)
@@ -158,50 +210,91 @@ class Plotter3D(GeoProcess):
             self.plotter.add_light(light)
             print(f"{dt}: alti={solarAlti:.1f}, azim={solarAzim:.1f}")
 
-    def add_sun_positions(self, dts, radius=10, length=None,
-                          gdf=LatLonLib.NANTES, model="pysolar",
-                          centre=None, color="yellow", opacity=1.0,
-                          show_edges=False, show_scalar_bar=False):
+    def add_sun_positions(
+        self,
+        dts,
+        radius=10,
+        length=None,
+        gdf=LatLonLib.NANTES,
+        model="pysolar",
+        centre=None,
+        color="yellow",
+        opacity=1.0,
+        show_edges=False,
+        show_scalar_bar=False,
+    ):
         xc, yc, zc = self.plotter.center if centre is None else centre
-        length = self.plotter.length/2 if length is None else length
+        length = self.plotter.length / 2 if length is None else length
         sunModel = SunLib(gdf, model)
 
         for i, dt in enumerate(dts):
             x, y, z = sunModel.getRadiationDirection(dt)
-            xyz = xc + length*x, yc + length*y, zc + length*z
+            xyz = xc + length * x, yc + length * y, zc + length * z
             sun = Sphere(radius=radius, center=xyz)
-            self.add_mesh(sun, color=color, show_edges=show_edges,
-                          show_scalar_bar=show_scalar_bar)
+            self.add_mesh(
+                sun, color=color, show_edges=show_edges, show_scalar_bar=show_scalar_bar
+            )
         return xc, yc, zc
 
     def add_tree_cylinders(self):
         pass
 
-    def add_tree_spheres(self, trees, trunk_height="trunk_height",
-                         crown_radius="crown_radius", color="green",
-                         opacity=1.0, show_edges=False,
-                         show_scalar_bar=False):
+    def add_tree_spheres(
+        self,
+        trees,
+        trunk_height="trunk_height",
+        crown_radius="crown_radius",
+        color="green",
+        opacity=1.0,
+        show_edges=False,
+        show_scalar_bar=False,
+    ):
         for _, row in trees.iterrows():
-            h, r = row[trunk_height], row[crown_radius],
+            h, r = (
+                row[trunk_height],
+                row[crown_radius],
+            )
             xyz = list(row.geometry.coords[0])[0:2] + [h]
 
             houppier = Sphere(radius=r, center=xyz)
-            tronc = Cylinder(center=xyz[0:2] + [xyz[2]/2],
-                             direction=(0.0, 0.0, 1.0),
-                             radius=0.2, height=h)
-            self.add_mesh(houppier, color=color, opacity=opacity,
-                          show_edges=show_edges,
-                          show_scalar_bar=show_scalar_bar)
-            self.add_mesh(tronc, color=color, opacity=opacity,
-                          show_edges=show_edges,
-                          show_scalar_bar=show_scalar_bar)
+            tronc = Cylinder(
+                center=xyz[0:2] + [xyz[2] / 2],
+                direction=(0.0, 0.0, 1.0),
+                radius=0.2,
+                height=h,
+            )
+            self.add_mesh(
+                houppier,
+                color=color,
+                opacity=opacity,
+                show_edges=show_edges,
+                show_scalar_bar=show_scalar_bar,
+            )
+            self.add_mesh(
+                tronc,
+                color=color,
+                opacity=opacity,
+                show_edges=show_edges,
+                show_scalar_bar=show_scalar_bar,
+            )
 
     def my_cpos_callback(self):
         # tuple: camera location, focus point, viewup vector
         # camera_position = [(x,y,z), (fx,fy,fz,), (nx,ny,nz)]
         cpos = self.plotter.camera_position
-        (x, y, z), (fx, fy, fz,), (nx, ny, nz) = \
-            cpos.position, cpos.focal_point, cpos.viewup
+        (
+            (x, y, z),
+            (
+                fx,
+                fy,
+                fz,
+            ),
+            (nx, ny, nz),
+        ) = (
+            cpos.position,
+            cpos.focal_point,
+            cpos.viewup,
+        )
         msg = f"""[({x:.2f}, {y:.2f}, {z:.2f}),
  ({fx:.2f}, {fy:.2f}, {fz:.2f}),
  ({nx:.2f}, {ny:.2f}, {nz:.2f})]
@@ -252,7 +345,7 @@ pl.add_sun_shadows([dt0, dt0 + timedelta(hours=6)])
 pl.run()
 """
 
-'''
+"""
 tzinfo = timezone.utc
 
 buffDist = 140.0
@@ -294,4 +387,4 @@ pl.set_camera_position(cpos)
 pl.my_cpos_callback()
 pl.add_general_lighting(color="lightgrey", intensity=0.95)
 pl.run()
-'''
+"""

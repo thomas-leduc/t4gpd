@@ -1,9 +1,9 @@
-'''
+"""
 Created on 15 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,24 +19,26 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
-from shapely.geometry import LineString, Polygon
+"""
+from shapely import LineString, Polygon
 
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class CaliperLib(object):
-    '''
+    """
     classdocs
-    '''
+    """
+
+    __slots__ = "maximize"
 
     def __init__(self, criteria=None):
-        '''
+        """
         Constructor
-        '''
-        if criteria in (None, 'min', 'max'):
-            self.maximize = True if criteria in [None, 'max'] else False
+        """
+        if criteria in (None, "min", "max"):
+            self.maximize = True if criteria in [None, "max"] else False
         else:
             raise IllegalArgumentTypeException(criteria, '{None, "min", "max"}')
 
@@ -50,7 +52,10 @@ class CaliperLib(object):
         result = list()
         for vertex in vertices:
             # projP, distFromAToProjP, distFromPToLine = GeomUtilities.projectOntoStraightLine(vertex, pairOfVertices)
-            result.append([vertex, pairOfVertices] + GeomLib.projectOntoStraightLine(vertex, pairOfVertices))
+            result.append(
+                [vertex, pairOfVertices]
+                + GeomLib.projectOntoStraightLine(vertex, pairOfVertices)
+            )
         return result
 
     @staticmethod
@@ -70,7 +75,7 @@ class CaliperLib(object):
         for listOfQuintuplets in listOfListOfQuintuplets:
             maxDist = -1.0
             for quintuplet in listOfQuintuplets:
-                if (maxDist < quintuplet[4]):
+                if maxDist < quintuplet[4]:
                     maxDist, currResult = quintuplet[4], quintuplet
             result.append(currResult)
         return result
@@ -83,16 +88,26 @@ class CaliperLib(object):
         u = GeomLib.unitVector(a, b)
         v = [-u[1], u[0]]
 
-        minDu = min([distFromAToProjP for _, _, _, distFromAToProjP, _ in listOfQuintuplets])
-        maxDu = max([distFromAToProjP for _, _, _, distFromAToProjP, _ in listOfQuintuplets])
-        maxDv = max([distFromPToLine for _, _, _, _, distFromPToLine in listOfQuintuplets])
+        minDu = min(
+            [distFromAToProjP for _, _, _, distFromAToProjP, _ in listOfQuintuplets]
+        )
+        maxDu = max(
+            [distFromAToProjP for _, _, _, distFromAToProjP, _ in listOfQuintuplets]
+        )
+        maxDv = max(
+            [distFromPToLine for _, _, _, _, distFromPToLine in listOfQuintuplets]
+        )
 
-        p1 = [ a[0] + u[0] * minDu, a[1] + u[1] * minDu ]
-        p2 = [ a[0] + u[0] * maxDu, a[1] + u[1] * maxDu ]
-        p3 = [ p2[0] + v[0] * maxDv, p2[1] + v[1] * maxDv ]
-        p4 = [ p1[0] + v[0] * maxDv, p1[1] + v[1] * maxDv ]
+        p1 = [a[0] + u[0] * minDu, a[1] + u[1] * minDu]
+        p2 = [a[0] + u[0] * maxDu, a[1] + u[1] * maxDu]
+        p3 = [p2[0] + v[0] * maxDv, p2[1] + v[1] * maxDv]
+        p4 = [p1[0] + v[0] * maxDv, p1[1] + v[1] * maxDv]
 
-        return [Polygon([p1, p2, p3, p4, p1]), max(maxDu - minDu, maxDv), min(maxDu - minDu, maxDv)]
+        return [
+            Polygon([p1, p2, p3, p4, p1]),
+            max(maxDu - minDu, maxDv),
+            min(maxDu - minDu, maxDv),
+        ]
 
     @staticmethod
     def __getAntipodalVertex(pairOfVertices, vertices):
@@ -100,7 +115,7 @@ class CaliperLib(object):
 
         maxDist, result = -1.0, None
         for p, _, _, _, distFromPToLine in listOfQuintuplets:
-            if (maxDist < distFromPToLine):
+            if maxDist < distFromPToLine:
                 maxDist, result = distFromPToLine, p
         return maxDist, result
 
@@ -110,7 +125,7 @@ class CaliperLib(object):
         distances = [
             max([dist for _, _, _, _, dist in listOfQuintuplets])
             for listOfQuintuplets in listOfListOfQuintuplets
-            ]
+        ]
         return distances
 
     @staticmethod
@@ -119,7 +134,9 @@ class CaliperLib(object):
         if convexHull is None:
             return None, 0
         # vertices = list(convexHull.exterior.coords)[:-1]  # Clockwise order
-        vertices = list(reversed(list(convexHull.exterior.coords)[:-1]))  # Counter-clockwise order
+        vertices = list(
+            reversed(list(convexHull.exterior.coords)[:-1])
+        )  # Counter-clockwise order
         return vertices, len(vertices)
 
     def diameter(self, geom):
@@ -129,13 +146,23 @@ class CaliperLib(object):
         if self.maximize:
             maxDist = -1.0
             for p, pairOfV, projP, _, dist in listOfMaxOfQuintuplets:
-                if (maxDist < dist):
-                    maxDist, pairOfVertices, oppVertex, projOppVertex = dist, pairOfV, p, projP
+                if maxDist < dist:
+                    maxDist, pairOfVertices, oppVertex, projOppVertex = (
+                        dist,
+                        pairOfV,
+                        p,
+                        projP,
+                    )
         else:
-            minDist = float('inf')
+            minDist = float("inf")
             for p, pairOfV, projP, _, dist in listOfMaxOfQuintuplets:
-                if (minDist > dist):
-                    minDist, pairOfVertices, oppVertex, projOppVertex = dist, pairOfV, p, projP
+                if minDist > dist:
+                    minDist, pairOfVertices, oppVertex, projOppVertex = (
+                        dist,
+                        pairOfV,
+                        p,
+                        projP,
+                    )
         # return [pairOfVertices, [oppVertex, projOppVertex]]
         return [oppVertex, projOppVertex]
 
@@ -156,7 +183,7 @@ class CaliperLib(object):
     def stretching(geom):
         distances = CaliperLib.__getDistances(geom)
         minDist, maxDist = min(distances), max(distances)
-        if (0.0 >= maxDist):
+        if 0.0 >= maxDist:
             return None
         return float(minDist / maxDist)
 
@@ -173,7 +200,7 @@ class CaliperLib(object):
     @staticmethod
     def mabr(geom):
         rectangles = CaliperLib.getBoundingRectangles(geom)
-        minArea, result = float('inf'), None
+        minArea, result = float("inf"), None
         for rect, len1, len2 in rectangles:
             currArea = len1 * len2
             if currArea < minArea:
@@ -184,7 +211,7 @@ class CaliperLib(object):
     @staticmethod
     def mpbr(geom):
         rectangles = CaliperLib.getBoundingRectangles(geom)
-        minHalfPerim, result = float('inf'), None
+        minHalfPerim, result = float("inf"), None
         for rect, len1, len2 in rectangles:
             currHalfPerim = len1 + len2
             if currHalfPerim < minHalfPerim:

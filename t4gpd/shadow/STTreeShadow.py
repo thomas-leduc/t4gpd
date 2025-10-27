@@ -43,6 +43,7 @@ class STTreeShadow(AbstractShadow):
         altitudeOfShadowPlane=0,
         aggregate=False,
         model="pvlib",
+        withTrunk=True,
         npoints=32,
     ):
         """
@@ -64,6 +65,7 @@ class STTreeShadow(AbstractShadow):
 
         sunModel = SunModel(trees, altitude=altitudeOfShadowPlane, model=model)
         self.sunPositions = sunModel.positions_and_sun_beam_direction(dts)
+        self.withTrunk = withTrunk
         self.npoints = npoints
 
     def _auxiliary(self, row, radDir, solarAlti, solarAzim):
@@ -71,12 +73,14 @@ class STTreeShadow(AbstractShadow):
         treeHeight = row[self.treeHeightFieldname]
         treeCrownRadius = row[self.treeCrownRadiusFieldname]
 
+        treeTrunkRadius = None if self.withTrunk else 0
+
         if isinstance(treeGeom, Point):
             _shadow = ShadowLib.projectSphericalTreeOntoShadowPlane(
                 treeGeom,
                 treeHeight,
                 treeCrownRadius,
-                None,
+                treeTrunkRadius,
                 radDir,
                 solarAlti,
                 solarAzim,
@@ -92,7 +96,7 @@ class STTreeShadow(AbstractShadow):
                     g,
                     treeHeight,
                     treeCrownRadius,
-                    None,
+                    treeTrunkRadius,
                     radDir,
                     solarAlti,
                     solarAzim,
@@ -143,6 +147,7 @@ class STTreeShadow(AbstractShadow):
             altitudeOfShadowPlane=0.0,
             aggregate=False,
             model="pvlib",
+            withTrunk=False,
             npoints=32,
         ).run()
 

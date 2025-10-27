@@ -22,7 +22,8 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from datetime import timedelta
-from pandas import DataFrame, MultiIndex
+from hashlib import md5
+from pandas import DataFrame, MultiIndex, Series, concat
 from random import choices
 
 
@@ -30,6 +31,39 @@ class DataFrameLib(object):
     """
     classdocs
     """
+
+    @staticmethod
+    def equals(df1, df2):
+        def row_hash(row):
+            return md5(str(row.values).encode()).hexdigest()
+
+        if not df1.equals(df2):
+            set1 = set(df1.apply(row_hash, axis=1))
+            set2 = set(df2.apply(row_hash, axis=1))
+            return set1 == set2
+        return True
+
+    @staticmethod
+    def fillWithMissingRows(df1, df2, on):
+        # Return df1 completed with the missing lines from df2
+        # according to the "on" columns.
+        if not isinstance(on, (list, tuple)):
+            on = [on]
+
+        """
+        # Identifies the lines in df2 that are absent from df1.
+        missing = df2.merge(df1, on=on, how="left", indicator=True)
+        missing = missing.loc[missing["_merge"] == "left_only", df2.columns]
+        """
+        # Creates a multi-key index (tuple per row)
+        keys1 = set(zip(*(df1[col] for col in on)))
+        mask = ~Series(list(zip(*(df2[col] for col in on)))).isin(keys1)
+
+        # Select only lines not present in df1
+        missing = df2.loc[mask]
+
+        # Concatenate without duplicates
+        return concat([df1, missing], ignore_index=True)
 
     @staticmethod
     def getNewColumnName(df):

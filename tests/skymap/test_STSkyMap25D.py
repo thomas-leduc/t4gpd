@@ -21,14 +21,17 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import matplotlib.pyplot as plt
 import unittest
 
 from geopandas import GeoDataFrame
+from numpy import ceil
 from shapely import Point, Polygon
 from shapely.affinity import translate
 from shapely.geometry import CAP_STYLE
 from shapely.wkt import loads
 from t4gpd.commons.GeomLib import GeomLib
+from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 from t4gpd.skymap.STSkyMap25D import STSkyMap25D
 
 
@@ -133,6 +136,48 @@ class STSkyMap25DTest(unittest.TestCase):
         plt.show()
         plt.close(fig)
 
+    def testPlotProjections(self):
+        dw = 10
+        buildings = GeoDataFrameDemos.regularGridOfPlots(2, 2, dw=dw)
+        buildings["HAUTEUR"] = 10
+        viewpoints = GeoDataFrame(
+            [{"gid": 1, "geometry": Point(0, 0)}], crs=buildings.crs
+        )
+
+        PRJ = ["Orthogonal", "Isoaire", "Stereographic", "Polar"]
+        ncols = 2
+        nrows = int(ceil(len(PRJ) / ncols))
+        fig, axes = plt.subplots(
+            nrows=nrows, ncols=ncols, figsize=(24, 8), squeeze=False
+        )
+        for i, prj in enumerate(PRJ):
+            smaps = STSkyMap25D(
+                buildings,
+                viewpoints,
+                nRays=360,
+                rayLength=100.0,
+                elevationFieldname="HAUTEUR",
+                h0=0.0,
+                size=dw,
+                epsilon=1e-1,
+                projectionName=prj,
+                withIndices=False,
+                withAngles=False,
+            ).run()
+
+            ax = axes.flat[i]
+            ax.set_title(
+                f"{prj} (h=10m), area={smaps.area.sum():.1f} m$^2$", fontsize=18
+            )
+            viewpoints.plot(ax=ax, marker="P")
+            buildings.plot(ax=ax, edgecolor="black", alpha=0.5)
+            smaps.plot(ax=ax, color="black")
+            ax.axis("off")
+
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
     def testRun1(self):
         for sensors in [self.sensors1, self.sensors2]:
             for masks in [self.masks1, self.masks2]:
@@ -175,7 +220,7 @@ class STSkyMap25DTest(unittest.TestCase):
                 self.assertIsInstance(result, GeoDataFrame, "result is a GeoDataFrame")
                 self.assertEqual(len(sensors), len(result), "Count rows")
                 self.assertEqual(
-                    len(sensors.columns) + 8, len(result.columns), "Count columns"
+                    len(sensors.columns) + 10, len(result.columns), "Count columns"
                 )
                 # print(result[['gid', 'w_mean', 'w_std', 'h_mean', 'h_over_w', 'svf']])
                 self.assertTrue(
@@ -219,7 +264,7 @@ class STSkyMap25DTest(unittest.TestCase):
                 self.assertIsInstance(result, GeoDataFrame, "result is a GeoDataFrame")
                 self.assertEqual(len(sensors), len(result), "Count rows")
                 self.assertEqual(
-                    len(sensors.columns) + 9, len(result.columns), "Count columns"
+                    len(sensors.columns) + 11, len(result.columns), "Count columns"
                 )
                 self.assertTrue(
                     all(result.apply(lambda row: row.w_mean > row.gid * 25, axis=1)),
@@ -269,7 +314,7 @@ class STSkyMap25DTest(unittest.TestCase):
                 self.assertIsInstance(result, GeoDataFrame, "result is a GeoDataFrame")
                 self.assertEqual(len(sensors), len(result), "Count rows")
                 self.assertEqual(
-                    len(sensors.columns) + 9, len(result.columns), "Count columns"
+                    len(sensors.columns) + 11, len(result.columns), "Count columns"
                 )
                 self.assertTrue(all(result.w_mean == 100.0), "Check w_mean values")
                 self.assertTrue(all(result.h_mean == 0.0), "Check h_mean values")
@@ -330,7 +375,7 @@ class STSkyMap25DTest(unittest.TestCase):
         ).run()
         self.assertIsInstance(result, GeoDataFrame, "result is a GeoDataFrame")
         self.assertEqual(len(sensors), len(result), "Count rows")
-        self.assertEqual(len(sensors.columns) + 9, len(result.columns), "Count columns")
+        self.assertEqual(len(sensors.columns) + 11, len(result.columns), "Count columns")
         # self.__plot(masks, sensors, result, bbox=None)
 
     def testRun7(self):
@@ -361,7 +406,7 @@ class STSkyMap25DTest(unittest.TestCase):
         ).run()
         self.assertIsInstance(result, GeoDataFrame, "result is a GeoDataFrame")
         self.assertEqual(len(sensors), len(result), "Count rows")
-        self.assertEqual(len(sensors.columns) + 9, len(result.columns), "Count columns")
+        self.assertEqual(len(sensors.columns) + 11, len(result.columns), "Count columns")
         # self.__plot(masks, sensors, result, bbox=None)
 
     def testRun8(self):
@@ -411,7 +456,7 @@ BATIMENT0000000302923571,Indifférenciée,Résidentiel,Commercial et services,No
         ).run()
         self.assertIsInstance(result, GeoDataFrame, "result is a GeoDataFrame")
         self.assertEqual(len(sensors), len(result), "Count rows")
-        self.assertEqual(len(sensors.columns) + 9, len(result.columns), "Count columns")
+        self.assertEqual(len(sensors.columns) + 11, len(result.columns), "Count columns")
         # self.__plot(masks, sensors, result, bbox=None)
 
     def testRun9(self):
@@ -446,7 +491,7 @@ BATIMENT0000000302923571,Indifférenciée,Résidentiel,Commercial et services,No
         ).run()
         self.assertIsInstance(result, GeoDataFrame, "result is a GeoDataFrame")
         self.assertEqual(len(sensors), len(result), "Count rows")
-        self.assertEqual(len(sensors.columns) + 9, len(result.columns), "Count columns")
+        self.assertEqual(len(sensors.columns) + 11, len(result.columns), "Count columns")
         # self.__plot(masks, sensors, result, bbox=None)
 
 

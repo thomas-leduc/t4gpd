@@ -1,9 +1,9 @@
-'''
+"""
 Created on 29 nov. 2023
 
 @author: tleduc
 
-Copyright 2020-2023 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 import warnings
 from geopandas import GeoDataFrame
 from numpy import full
@@ -31,25 +32,35 @@ from t4gpd.raster.RTFromArrayToRaster import RTFromArrayToRaster
 
 
 class STFromGridToRaster(AbstractRasterGeoProcess):
-    '''
+    """
     classdocs
-    '''
+    """
 
-    def __init__(self, grid, fieldname, rowFieldname="row", columnFieldname="column",
-                 roi=None, ndv=-1, debug=False):
-        '''
+    def __init__(
+        self,
+        grid,
+        fieldname,
+        rowFieldname="row",
+        columnFieldname="column",
+        roi=None,
+        ndv=-1,
+        debug=False,
+    ):
+        """
         Constructor
-        '''
+        """
         warnings.formatwarning = WarnUtils.format_Warning_alt
+        warnings.warn("Deprecated class: Use t4gpd.commons.raster.RasterLib instead")
 
         if not isinstance(grid, GeoDataFrame):
             raise IllegalArgumentTypeException(grid, "GeoDataFrame")
         self.grid = grid
 
         for field in [fieldname, rowFieldname, columnFieldname]:
-            if not field in grid:
+            if field not in grid:
                 raise IllegalArgumentTypeException(
-                    field, "must be a valid grid field name")
+                    field, "must be a valid grid field name"
+                )
         self.fieldname = fieldname
         self.rowFieldname = rowFieldname
         self.columnFieldname = columnFieldname
@@ -66,9 +77,12 @@ class STFromGridToRaster(AbstractRasterGeoProcess):
     def __as_array(self, nrows, ncols):
         arr = full([nrows, ncols], self.ndv, dtype=type(self.ndv))
 
-        if not TypeLib.are_both_floating_or_integer(self.ndv, self.grid[self.fieldname]):
+        if not TypeLib.are_both_floating_or_integer(
+            self.ndv, self.grid[self.fieldname]
+        ):
             warnings.warn(
-                "The numerical types of the NDV and the series of values are not identical")
+                "The numerical types of the NDV and the series of values are not identical"
+            )
 
         for _, row in self.grid.iterrows():
             nr = row[self.rowFieldname]
@@ -88,36 +102,51 @@ class STFromGridToRaster(AbstractRasterGeoProcess):
         raster = RTFromArrayToRaster(arr, roi, self.ndv, self.debug).run()
         return raster
 
+    @staticmethod
+    def test():
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import ListedColormap
+        from rasterio.plot import show
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+        from t4gpd.morph.STGrid import STGrid
 
-"""
-import matplotlib.pyplot as plt
-from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
-from t4gpd.morph.STGrid import STGrid
-from t4gpd.raster.RTToFile import RTToFile
+        my_cmap = ListedColormap(["blue", "green"])
 
-buildings = GeoDataFrameDemos.ensaNantesBuildings()
-buildings = GeoDataFrameDemos.singleBuildingInNantes()
-# buildings = GeoDataFrameDemos.districtGraslinInNantesBuildings()
-# buildings = GeoDataFrameDemos.regularGridOfPlots(2, 3)
-grid = STGrid(buildings, dx=5, dy=5, indoor="both", intoPoint=True,
-              encode=True, withDist=False).run()
+        buildings = GeoDataFrameDemos.ensaNantesBuildings()
+        # buildings = GeoDataFrameDemos.singleBuildingInNantes()
 
-ndv = 0
-# grid.loc[len(grid), ["row", "column", "indoor"]] = int(grid.row.max() + 6), int(grid.column.max()), ndv
-grid.row = grid.row.astype(int)
-grid.column = grid.column.astype(int)
+        grid = STGrid(
+            buildings,
+            dx=5,
+            dy=5,
+            indoor="both",
+            intoPoint=True,
+            encode=True,
+            withDist=False,
+        ).run()
 
-raster = STFromGridToRaster(grid, "indoor", ndv=ndv, debug=False).run()
+        ndv = 0
+        # grid.loc[len(grid), ["row", "column", "indoor"]] = int(grid.row.max() + 6), int(grid.column.max()), ndv
+        grid.row = grid.row.astype(int)
+        grid.column = grid.column.astype(int)
 
-fig, ax = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
-buildings.plot(ax=ax, color="lightgrey")
-grid.plot(ax=ax, color="red")
-ax.axis("off")
-plt.tight_layout()
-plt.show()
+        raster = STFromGridToRaster(
+            grid,
+            "indoor",
+            rowFieldname="row",
+            columnFieldname="column",
+            ndv=ndv,
+            debug=False,
+        ).run()
 
-RTToFile(raster, "./raster.tif").run()
-plt.imshow(raster.read(1), cmap="BrBG")
-plt.show()
-plt.close(fig)
-"""
+        # MAPPING
+        fig, ax = plt.subplots(figsize=(1 * 8.26, 1 * 8.26))
+        buildings.boundary.plot(ax=ax, color="red")
+        show(raster, ax=ax, cmap=my_cmap, alpha=0.8)
+        ax.axis("off")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+
+
+# STFromGridToRaster.test()

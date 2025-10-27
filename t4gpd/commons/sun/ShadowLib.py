@@ -104,6 +104,8 @@ class ShadowLib(object):
             # h = 90.1 * a**(2/3)
             # a = (h / 90.1)**(3/2)
             a = max(0.1, (treeHeight / 90.1) ** (3 / 2))
+        elif 0 == treeTrunkRadius:
+            return treeCrownShadow
         else:
             a = treeTrunkRadius
         c = Point((treePosition.x, treePosition.y, treeHeight - 2 * a))

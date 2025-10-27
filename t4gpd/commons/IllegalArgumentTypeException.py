@@ -1,9 +1,9 @@
-'''
+"""
 Created on 19 juin 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2025 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,24 +19,29 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 
 
-class IllegalArgumentTypeException(Exception):
-    '''
+class IllegalArgumentTypeException(Exception):  # ValueError
+    """
     classdocs
-    '''
+    """
+
+    __slots__ = ("actualArgument", "expectedType")
 
     def __init__(self, actualArgument, expectedType):
-        '''
+        """
         Constructor
-        '''
+        """
         self.actualArgument = actualArgument
         self.expectedType = expectedType
 
     def __str__(self):
-        return '\n\
+        return (
+            "\n\
 %s\n\
 *** Illegal argument: \n\
 *** Instead of: %s\n\
-*** a %s was expected!' % ('-' * 70, str(self.actualArgument), str(self.expectedType))
+*** a %s was expected!"
+            % ("-" * 70, str(self.actualArgument), str(self.expectedType))
+        )
