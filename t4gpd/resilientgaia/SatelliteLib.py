@@ -3,7 +3,7 @@ Created on 27 sep. 2024
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,7 +21,10 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 from datetime import date, datetime, timedelta
+from pandas import DataFrame
+from pandas.core.common import flatten
 from pymap3d import Ellipsoid
+from pymap3d.aer import ecef2aer
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
@@ -41,6 +44,54 @@ class SatelliteLib:
     def constellation(satName):
         firstLetter = satName[0]
         return SatelliteLib.CONSTELLATIONS[firstLetter]
+
+    @staticmethod
+    def ecef_to_aer(vp, h0, satcoordX, satcoordY, satcoordZ, ell=WGS84):
+        """
+        Convert ECEF coordinates to AER (azimuth, elevation, slant range)
+        https://geospace-code.github.io/pymap3d/aer.html#pymap3d.aer.ecef2aer
+        """
+        lat0, lon0 = vp.y, vp.x
+        az, el, srange = ecef2aer(
+            satcoordX, satcoordY, satcoordZ, lat0, lon0, h0, ell=ell, deg=True
+        )
+        if 0 > el:
+            return None, None, None
+        return az, el, srange
+
+    @staticmethod
+    def gdf_ecef_to_aer(ecef, h0, version=2, ell=WGS84):
+        """
+        Convert ECEF coordinates to AER (azimuth, elevation, slant range)
+        https://geospace-code.github.io/pymap3d/aer.html#pymap3d.aer.ecef2aer
+        """
+        _ecef = ecef if ecef.crs.is_geographic else ecef.to_crs("epsg:4326")
+        sats = SatelliteLib.get_satellite_names(version)
+        columns = list(
+            flatten([(f"{sat}_az", f"{sat}_el", f"{sat}_sr") for sat in sats])
+        )
+
+        return DataFrame(
+            _ecef.apply(
+                lambda row: list(
+                    flatten(
+                        [
+                            SatelliteLib.ecef_to_aer(
+                                row.geometry,
+                                h0,
+                                row[f"satcoordX_{sat}"],
+                                row[f"satcoordY_{sat}"],
+                                row[f"satcoordZ_{sat}"],
+                                ell,
+                            )
+                            for sat in sats
+                        ]
+                    )
+                ),
+                axis=1,
+            ).to_list(),
+            columns=columns,
+        )
 
     @staticmethod
     def get_satellite_name(i):

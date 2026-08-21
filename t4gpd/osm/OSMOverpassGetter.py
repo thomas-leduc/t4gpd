@@ -3,7 +3,7 @@ Created on 21 Jul. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -53,7 +53,15 @@ class OSMOverpassGetter(GeoProcess):
                 bbox, "GeoDataFrame or a list or tuple of 4 coordinates"
             )
 
-        types = ("buildings", "pois", "roads", "streetlights", "trees", "wetlands")
+        types = (
+            "buildings",
+            "islands",
+            "pois",
+            "roads",
+            "streetlights",
+            "trees",
+            "wetlands",
+        )
         if type not in types:
             types = "', '".join(types)
             raise IllegalArgumentTypeException(type, f"'{types}'")
@@ -102,6 +110,18 @@ relation["waterway"="riverbank"]({south},{west},{north},{east});
 out body;
 >;
 out skel qt;
+"""
+
+    @staticmethod
+    def __islands_querystring(south, west, north, east):
+        # See https://overpass-turbo.eu/
+        return f"""
+[out:json][timeout:{OSMOverpassGetter.TIMEOUT}];
+(
+relation ["place"="island"]({south},{west},{north},{east});
+way ["place"="island"]({south},{west},{north},{east});
+);
+out body;
 """
 
     @staticmethod
@@ -267,6 +287,10 @@ out skel qt;
                 query = OSMOverpassGetter.__buildings_querystring(
                     south, west, north, east
                 )
+            case "islands":
+                query = OSMOverpassGetter.__islands_querystring(
+                    south, west, north, east
+                )
             case "pois":
                 query = OSMOverpassGetter.__pois_querystring(south, west, north, east)
             case "roads":
@@ -421,17 +445,17 @@ out skel qt;
     def test(usecase="ensan", clip=False):
         import matplotlib.pyplot as plt
 
-        if usecase == "ensan":
-            from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+        match usecase:
+            case "ensan":
+                from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 
-            bbox = GeoDataFrameDemos.ensaNantesBuildings()
-            # from t4gpd.demos.NantesBDT import NantesBDT
-            # bbox = NantesBDT.buildings()
-
-        else:
-            # Coordonnées de la ville d'Avignon
-            south, west, north, east = 43.94025, 4.788114, 43.956126, 4.825002
-            bbox = (west, south, east, north)
+                bbox = GeoDataFrameDemos.ensaNantesBuildings()
+                # from t4gpd.demos.NantesBDT import NantesBDT
+                # bbox = NantesBDT.buildings()
+            case "avignon":
+                # Coordonnées de la ville d'Avignon
+                south, west, north, east = 43.94025, 4.788114, 43.956126, 4.825002
+                bbox = (west, south, east, north)
 
         buildings, pois, roads, streetlights, trees, wetlands = (
             None,

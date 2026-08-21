@@ -1,9 +1,9 @@
-'''
+"""
 Created on 30 oct. 2024
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from numpy import ones_like, triu
 from pandas import DataFrame
 from t4gpd.commons.CorrelationLib import CorrelationLib
@@ -28,22 +29,33 @@ from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeExcept
 
 
 class PlotCorrelationMatrix(GeoProcess):
-    '''
+    """
     classdocs
-    '''
+    """
 
-    def __init__(self, df, tri=True, pval=True, figsize=None,
-                 method="pearson", ofile=None):
-        '''
+    def __init__(
+        self,
+        df,
+        tri=True,
+        pval=True,
+        figsize=None,
+        method="pearson",
+        xrotation=45,
+        yrotation=None,
+        ofile=None,
+    ):
+        """
         Constructor
-        '''
+        """
         if not isinstance(df, DataFrame):
             raise IllegalArgumentTypeException(df, "DataFrame")
         self.df = df
         self.tri = tri
         self.pval = pval
-        self.figsize = (2.5*8.26, 2.2*8.26) if figsize is None else figsize
+        self.figsize = (2.5 * 8.26, 2.2 * 8.26) if figsize is None else figsize
         self.method = method
+        self.xrotation = xrotation
+        self.yrotation = yrotation
         self.ofile = ofile
 
     @staticmethod
@@ -64,23 +76,38 @@ class PlotCorrelationMatrix(GeoProcess):
                     p_value = pval.iloc[i, j]
                     if not isnan(p_value):
                         corr_value = corr.iloc[i, j]
-                        text_color = "black" if ((min_corr + 0.36) <= corr_value <= (
-                            max_corr - 0.4)) else "white"
+                        text_color = (
+                            "black"
+                            if ((min_corr + 0.36) <= corr_value <= (max_corr - 0.4))
+                            else "white"
+                        )
 
-                        label = f"(p = {p_value:.2f})"
+                        label = f"p={p_value:.3f}"
                         if p_value <= 0.01:
                             # include double asterisks for p-value <= 0.01
                             label += "**"
                         elif p_value <= 0.05:
                             # include single asterisk for p-value <= 0.05
                             label += "*"
-                        ax.text(i + 0.5, j + 0.8, label,
-                                ha="center", va="center",
-                                fontsize=8, color=text_color)
+                        ax.text(
+                            i + 0.5,
+                            j + 0.8,
+                            label,
+                            ha="center",
+                            va="center",
+                            fontsize=8,
+                            color=text_color,
+                        )
                         if not tri:
-                            ax.text(j + 0.5, i + 0.8, label,
-                                    ha="center", va="center",
-                                    fontsize=8, color=text_color)
+                            ax.text(
+                                j + 0.5,
+                                i + 0.8,
+                                label,
+                                ha="center",
+                                va="center",
+                                fontsize=8,
+                                color=text_color,
+                            )
 
     def __plot(self, corr, pval):
         import matplotlib.pyplot as plt
@@ -99,18 +126,32 @@ class PlotCorrelationMatrix(GeoProcess):
 
         # Create the Correlation Heatmap
         # Data will not be shown in cells where mask is True
-        heatmap = heatmap(corr,
-                          annot=True,
-                          annot_kws={"fontsize": 10},
-                          fmt=".2f",
-                          linewidths=0.5,
-                          cmap="RdBu",
-                          mask=mask,
-                          ax=ax)
+        heatmap = heatmap(
+            corr,
+            annot=True,
+            annot_kws={"fontsize": 12},
+            fmt=".2f",
+            linewidths=0.5,
+            cmap="RdBu",
+            mask=mask,
+            vmin=-1,
+            vmax=1,
+            ax=ax,
+        )
+        heatmap.set_xticklabels(
+            ax.get_xticklabels(),
+            rotation=self.xrotation,
+            ha="right",  # souvent utile pour éviter le chevauchement
+        )
+        if not self.yrotation is None:
+            heatmap.set_yticklabels(
+                ax.get_yticklabels(),
+                rotation=self.yrotation,
+                ha="right",  # souvent utile pour éviter le chevauchement
+            )
         # Assign p-value annotations with asterisks for significance
         if self.pval:
-            PlotCorrelationMatrix.__assign_pvalue_annotations(
-                ax, corr, pval, self.tri)
+            PlotCorrelationMatrix.__assign_pvalue_annotations(ax, corr, pval, self.tri)
 
         if self.ofile is None:
             plt.show()
@@ -121,7 +162,8 @@ class PlotCorrelationMatrix(GeoProcess):
     def run(self):
         # https://tosinharold.medium.com/enhancing-correlation-matrix-heatmap-plots-with-p-values-in-python-41bac6a7fd77
         corr, pval = CorrelationLib.correlation_with_pvalues(
-            self.df, method=self.method)
+            self.df, method=self.method
+        )
 
         self.__plot(corr, pval)
         return corr, pval
@@ -133,13 +175,14 @@ class PlotCorrelationMatrix(GeoProcess):
         nrows, rng = 10, default_rng(123)
         df = DataFrame(
             data=rng.uniform(low=0, high=1, size=(nrows, 4)),
-            columns=["X1", "X2", "X3", "X4"])
+            columns=["X1", "X2", "X3", "X4"],
+        )
         df = df.assign(
             Y1=lambda row: (10 * row.X1 + 0.5 * row.X2 + 0.4 * row.X3) / 10.9,
             Y2=lambda row: (10 * row.X1 + 1.5 * row.X2 + 1.4 * row.X4) / 12.9,
         )
 
-        PlotCorrelationMatrix(df, tri=True, ofile=None).run()
+        PlotCorrelationMatrix(df, tri=True, rotation=30, ofile=None).run()
         return df
 
 

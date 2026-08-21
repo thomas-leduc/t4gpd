@@ -3,7 +3,7 @@ Created on 10 mar. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -39,14 +39,13 @@ class LinearRegressionLib(AbstractIndicesLib):
         return ["slope", "intercept", "score", "mae", "mse"]
 
     @staticmethod
-    def _indices(row, with_geom=False):
-        geom = row.geometry
+    def get_indices(geom, with_geom=False, suffix=""):
         result = {
-            "slope": nan,
-            "intercept": nan,
-            "score": nan,
-            "mae": nan,
-            "mse": nan,
+            f"slope{suffix}": nan,
+            f"intercept{suffix}": nan,
+            f"score{suffix}": nan,
+            f"mae{suffix}": nan,
+            f"mse{suffix}": nan,
         }
         pts = GeomLib.getListOfShapelyPoints(geom, withoutClosingLoops=True)
 
@@ -62,11 +61,11 @@ class LinearRegressionLib(AbstractIndicesLib):
             mse = mean_squared_error(y, y_pred)
 
             result = {
-                "slope": slope,
-                "intercept": intercept,
-                "score": score,
-                "mae": mae,
-                "mse": mse,
+                f"slope{suffix}": slope,
+                f"intercept{suffix}": intercept,
+                f"score{suffix}": score,
+                f"mae{suffix}": mae,
+                f"mse{suffix}": mse,
             }
 
             if with_geom:
@@ -85,6 +84,10 @@ class LinearRegressionLib(AbstractIndicesLib):
         if with_geom:
             result.update({"geometry": LineString()})
         return result
+        
+    @staticmethod
+    def _indices(row, with_geom=False):
+        return LinearRegressionLib.get_indices(row.geometry, with_geom=with_geom)
 
     @staticmethod
     def test():

@@ -3,7 +3,7 @@ Created on 15 Oct. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -24,7 +24,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 from geopandas import GeoDataFrame, overlay
 from numpy import unique
 from pandas import DataFrame, concat
-from shapely import STRtree, intersection
+from shapely import STRtree, intersection, is_empty
 from t4gpd.commons.DataFrameLib import DataFrameLib
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
@@ -95,6 +95,40 @@ class OverlayLib(object):
         )
 
     @staticmethod
+    def intersection3(gdf1, gdf2):
+        OverlayLib.__commons(gdf1, gdf2)
+
+        # --- Step 1: Spatial pre-filtering via STRtree
+        tree = STRtree(gdf2.geometry.values)
+        idx1, idx2 = tree.query(gdf1.geometry.values, predicate="intersects")
+
+        # ---  Step 2: Element-by-element vectorized intersection
+        inter_geoms = intersection(
+            gdf1.geometry.values[idx1], gdf2.geometry.values[idx2]
+        )
+
+        # --- Step 3: Concatenation
+        mask = ~is_empty(inter_geoms)
+
+        return GeoDataFrame(
+            {
+                **{
+                    c: gdf1[c].values[idx1][mask]
+                    for c in gdf1.columns
+                    if c != "geometry"
+                },
+                **{
+                    c: gdf2[c].values[idx2][mask]
+                    for c in gdf2.columns
+                    if c != "geometry"
+                },
+                "geometry": inter_geoms[mask],
+            },
+            geometry="geometry",
+            crs=gdf1.crs,
+        )
+
+    @staticmethod
     def test():
         import matplotlib.pyplot as plt
         from t4gpd.commons.PointsInPolygonsLib import PointsInPolygonsLib
@@ -118,8 +152,10 @@ class OverlayLib(object):
         ref = overlay(buildings, irays, how="intersection", keep_geom_type=False)
         orays1 = OverlayLib.intersection1(buildings, irays, keep_geom_type=False)
         orays2 = OverlayLib.intersection2(buildings, irays)
+        orays3 = OverlayLib.intersection3(buildings, irays)
         assert ref.equals(orays1)
         assert DataFrameLib.equals(ref, orays2)
+        assert DataFrameLib.equals(ref, orays3)
 
         # MAPPING
         fig, ax = plt.subplots(figsize=(10, 10))

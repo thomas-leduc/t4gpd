@@ -3,7 +3,7 @@ Created on 25 feb. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -39,14 +39,13 @@ class CircularityLib(AbstractIndicesLib):
         return ["gravelius", "jaggedness", "miller", "morton", "a_circ_def"]
 
     @staticmethod
-    def _indices(row, with_geom=False):
-        geom = row.geometry
+    def get_indices(geom, with_geom=False, suffix=""):
         result = {
-            "gravelius": nan,
-            "jaggedness": nan,
-            "miller": 0,
-            "morton": 0,
-            "a_circ_def": 0,
+            f"gravelius{suffix}": nan,
+            f"jaggedness{suffix}": nan,
+            f"miller{suffix}": 0,
+            f"morton{suffix}": 0,
+            f"a_circ_def{suffix}": 0,
         }
 
         if GeomLib.isPuntal(geom) or GeomLib.isLineal(geom):
@@ -67,16 +66,20 @@ class CircularityLib(AbstractIndicesLib):
         areaCircDefect = area / mbcArea if (0.0 < mbcArea) else nan
 
         result = {
-            "gravelius": gravelius,
-            "jaggedness": jaggedness,
-            "miller": miller,
-            "morton": morton,
-            "a_circ_def": areaCircDefect,
+            f"gravelius{suffix}": gravelius,
+            f"jaggedness{suffix}": jaggedness,
+            f"miller{suffix}": miller,
+            f"morton{suffix}": morton,
+            f"a_circ_def{suffix}": areaCircDefect,
         }
 
         if with_geom:
             result.update({"geometry": mbc})
         return result
+
+    @staticmethod
+    def _indices(row, with_geom=False):
+        return CircularityLib.get_indices(row.geometry, with_geom=with_geom)
 
     @staticmethod
     def test():

@@ -1,5 +1,25 @@
 # Package t4gpd history
 
+## Version 1.0.0 - rev. 15867 - 21 Aug. 2026
+* Add new commons.raster.DSMLib class
+* Add new commons.ClusteringLib class
+* Add new commons.WGETLib class
+* Add new commons.sat.PANLib class
+* Add new commons.GeographicallyWeightedCorrelationLib class
+* Add new commons.IoULib class
+* Add new commons.PDALLib class
+* Add new commons.pyplot.ArrowsLib class
+* Add new commons.SkeletonLib class
+* Add new commons.DistanceFromPointsToCurveLib class
+* Add new resilientgaia.STSP3GnssRawReader class
+* Add new commons.AzimuthOfTravelLib class
+* Add new commons.encoding.EncodingIndices class
+* Add new io.ArchiveReader class
+* Add new commons.grid.IGNTilingLib class
+* Add new io.GTFSReader class
+* Add new test.commons.PointWeightingLibTest class
+* Add new commons.PointWeightingLib class
+
 ## Version 0.9.9 - rev. 15517 - 27 Oct 2025
 * Add new tests.commons.encoding.IsovistBuilderTest class
 * Add new tests.commons.encoding.SensorBasedEncodingLibTest class

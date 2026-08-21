@@ -1,9 +1,9 @@
-'''
+"""
 Created on 6 sep. 2023
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,7 +19,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 from geopandas import GeoDataFrame, overlay
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.GeoProcess import GeoProcess
@@ -27,35 +28,37 @@ from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeExcept
 
 
 class STHeightOfRoughness(GeoProcess):
-    '''
+    """
     classdocs
-    '''
+    """
 
-    def __init__(self, masks, grid, elevationFieldName="HAUTEUR", outputFieldName="hre"):
-        '''
+    def __init__(
+        self, masks, grid, elevationFieldName="HAUTEUR", outputFieldName="hre"
+    ):
+        """
         Constructor
-        '''
+        """
         if not isinstance(masks, GeoDataFrame):
-            raise IllegalArgumentTypeException(
-                masks, "GeoDataFrame")
+            raise IllegalArgumentTypeException(masks, "GeoDataFrame")
         if not elevationFieldName in masks:
             raise Exception(
-                f"Illegal argument: {elevationFieldName} is not a relevant field name!")
+                f"Illegal argument: {elevationFieldName} is not a relevant field name!"
+            )
         if not isinstance(grid, GeoDataFrame):
-            raise IllegalArgumentTypeException(
-                grid, "GeoDataFrame")
+            raise IllegalArgumentTypeException(grid, "GeoDataFrame")
         if outputFieldName in grid:
             raise Exception(
-                f"Illegal argument: {outputFieldName} is an existing column of the grid!")
+                f"Illegal argument: {outputFieldName} is an existing column of the grid!"
+            )
 
         if not GeoDataFrameLib.shareTheSameCrs(masks, grid):
             raise Exception(
-                "Illegal argument: masks and grid are expected to share the same crs!")
+                "Illegal argument: masks and grid are expected to share the same crs!"
+            )
 
         self.masks = masks
         # CLEAN GEOMETRIES
-        self.masks.geometry = self.masks.geometry.apply(
-            lambda g: g.buffer(0))
+        self.masks.geometry = self.masks.geometry.apply(lambda g: g.buffer(0))
         self.elevationFieldName = elevationFieldName
         self.grid = grid.copy(deep=True)
         self.outputFieldName = outputFieldName
@@ -69,22 +72,36 @@ class STHeightOfRoughness(GeoProcess):
             grid = grid.reset_index().rename(columns={grid.index.name: "__CELL_ID__"})
 
         masks2 = overlay(masks, grid, how="intersection", keep_geom_type=True)
-        masks2["__VOLUME__"] = masks2.apply(
-            lambda row: row[elevationFieldName]*row.geometry.area, axis=1)
 
-        masks2 = masks2.dissolve(by="__CELL_ID__",
-                                 aggfunc={"__CELL_AREA__": "first",
-                                          "__VOLUME__": "sum"},
-                                 as_index=False)
-        masks2[outputFieldName] = masks2.apply(
-            lambda row: row.__VOLUME__/row.__CELL_AREA__, axis=1)
-        grid2 = grid.merge(
-            masks2[["__CELL_ID__", outputFieldName]], on="__CELL_ID__")
+        if masks2.empty:
+            grid2 = grid.copy(deep=True)
+            grid2[outputFieldName] = 0
+            grid2.drop(columns=["__CELL_ID__"], inplace=True)
 
-        grid2.set_index("__CELL_ID__", drop=True, inplace=True)
-        grid2.index.name = None
+        else:
+            masks2["__VOLUME__"] = masks2.apply(
+                lambda row: row[elevationFieldName] * row.geometry.area, axis=1
+            )
+
+            masks2 = masks2.dissolve(
+                by="__CELL_ID__",
+                aggfunc={"__CELL_AREA__": "first", "__VOLUME__": "sum"},
+                as_index=False,
+            )
+            masks2[outputFieldName] = masks2.apply(
+                lambda row: row.__VOLUME__ / row.__CELL_AREA__, axis=1
+            )
+            grid2 = grid.merge(
+                masks2[["__CELL_ID__", outputFieldName]], on="__CELL_ID__"
+            )
+
+            grid2.set_index("__CELL_ID__", drop=True, inplace=True)
+            grid2.index.name = None
+
         grid2.drop(columns=["__CELL_AREA__"], inplace=True)
         return grid2
 
     def run(self):
-        return STHeightOfRoughness.__overlay(self.masks, self.grid, self.elevationFieldName, self.outputFieldName)
+        return STHeightOfRoughness.__overlay(
+            self.masks, self.grid, self.elevationFieldName, self.outputFieldName
+        )

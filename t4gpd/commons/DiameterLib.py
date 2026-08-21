@@ -3,7 +3,7 @@ Created on 19 juin 2020
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,9 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
-from itertools import combinations
-from shapely import LineString, points
 
+from geopandas import GeoDataFrame
+from itertools import combinations
+from numpy import nan
+from shapely import LineString, points
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -37,8 +39,10 @@ class DiameterLib(object):
         if not GeomLib.isAShapelyGeometry(obj):
             raise IllegalArgumentTypeException(obj, "Shapely geometry")
         chull = obj.convex_hull
-        chull = chull if GeomLib.isLineal(chull) else chull.exterior
-        vertices = points(chull.coords)
+        if GeomLib.isPolygonal(chull):
+            vertices = points(chull.exterior.coords)
+        else:
+            vertices = points(chull.coords)
 
         maxDist, pairOfVertices = -1.0, None
         for v1, v2 in combinations(vertices, 2):
@@ -48,7 +52,16 @@ class DiameterLib(object):
                 pairOfVertices = [v1, v2]
 
         if pairOfVertices is None:
-            return [None, None, None]
+            return [None, nan, nan]
 
         segment = LineString(pairOfVertices)
         return [segment, maxDist, GeomLib.getLineStringOrientation(segment)]
+
+    @staticmethod
+    def total_bounds_diameter(obj):
+        if not isinstance(obj, GeoDataFrame):
+            raise IllegalArgumentTypeException(obj, "GeoDataFrame")
+        if not obj.crs.is_projected:
+            raise IllegalArgumentTypeException(obj.crs, "projected CRS")
+        xmin, ymin, xmax, ymax = obj.total_bounds
+        return ((xmax - xmin) ** 2 + (ymax - ymin) ** 2) ** 0.5

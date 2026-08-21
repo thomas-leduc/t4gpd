@@ -3,7 +3,7 @@ Created on 25 feb. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -37,14 +37,13 @@ class ConvexityLib(AbstractIndicesLib):
         return ["n_con_comp", "a_conv_def", "p_conv_def", "big_concav", "small_conc"]
 
     @staticmethod
-    def _indices(row, with_geom=False):
-        geom = row.geometry
+    def get_indices(geom, with_geom=False, suffix=""):
         result = {
-            "n_con_comp": nan,
-            "a_conv_def": nan,
-            "p_conv_def": nan,
-            "big_concav": nan,
-            "small_conc": nan,
+            f"n_con_comp{suffix}": nan,
+            f"a_conv_def{suffix}": nan,
+            f"p_conv_def{suffix}": nan,
+            f"big_concav{suffix}": nan,
+            f"small_conc{suffix}": nan,
         }
 
         if GeomLib.isPuntal(geom) or GeomLib.isLineal(geom):
@@ -77,15 +76,19 @@ class ConvexityLib(AbstractIndicesLib):
         )
 
         result = {
-            "n_con_comp": nConnectedComponents,
-            "a_conv_def": areaConvexityDefect,
-            "p_conv_def": perimConvexityDefect,
-            "big_concav": bigConcavities,
-            "small_conc": smallConcavities,
+            f"n_con_comp{suffix}": nConnectedComponents,
+            f"a_conv_def{suffix}": areaConvexityDefect,
+            f"p_conv_def{suffix}": perimConvexityDefect,
+            f"big_concav{suffix}": bigConcavities,
+            f"small_conc{suffix}": smallConcavities,
         }
         if with_geom:
             result.update({"geometry": chull})
         return result
+
+    @staticmethod
+    def _indices(row, with_geom=False):
+        return ConvexityLib.get_indices(row.geometry, with_geom=with_geom)
 
     @staticmethod
     def test():

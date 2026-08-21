@@ -3,7 +3,7 @@ Created on 25 Feb. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -24,7 +24,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 import unittest
 from numpy import isnan, nan
 from pandas import Series
-from shapely import LineString, Polygon
+from shapely import LineString, Polygon, box
 from shapely.wkt import loads
 from t4gpd.commons.morph.RectangularityLib import RectangularityLib
 
@@ -36,15 +36,45 @@ class RectangularityLibTest(unittest.TestCase):
         self.duos = [
             (
                 mpts,
-                {"stretching": nan, "a_rect_def": nan, "p_rect_def": nan},
+                {
+                    "stretching": nan,
+                    "a_rect_def": nan,
+                    "p_rect_def": nan,
+                    "mabr_major_mae": nan,
+                    "mabr_major_mse": nan,
+                    "mabr_major_rmse": nan,
+                    "mabr_minor_mae": nan,
+                    "mabr_minor_mse": nan,
+                    "mabr_minor_rmse": nan,
+                },
             ),
             (
                 LineString(mpts.geoms),
-                {"stretching": nan, "a_rect_def": nan, "p_rect_def": nan},
+                {
+                    "stretching": nan,
+                    "a_rect_def": nan,
+                    "p_rect_def": nan,
+                    "mabr_major_mae": nan,
+                    "mabr_major_mse": nan,
+                    "mabr_major_rmse": nan,
+                    "mabr_minor_mae": nan,
+                    "mabr_minor_mse": nan,
+                    "mabr_minor_rmse": nan,
+                },
             ),
             (
                 Polygon(mpts.geoms),
-                {"stretching": 0.841, "a_rect_def": 0.679, "p_rect_def": 1.189},
+                {
+                    "stretching": 0.841,
+                    "a_rect_def": 0.679,
+                    "p_rect_def": 1.189,
+                    "mabr_major_mae": 22.834,
+                    "mabr_major_mse": 693.269,
+                    "mabr_major_rmse": 26.33,
+                    "mabr_minor_mae": 29.417,
+                    "mabr_minor_mse": 1066.483,
+                    "mabr_minor_rmse": 32.657,
+                },
             ),
         ]
 
@@ -53,6 +83,62 @@ class RectangularityLibTest(unittest.TestCase):
 
     def testIndices(self):
         for geom, expected in self.duos:
+            geom = Series(geom, index=["geometry"])
+            actual = RectangularityLib._indices(geom, with_geom=False)
+            for indice in RectangularityLib._getColumns():
+                if isnan(expected[indice]):
+                    self.assertTrue(isnan(actual[indice]), f"Test {indice}")
+                else:
+                    self.assertAlmostEqual(
+                        expected[indice], actual[indice], None, f"Test {indice}", 1e-3
+                    )
+
+    def testIndices2(self):
+        pairs = [
+            [
+                box(0, 0, 0, 0),
+                {
+                    "stretching": nan,
+                    "a_rect_def": nan,
+                    "p_rect_def": nan,
+                    "mabr_major_mae": nan,
+                    "mabr_major_mse": nan,
+                    "mabr_major_rmse": nan,
+                    "mabr_minor_mae": nan,
+                    "mabr_minor_mse": nan,
+                    "mabr_minor_rmse": nan,
+                },
+            ],
+            [
+                box(0, 0, 1, 0),
+                {
+                    "stretching": 0,
+                    "a_rect_def": nan,
+                    "p_rect_def": 0.5,
+                    "mabr_major_mae": nan,
+                    "mabr_major_mse": nan,
+                    "mabr_major_rmse": nan,
+                    "mabr_minor_mae": nan,
+                    "mabr_minor_mse": nan,
+                    "mabr_minor_rmse": nan,
+                },
+            ],
+            [
+                box(0, 0, 1, 1),
+                {
+                    "stretching": 1,
+                    "a_rect_def": 1,
+                    "p_rect_def": 1,
+                    "mabr_major_mae": 0.5,
+                    "mabr_major_mse": 0.25,
+                    "mabr_major_rmse": 0.5,
+                    "mabr_minor_mae": 0.5,
+                    "mabr_minor_mse": 0.25,
+                    "mabr_minor_rmse": 0.5,
+                },
+            ],
+        ]
+        for geom, expected in pairs:
             geom = Series(geom, index=["geometry"])
             actual = RectangularityLib._indices(geom, with_geom=False)
             for indice in RectangularityLib._getColumns():

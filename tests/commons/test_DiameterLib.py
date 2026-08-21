@@ -3,7 +3,7 @@ Created on 18 Jul. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,9 +20,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import unittest
 
-from shapely import LineString
+from numpy import isnan, nan, sqrt
+from shapely import LineString, box
 from t4gpd.commons.DiameterLib import DiameterLib
 from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
 
@@ -49,7 +51,7 @@ class DiameterLibTest(unittest.TestCase):
         plt.show()
         plt.close(fig)
 
-    def testDiameter(self):
+    def testDiameter1(self):
         expected = [
             LineString([(353869.6, 6695075.7, 46.2), (353942.6, 6695014, 46.2)]),
             95.6,
@@ -60,6 +62,24 @@ class DiameterLibTest(unittest.TestCase):
         self.assertAlmostEqual(expected[1], actual[1], None, "Test maxDist", 0.1)
         self.assertAlmostEqual(expected[2], actual[2], None, "Test orientation", 0.1)
         # self.__plot(actual)
+
+    def testDiameter2(self):
+        pairs = [
+            [box(0, 0, 0, 0), [None, nan, nan]],
+            [box(0, 0, 1, 0), [LineString([(1, 0), (0, 0)]), 1, 180]],
+            [box(0, 0, 1, 1), [LineString([(0, 0), (1, 1)]), sqrt(2), 45]],
+        ]
+        for geom, expected in pairs:
+            actual = DiameterLib.diameter(geom)
+            self.assertEqual(expected[0], actual[0], "Test geometry")
+            if isnan(expected[1]):
+                self.assertTrue(isnan(actual[1]), "Test maxDist")
+            else:
+                self.assertEqual(expected[1], actual[1], "Test maxDist")
+            if isnan(expected[2]):
+                self.assertTrue(isnan(actual[2]), "Test orientation")
+            else:
+                self.assertEqual(expected[2], actual[2], "Test orientation")
 
 
 if __name__ == "__main__":

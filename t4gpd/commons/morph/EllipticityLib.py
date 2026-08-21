@@ -3,7 +3,7 @@ Created on 18 Apr. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -47,24 +47,22 @@ class EllipticityLib(AbstractIndicesLib):
             "p_elli_def",
         ]
 
-    @staticmethod
-    def _indices(row, with_geom=False):
+    def get_indices(geom, with_geom=False, suffix=""):
         def __sort_of_linear_regression(mainAxis, pts):
             ppts = [mainAxis.interpolate(mainAxis.project(pt)) for pt in pts]
             dists = asarray([p.distance(pp) for p, pp in zip(pts, ppts)])
             mae, mse = abs(dists).mean(), (dists**2).mean()
             return mae, mse
 
-        geom = row.geometry
         result = {
-            "mabe_azim": nan,
-            "mabe_area": nan,
-            "mabe_perim": nan,
-            "mabe_flattening": nan,
-            "mabe_mae": nan,
-            "mabe_mse": nan,
-            "a_elli_def": nan,
-            "p_elli_def": nan,
+            f"mabe_azim{suffix}": nan,
+            f"mabe_area{suffix}": nan,
+            f"mabe_perim{suffix}": nan,
+            f"mabe_flattening{suffix}": nan,
+            f"mabe_mae{suffix}": nan,
+            f"mabe_mse{suffix}": nan,
+            f"a_elli_def{suffix}": nan,
+            f"p_elli_def{suffix}": nan,
         }
 
         if geom.is_empty:
@@ -97,20 +95,24 @@ class EllipticityLib(AbstractIndicesLib):
         perimEllipDefect = mabePerim / geomPerim if (0.0 < geomPerim) else nan
 
         result = {
-            "mabe_azim": rad2deg(azim),
-            "mabe_area": mabeArea,
-            "mabe_perim": mabePerim,
-            "mabe_flattening": flattening,
-            "mabe_mae": mabe_mae,
-            "mabe_mse": mabe_mse,
-            "a_elli_def": areaEllipDefect,
-            "p_elli_def": perimEllipDefect,
+            f"mabe_azim{suffix}": rad2deg(azim),
+            f"mabe_area{suffix}": mabeArea,
+            f"mabe_perim{suffix}": mabePerim,
+            f"mabe_flattening{suffix}": flattening,
+            f"mabe_mae{suffix}": mabe_mae,
+            f"mabe_mse{suffix}": mabe_mse,
+            f"a_elli_def{suffix}": areaEllipDefect,
+            f"p_elli_def{suffix}": perimEllipDefect,
         }
 
         if with_geom:
             result.update({"geometry": mabe})
 
         return result
+
+    @staticmethod
+    def _indices(row, with_geom=False):
+        return EllipticityLib.get_indices(row.geometry, with_geom=with_geom)
 
     @staticmethod
     def test():

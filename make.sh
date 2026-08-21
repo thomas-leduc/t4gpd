@@ -23,8 +23,19 @@ EOF
 function _compile() {
 	# python3 setup.py sdist bdist_wheel;
 	# _comment "python3 setup.py sdist bdist_wheel";
-	python3 setup.py sdist;
-	_comment "python3 setup.py sdist";
+	# python3 setup.py sdist;
+	# _comment "python3 setup.py sdist";
+	# PREREQUISITE: pip install build;
+	python -m build --sdist;
+	_comment "python -m build --sdist";
+}
+
+function _copyright() {
+	local YEAR=$(date +%Y);
+	local FILES1=$(find t4gpd -name \*.py);
+	local FILES2=$(find tests -name \*.py);
+	sed --in-place --expression="/^Copyright 2020-20[[:digit:]]\{2\} Thomas Leduc/ {s//Copyright 2020-${YEAR} Thomas Leduc/;}" ${FILES1};
+	sed --in-place --expression="/^Copyright 2020-20[[:digit:]]\{2\} Thomas Leduc/ {s//Copyright 2020-${YEAR} Thomas Leduc/;}" ${FILES2};
 }
 
 function _coverage() {
@@ -35,8 +46,9 @@ function _coverage() {
 }
 
 function _get_version() {
-	#~ local VERSION=$(sed -ne "/^\ *return '\([^']*\)'/ {s//\1/;p;}" t4gpd/Version.py);
-	local VERSION=$(sed -ne "/^\ *__version__ = '\([^']*\)'/ {s//\1/;p;}" t4gpd/_version.py);
+	# local VERSION=$(sed -ne "/^\ *return '\([^']*\)'/ {s//\1/;p;}" t4gpd/Version.py);
+	# local VERSION=$(sed -ne "/^\ *__version__ = '\([^']*\)'/ {s//\1/;p;}" t4gpd/_version.py);
+	local VERSION=$(sed -ne '/^version = "\([^"]*\)"/ {s//\1/;p;}' pyproject.toml);
 	echo ${VERSION};
 }
 
@@ -58,16 +70,16 @@ function _show() {
 
 function _twine() {
 	local VERSION=$(_get_version);
-	#~ twine upload ./dist/t4gpd-${VERSION}.tar.gz;
+	# twine upload ./dist/t4gpd-${VERSION}.tar.gz;
 	_comment "twine upload ./dist/t4gpd-${VERSION}.tar.gz";
 }
 
 function _usage() {
-	echo "Usage: $(basename ${0}) [clean|compile|coverage|deploy|distclean|help|official|show|test <dir>|twine" >& 2;
+	echo "Usage: $(basename ${0}) [clean|compile|copyright|coverage|deploy|distclean|help|official|show|test <dir>|twine" >& 2;
 	exit 1;
 }
 
-#~ -----
+# -----
 case ${#} in
 	0)
 		_compile;;
@@ -75,6 +87,7 @@ case ${#} in
 		case ${1} in
 			clean) _clean;;
 			compile) _compile;;
+			copyright) _copyright;;
 			coverage) _coverage;;
 			deploy) _deploy;;
 			distclean) _distclean;;

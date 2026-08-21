@@ -3,7 +3,7 @@ Created on 15 dec. 2020
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,8 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
-from shapely import LineString, Polygon
 
+from shapely import LineString, Point, Polygon, count_coordinates
 from t4gpd.commons.GeomLib import GeomLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -61,6 +61,21 @@ class CaliperLib(object):
     @staticmethod
     def __getListOfListOfQuintuplets(geom):
         vertices, nVertices = CaliperLib.__preprocess(geom)
+
+        # vertex, pairOfVertices, projP, distFromAToProjP, distFromPToLine
+        match nVertices:
+            case 0:
+                return [[(Point(), (), Point(), 0, 0)]]
+            case 1:
+                return [[(Point(vertices), (), Point(vertices), 0, 0)]]
+            case 2:
+                return [
+                    [
+                        (Point(vertices[0]), vertices, Point(vertices[0]), 0, 0),
+                        (Point(vertices[1]), vertices, Point(vertices[1]), 0, 0),
+                    ]
+                ]
+
         result = list()
         for i in range(nVertices):
             nextI = (i + 1) % nVertices
@@ -130,13 +145,15 @@ class CaliperLib(object):
 
     @staticmethod
     def __preprocess(geom):
-        convexHull = geom.convex_hull
-        if convexHull is None:
+        chull = geom.convex_hull
+        if chull.is_empty:
             return None, 0
-        # vertices = list(convexHull.exterior.coords)[:-1]  # Clockwise order
-        vertices = list(
-            reversed(list(convexHull.exterior.coords)[:-1])
-        )  # Counter-clockwise order
+        elif GeomLib.isPolygonal(chull):
+            vertices = list(chull.exterior.coords)[:-1]
+        else:
+            vertices = list(chull.coords)
+        # Counter-clockwise order
+        vertices = list(reversed(vertices))
         return vertices, len(vertices)
 
     def diameter(self, geom):
@@ -190,6 +207,16 @@ class CaliperLib(object):
     @staticmethod
     def getBoundingRectangles(geom):
         vertices, nVertices = CaliperLib.__preprocess(geom)
+
+        match nVertices:
+            case 0:
+                return [(Polygon(), 0, 0)]
+            case 1:
+                return [(Point(vertices), 0, 0)]
+            case 2:
+                ls = LineString(vertices)
+                return [(ls, ls.length, 0)]
+
         result = list()
         for i in range(nVertices):
             nextI = (i + 1) % nVertices
@@ -218,3 +245,29 @@ class CaliperLib(object):
                 minHalfPerim = currHalfPerim
                 result = [rect, len1, len2]
         return result
+
+    @staticmethod
+    def major_axis(geom):
+        if 4 != count_coordinates(geom) - 1:
+            raise IllegalArgumentTypeException(geom, "quadrilateral")
+        p1, p2, p3, p4 = geom.exterior.coords[:-1]
+        p12 = Point(0.5 * (p1[0] + p2[0]), 0.5 * (p1[1] + p2[1]))
+        p23 = Point(0.5 * (p2[0] + p3[0]), 0.5 * (p2[1] + p3[1]))
+        p34 = Point(0.5 * (p3[0] + p4[0]), 0.5 * (p3[1] + p4[1]))
+        p41 = Point(0.5 * (p4[0] + p1[0]), 0.5 * (p4[1] + p1[1]))
+        if p12.distance(p34) > p23.distance(p41):
+            return LineString([p12, p34])
+        return LineString([p23, p41])
+
+    @staticmethod
+    def minor_axis(geom):
+        if 4 != count_coordinates(geom) - 1:
+            raise IllegalArgumentTypeException(geom, "quadrilateral")
+        p1, p2, p3, p4 = geom.exterior.coords[:-1]
+        p12 = Point(0.5 * (p1[0] + p2[0]), 0.5 * (p1[1] + p2[1]))
+        p23 = Point(0.5 * (p2[0] + p3[0]), 0.5 * (p2[1] + p3[1]))
+        p34 = Point(0.5 * (p3[0] + p4[0]), 0.5 * (p3[1] + p4[1]))
+        p41 = Point(0.5 * (p4[0] + p1[0]), 0.5 * (p4[1] + p1[1]))
+        if p12.distance(p34) < p23.distance(p41):
+            return LineString([p12, p34])
+        return LineString([p23, p41])

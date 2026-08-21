@@ -3,7 +3,7 @@ Created on 15 dec. 2020
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -20,11 +20,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from numpy import inf, pi
 from shapely import Point
-
 from t4gpd.commons.AngleLib import AngleLib
 from t4gpd.commons.GeomLib import GeomLib
+from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
 
 class ChrystalAlgorithm(object):
@@ -41,7 +42,14 @@ class ChrystalAlgorithm(object):
         """
         Constructor
         """
-        self.coords = list(geom.convex_hull.exterior.coords)[:-1]
+        if not GeomLib.isAShapelyGeometry(geom):
+            raise IllegalArgumentTypeException(geom, "Shapely geometry")
+
+        chull = geom.convex_hull
+        if GeomLib.isPolygonal(chull):
+            self.coords = list(chull.exterior.coords)[:-1]
+        else:
+            self.coords = list(chull.coords)
         self.ncoords = len(self.coords)
 
     def __angleBetweenNodes(self, i, j, k):

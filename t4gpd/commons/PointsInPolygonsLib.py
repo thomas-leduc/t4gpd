@@ -3,7 +3,7 @@ Created on 15 Oct. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -22,8 +22,9 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from geopandas import GeoDataFrame
+from numpy import asarray
 from pandas import Series
-from shapely import STRtree
+from shapely import MultiPoint, Polygon, STRtree, contains, covers
 from t4gpd.commons.GeoDataFrameLib import GeoDataFrameLib
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 
@@ -34,7 +35,21 @@ class PointsInPolygonsLib(object):
     """
 
     @staticmethod
-    def __commons(points, polygons):
+    def select_points_in_polygon(
+        points: MultiPoint, polygon: Polygon, strict: bool = False
+    ) -> MultiPoint:
+        pts = asarray(points.geoms)
+        if strict:
+            mask_inside = contains(polygon, pts)
+        else:
+            mask_inside = covers(polygon, pts)
+        points_inside = pts[mask_inside]
+        return MultiPoint(points_inside)
+
+    @staticmethod
+    def __commons(
+        points: GeoDataFrame, polygons: GeoDataFrame, strict: bool = False
+    ) -> Series:
         if not isinstance(points, GeoDataFrame):
             raise IllegalArgumentTypeException(points, "GeoDataFrame")
         if not isinstance(polygons, GeoDataFrame):
@@ -48,30 +63,45 @@ class PointsInPolygonsLib(object):
         tree = STRtree(polygons.geometry.values)
 
         # Creating a Boolean mask: True if the point is contained within a polygon
-        mask_inside = [
-            any(polys[poly_idx].contains(pt) for poly_idx in tree.query(pt))
-            for pt in points.geometry
-        ]
+        if strict:
+            mask_inside = [
+                any(polys[poly_idx].contains(pt) for poly_idx in tree.query(pt))
+                for pt in points.geometry
+            ]
+        else:
+            mask_inside = [
+                any(polys[poly_idx].covers(pt) for poly_idx in tree.query(pt))
+                for pt in points.geometry
+            ]
         # Robust against non-trivial indices
         return Series(mask_inside, index=points.index)
         # return mask_inside
 
     @staticmethod
-    def indoors(points, polygons):
-        mask_inside = PointsInPolygonsLib.__commons(points, polygons)
-        points_outside = points.loc[mask_inside]
-        return points_outside
+    def indoors(
+        points: GeoDataFrame, polygons: GeoDataFrame, strict: bool = False
+    ) -> GeoDataFrame:
+        mask_inside = PointsInPolygonsLib.__commons(points, polygons, strict)
+        points_inside = points.loc[mask_inside]
+        return points_inside
 
     @staticmethod
-    def in_or_outdoors(points, polygons, deepCopy=False):
-        mask_inside = PointsInPolygonsLib.__commons(points, polygons)
+    def in_or_outdoors(
+        points: GeoDataFrame,
+        polygons: GeoDataFrame,
+        deepCopy: bool = False,
+        strict: bool = False,
+    ) -> GeoDataFrame:
+        mask_inside = PointsInPolygonsLib.__commons(points, polygons, strict)
         _points = points.copy(deep=True) if deepCopy else points
         _points["indoor"] = False
         _points.loc[mask_inside, "indoor"] = True
         return _points
 
     @staticmethod
-    def outdoors(points, polygons):
+    def outdoors(
+        points: GeoDataFrame, polygons: GeoDataFrame, strict: bool = False
+    ) -> GeoDataFrame:
         mask_inside = PointsInPolygonsLib.__commons(points, polygons)
         points_outside = points.loc[~mask_inside]
         return points_outside
@@ -87,7 +117,7 @@ class PointsInPolygonsLib(object):
         buildings = GeoDataFrameDemos.ensaNantesBuildings()
         bbox = STBBox(buildings, 0).run()
 
-        grid1 = FastGridLib.grid(buildings, dx=10, intoPoint=False, withRowsCols=True)
+        grid1 = FastGridLib.grid(buildings, dx=10, intoPoint=True, withRowsCols=True)
         grid2 = PointsInPolygonsLib.outdoors(grid1, buildings)
         grid3 = PointsInPolygonsLib.indoors(grid1, buildings)
         grid4 = PointsInPolygonsLib.in_or_outdoors(grid1, buildings, deepCopy=True)
@@ -127,5 +157,33 @@ class PointsInPolygonsLib(object):
         plt.show()
         plt.close(fig)
 
+    @staticmethod
+    def test2():
+        import matplotlib.pyplot as plt
+        from t4gpd.commons.PointsDensifierLib import PointsDensifierLib
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        buildings = GeoDataFrameDemos.singleBuildingInNantes()
+        # buildings = GeoDataFrameDemos.regularGridOfPlots(nlines=3, ncols=3, dw=5)
+        sensors = PointsDensifierLib.densify(buildings, distance=5.0)
+        osensors = sensors.copy(deep=True)
+        osensors.geometry = osensors.apply(
+            lambda row: PointsInPolygonsLib.select_points_in_polygon(
+                row.geometry, buildings.geometry.loc[row.name], strict=False
+            ),
+            axis=1,
+        )
+
+        fig, ax = plt.subplots(figsize=(1.5 * 8.26, 1.5 * 8.26))
+        buildings.boundary.plot(ax=ax, color="blue", linewidth=0.1)
+        osensors.plot(ax=ax, color="grey", marker="o", markersize=400)
+        sensors.plot(ax=ax, color="black", marker="P")
+        ax.axis("off")
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+        return osensors
+
 
 # PointsInPolygonsLib.test()
+# sensors = PointsInPolygonsLib.test2()

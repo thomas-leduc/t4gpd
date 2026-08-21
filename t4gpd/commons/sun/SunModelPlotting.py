@@ -3,7 +3,7 @@ Created on 11 Feb. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -197,7 +197,7 @@ class SunModelPlotting(object):
             ax.plot(daysInYear, sunpos[fieldname], label=model)
 
         if (1 == nc):
-            ax.legend(fontsize=14)
+            ax.legend(fontsize=16)
         fig.tight_layout()
         if ofile is None:
             plt.show()
@@ -356,7 +356,7 @@ class SunModelPlotting(object):
                     f"{hour}:00",
                     fontsize=9,
                 ).set_color("black")
-            ax.legend()
+            ax.legend(fontsize=16)
             ax.grid()
             ax.set_ylim(0, 90)
             ax.set_xlabel("Solar azimuth [°]", fontsize=16)
@@ -417,7 +417,7 @@ class SunModelPlotting(object):
                 else:
                     ax.plot(df.hour, df.elevation, color=color, label=label)
 
-            ax.legend()
+            ax.legend(fontsize=16)
             ax.grid()
             ax.set_ylim(0, 90)
             ax.set_xlabel(f"Daylight hours ({tz})", fontsize=16)

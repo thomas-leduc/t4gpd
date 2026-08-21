@@ -3,7 +3,7 @@ Created on 16 Oct. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -23,7 +23,7 @@ along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 
 from geopandas import GeoDataFrame
 from numpy import allclose, arctan2
-from pandas import concat
+from pandas import Series, concat
 from shapely import distance
 from shapely.ops import nearest_points
 from t4gpd.commons.DataFrameLib import DataFrameLib
@@ -39,43 +39,64 @@ class SensorBasedEncodingLib(object):
     """
 
     @staticmethod
-    def __commons(sensors, buildings, rayLength, nRays):
+    def __commons(
+        sensors: GeoDataFrame, buildings: GeoDataFrame, rayLength: float, nRays: int
+    ):
         if not isinstance(sensors, GeoDataFrame):
             raise IllegalArgumentTypeException(sensors, "GeoDataFrame")
+
         if not isinstance(buildings, GeoDataFrame):
             raise IllegalArgumentTypeException(buildings, "GeoDataFrame")
+
         if not GeoDataFrameLib.shareTheSameCrs(sensors, buildings):
-            raise Exception(
-                "Illegal argument: sensors and buildings are expected to share the same crs!"
+            raise ValueError(
+                "sensors and buildings are expected to share the same crs!"
             )
+
         irays = PanopticRaysLib.get2DGeoDataFrame(sensors, rayLength, nRays)
         orays = OverlayLib.intersection1(buildings, irays, keep_geom_type=False)
         # orays = OverlayLib.intersection2(buildings, irays)
-        if ("raylen" not in irays) or ("raylen" != rayLength):
-            irays["raylen"] = irays[rayLength] if rayLength in irays else rayLength
+        if ("raylen" not in irays.columns) or ("raylen" != rayLength):
+            irays["raylen"] = (
+                irays[rayLength] if rayLength in irays.columns else rayLength
+            )
+
         orays["raylen"] = orays.apply(
             lambda row: distance(*nearest_points(row.viewpoint, row.geometry)), axis=1
         )
         return irays, orays
 
     @staticmethod
-    def encode2D(sensors, buildings, rayLength=100.0, nRays=64):
+    def encode2D(
+        sensors: GeoDataFrame,
+        buildings: GeoDataFrame,
+        rayLength: float = 100.0,
+        nRays: int = 64,
+    ) -> GeoDataFrame:
+
         irays, orays = SensorBasedEncodingLib.__commons(
             sensors, buildings, rayLength, nRays
         )
+
+        # Rename ray lengths for the 2D encoding.
         irays.rename(columns={"raylen": "raylen2D"}, inplace=True)
         orays.rename(columns={"raylen": "raylen2D"}, inplace=True)
 
+        # For each ray, keep the closest building intersection.
         idx = orays.groupby(by=["__VPT_ID__", "__RAY_ID__"]).raylen2D.idxmin()
         orays = orays.loc[idx]
 
+        # Restore rays with no building intersection.
         orays = DataFrameLib.fillWithMissingRows(
             orays, irays, on=["__VPT_ID__", "__RAY_ID__"]
         )
 
         orays.sort_values(by=["__VPT_ID__", "__RAY_ID__"], inplace=True)
+
+        # Aggregate ray lengths into one list per sensor.
         orays = orays.groupby(by="__VPT_ID__").agg({"raylen2D": list})
 
+        # Avoid duplicating an existing output column.
         if "raylen2D" in sensors:
             osensors = concat([sensors.drop(columns="raylen2D"), orays], axis=1)
         else:
@@ -83,43 +104,97 @@ class SensorBasedEncodingLib(object):
         return osensors
 
     @staticmethod
-    def encode25D(
-        sensors,
-        buildings,
-        elevationFieldname="HAUTEUR",
-        h0=0,
-        rayLength=100.0,
-        nRays=64,
-    ):
-        if elevationFieldname not in buildings:
-            raise Exception(f"{elevationFieldname} is not a relevant field name!")
+    def __validate25DParameters(
+        sensors: GeoDataFrame,
+        buildings: GeoDataFrame,
+        elevationFieldname: str,
+        h0: float | str,
+    ) -> None:
+        if elevationFieldname not in buildings.columns:
+            raise ValueError(f"{elevationFieldname!r} is not a relevant field name!")
 
-        irays, orays = SensorBasedEncodingLib.__commons(
-            sensors, buildings, rayLength, nRays
+        if isinstance(h0, str):
+            if h0 not in sensors.columns:
+                raise ValueError(f"{h0!r} is not a valid field name in sensors.")
+        elif not isinstance(h0, (int, float)):
+            raise TypeError(
+                f"h0 must be either a number or a column name (str), "
+                f"got {type(h0).__name__}."
+            )
+
+    @staticmethod
+    def __encode25D(
+        irays: GeoDataFrame,
+        orays: GeoDataFrame,
+        elevationFieldname: str,
+        h0: float | str,
+    ) -> GeoDataFrame:
+        """Compute the 25D encoding from input and output rays."""
+
+        irays = irays.rename(columns={"raylen": "raylen25D"}).copy()
+        orays = orays.rename(columns={"raylen": "raylen25D"}).copy()
+
+        # If h0 is a column name, the corresponding sensor attribute
+        # has been propagated to the rays by get2DGeoDataFrame().
+        h0_values = orays[h0] if isinstance(h0, str) else h0
+
+        # Keep only building intersections located above the viewpoint.
+        orays.drop(
+            index=orays[orays[elevationFieldname] <= h0_values].index,
+            inplace=True,
         )
-        irays.rename(columns={"raylen": "raylen25D"}, inplace=True)
-        orays.rename(columns={"raylen": "raylen25D"}, inplace=True)
 
-        orays["h_over_w"] = (orays[elevationFieldname] - h0) / orays.raylen25D
+        # Compute the height-to-distance ratio used to select the
+        # highest angular obstruction along each ray.
+        orays["h_over_w"] = (orays[elevationFieldname] - h0_values) / orays["raylen25D"]
+
+        # For each ray, keep the obstruction with the largest
+        # height-to-distance ratio. In case of equality, keep
+        # the closest obstruction.
         idx = (
-            orays.sort_values(["h_over_w", "raylen25D"], ascending=[False, True])
-            .groupby(["__VPT_ID__", "__RAY_ID__"], as_index=False)
+            orays.sort_values(
+                ["h_over_w", "raylen25D"],
+                ascending=[False, True],
+            )
+            .groupby(
+                ["__VPT_ID__", "__RAY_ID__"],
+                as_index=False,
+            )
             .head(1)
             .index
         )
         orays = orays.loc[idx]
-        orays["angles"] = arctan2(orays[elevationFieldname], orays.raylen25D)
 
-        orays = DataFrameLib.fillWithMissingRows(
-            orays, irays, on=["__VPT_ID__", "__RAY_ID__"]
+        # Compute the vertical angle of the selected obstruction.
+        h0_selected = (
+            h0_values.loc[orays.index] if isinstance(h0_values, Series) else h0_values
         )
-        idx = orays[orays.h_over_w.isna()].index
+
+        orays["angles"] = arctan2(
+            orays[elevationFieldname] - h0_selected,
+            orays["raylen25D"],
+        )
+
+        # Restore rays with no building intersection.
+        orays = DataFrameLib.fillWithMissingRows(
+            orays,
+            irays,
+            on=["__VPT_ID__", "__RAY_ID__"],
+        )
+
+        # A missing intersection means that the ray is unobstructed.
+        idx = orays["h_over_w"].isna()
         orays.loc[idx, elevationFieldname] = 0
         orays.loc[idx, "h_over_w"] = 0
         orays.loc[idx, "angles"] = 0
 
-        orays.sort_values(by=["__VPT_ID__", "__RAY_ID__"], inplace=True)
-        orays = orays.groupby(by="__VPT_ID__").agg(
+        orays.sort_values(
+            by=["__VPT_ID__", "__RAY_ID__"],
+            inplace=True,
+        )
+
+        # Aggregate ray-based values into one list per sensor.
+        return orays.groupby(by="__VPT_ID__").agg(
             {
                 elevationFieldname: list,
                 "raylen25D": list,
@@ -128,92 +203,108 @@ class SensorBasedEncodingLib(object):
             }
         )
 
+    @staticmethod
+    def encode25D(
+        sensors: GeoDataFrame,
+        buildings: GeoDataFrame,
+        elevationFieldname: str = "HAUTEUR",
+        h0: float | str = 0,
+        rayLength: float = 100.0,
+        nRays: int = 64,
+    ) -> GeoDataFrame:
+        SensorBasedEncodingLib.__validate25DParameters(
+            sensors, buildings, elevationFieldname, h0
+        )
+
+        irays, orays = SensorBasedEncodingLib.__commons(
+            sensors, buildings, rayLength, nRays
+        )
+
+        orays = SensorBasedEncodingLib.__encode25D(
+            irays,
+            orays,
+            elevationFieldname,
+            h0,
+        )
+
+        # Remove intermediate/output columns already present in sensors
+        # to avoid useless or duplicate column names in the final GeoDataFrame
         colsToDrop = [
             col
             for col in [elevationFieldname, "raylen25D", "h_over_w", "angles"]
             if col in sensors
         ]
-        _sensors = sensors.drop(columns=colsToDrop) if 0 < len(colsToDrop) else sensors
+        _sensors = sensors.drop(columns=colsToDrop) if colsToDrop else sensors
         osensors = concat([_sensors, orays], axis=1)
         return osensors
 
     @staticmethod
     def encode2D25D(
-        sensors,
-        buildings,
-        elevationFieldname="HAUTEUR",
-        h0=0,
-        rayLength=100.0,
-        nRays=64,
-    ):
-        if elevationFieldname not in buildings:
-            raise Exception(f"{elevationFieldname} is not a relevant field name!")
+        sensors: GeoDataFrame,
+        buildings: GeoDataFrame,
+        elevationFieldname: str = "HAUTEUR",
+        h0: float | str = 0,
+        rayLength: float = 100.0,
+        nRays: int = 64,
+    ) -> GeoDataFrame:
+        SensorBasedEncodingLib.__validate25DParameters(
+            sensors, buildings, elevationFieldname, h0
+        )
 
         irays, orays = SensorBasedEncodingLib.__commons(
             sensors, buildings, rayLength, nRays
         )
 
         # ==================== 2D ====================
-        iraysCopy = irays.copy(deep=True)
-        oraysCopy = orays.copy(deep=True)
-        iraysCopy.rename(columns={"raylen": "raylen2D"}, inplace=True)
-        oraysCopy.rename(columns={"raylen": "raylen2D"}, inplace=True)
+        irays2D = irays.rename(columns={"raylen": "raylen2D"}).copy()
+        orays2D = orays.rename(columns={"raylen": "raylen2D"}).copy()
 
-        idx = oraysCopy.groupby(by=["__VPT_ID__", "__RAY_ID__"]).raylen2D.idxmin()
-        oraysCopy = oraysCopy.loc[idx]
+        # Keep the closest building intersection for each ray.
+        idx = orays2D.groupby(["__VPT_ID__", "__RAY_ID__"])["raylen2D"].idxmin()
+        orays2D = orays2D.loc[idx]
 
-        oraysCopy = DataFrameLib.fillWithMissingRows(
-            oraysCopy, iraysCopy, on=["__VPT_ID__", "__RAY_ID__"]
+        # Restore rays with no building intersection.
+        orays2D = DataFrameLib.fillWithMissingRows(
+            orays2D,
+            irays2D,
+            on=["__VPT_ID__", "__RAY_ID__"],
         )
 
-        oraysCopy.sort_values(by=["__VPT_ID__", "__RAY_ID__"], inplace=True)
-        oraysCopy = oraysCopy.groupby(by="__VPT_ID__").agg({"raylen2D": list})
+        orays2D.sort_values(
+            by=["__VPT_ID__", "__RAY_ID__"],
+            inplace=True,
+        )
+        orays2D = orays2D.groupby(by="__VPT_ID__").agg({"raylen2D": list})
 
-        if "raylen2D" in sensors:
-            osensors = concat([sensors.drop(columns="raylen2D"), oraysCopy], axis=1)
-        else:
-            osensors = concat([sensors, oraysCopy], axis=1)
+        # Avoid duplicating an existing output column.
+        osensors = (
+            sensors.drop(columns="raylen2D")
+            if "raylen2D" in sensors.columns
+            else sensors
+        )
+        osensors = concat(
+            [osensors, orays2D],
+            axis=1,
+        )
 
         # ==================== 25D ====================
-        irays.rename(columns={"raylen": "raylen25D"}, inplace=True)
-        orays.rename(columns={"raylen": "raylen25D"}, inplace=True)
-
-        orays["h_over_w"] = (orays[elevationFieldname] - h0) / orays.raylen25D
-        idx = (
-            orays.sort_values(["h_over_w", "raylen25D"], ascending=[False, True])
-            .groupby(["__VPT_ID__", "__RAY_ID__"], as_index=False)
-            .head(1)
-            .index
+        orays25D = SensorBasedEncodingLib.__encode25D(
+            irays,
+            orays,
+            elevationFieldname,
+            h0,
         )
-        orays = orays.loc[idx]
-        orays["angles"] = arctan2(orays[elevationFieldname], orays.raylen25D)
 
-        orays = DataFrameLib.fillWithMissingRows(
-            orays, irays, on=["__VPT_ID__", "__RAY_ID__"]
-        )
-        idx = orays[orays.h_over_w.isna()].index
-        orays.loc[idx, elevationFieldname] = 0
-        orays.loc[idx, "h_over_w"] = 0
-        orays.loc[idx, "angles"] = 0
-
-        orays.sort_values(by=["__VPT_ID__", "__RAY_ID__"], inplace=True)
-        orays = orays.groupby(by="__VPT_ID__").agg(
-            {
-                elevationFieldname: list,
-                "raylen25D": list,
-                "h_over_w": list,
-                "angles": list,
-            }
-        )
         colsToDrop = [
             col
             for col in [elevationFieldname, "raylen25D", "h_over_w", "angles"]
-            if col in sensors
+            if col in osensors.columns
         ]
-        _osensors = (
-            osensors.drop(columns=colsToDrop) if 0 < len(colsToDrop) else osensors
-        )
-        osensors = concat([_osensors, orays], axis=1)
+
+        if colsToDrop:
+            osensors = osensors.drop(columns=colsToDrop)
+
+        osensors = concat([osensors, orays25D], axis=1)
 
         # ==================== allclose(2D, 25D) ====================
         osensors["allclose"] = osensors.apply(
@@ -367,7 +458,124 @@ class SensorBasedEncodingLib(object):
         plt.show()
         plt.close(fig)
 
+    def test4():
+        import matplotlib.pyplot as plt
+        from shapely import Point
+        from t4gpd.commons.encoding.EncodingIndices import EncodingIndices
+        from t4gpd.commons.encoding.SkymapBuilder import SkymapBuilder
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        dw = 10
+        h0 = 1.1
+        buildings = GeoDataFrameDemos.regularGridOfPlots(2, 2, dw=dw)
+        buildings = buildings.head(3)
+        buildings["HAUTEUR"] = dw
+        sensors = GeoDataFrame(
+            [{"gid": 1, "geometry": Point(0, 0, h0)}], crs=buildings.crs
+        )
+
+        rayLength = 100.0
+        nRays = 360
+        projectionName = "Stereographic"
+        size = dw
+
+        osensors = SensorBasedEncodingLib.encode25D(
+            sensors, buildings, "HAUTEUR", h0, rayLength, nRays
+        )
+        osensors = EncodingIndices.svf_indices(osensors, "angles")
+        print(osensors[["geometry", "svf_geom", "svf_rad"]])
+
+        smaps = SkymapBuilder.build(
+            osensors, "angles", projectionName, size, epsilon=0.1
+        )
+
+        # MAPPING
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.set_title(f"h0 = {h0} m", fontsize=20)
+        buildings.plot(ax=ax, color="lightgrey", edgecolor="black", linewidth=0.1)
+        osensors.plot(ax=ax, color="black", marker="P")
+        osensors.apply(
+            lambda x: ax.annotate(
+                text=f"geom={x.svf_geom:.3f}\n\nrad={x.svf_rad:.3f}",
+                xy=x.geometry.coords[0][:2],
+                color="black",
+                size=12,
+                ha="center",
+                va="center",
+            ),
+            axis=1,
+        )
+        smaps.plot(ax=ax, color="red", linewidth=0.5)
+        ax.axis("off")
+
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+        return osensors
+
+    def test5():
+        import matplotlib.pyplot as plt
+        from geopandas import sjoin
+        from t4gpd.commons.PointsInPolygonsLib import PointsInPolygonsLib
+        from t4gpd.commons.encoding.EncodingIndices import EncodingIndices
+        from t4gpd.commons.encoding.SkymapBuilder import SkymapBuilder
+        from t4gpd.commons.grid.FastGridLib import FastGridLib
+        from t4gpd.demos.GeoDataFrameDemos import GeoDataFrameDemos
+
+        dx, rayLength, nRays = 100, 45, 64
+
+        buildings = GeoDataFrameDemos.ensaNantesBuildings()
+        sensors = FastGridLib.grid(
+            buildings, dx, dy=None, intoPoint=True, withRowsCols=False
+        )
+        sensors = sjoin(
+            sensors,
+            buildings[["HAUTEUR", "geometry"]].rename(columns={"HAUTEUR": "h0"}),
+            how="left",
+            predicate="within",
+        )
+        sensors.drop(columns=["index_right"], inplace=True)
+        sensors["h0"] = sensors["h0"].fillna(0)
+        # sensors = PointsInPolygonsLib.indoors(sensors, buildings)
+
+        h0 = 0.0
+        h0 = "h0"
+        sensors = SensorBasedEncodingLib.encode2D25D(
+            sensors, buildings, "HAUTEUR", h0, rayLength, nRays
+        )
+        sensors = EncodingIndices.svf_indices(sensors, angles="angles")
+
+        projectionName, size = "Stereographic", 10
+        smaps = SkymapBuilder.build(
+            sensors, "angles", projectionName, size, epsilon=0.1
+        )
+
+        # MAPPING
+        fig, ax = plt.subplots(figsize=(10, 10))
+        buildings.plot(ax=ax, color="lightgrey", edgecolor="black", linewidth=0.1)
+        smaps.plot(ax=ax, color="yellow", edgecolor="orange", alpha=0.8)
+        sensors.plot(ax=ax, color="black", marker="+")
+        sensors.apply(
+            lambda x: ax.annotate(
+                text=f"{x.h0:.2f}\n{x.svf_geom:.3f}",
+                xy=x.geometry.coords[0],
+                color="black",
+                size=12,
+                ha="right",
+                va="top",
+            ),
+            axis=1,
+        )
+        ax.axis("off")
+
+        fig.tight_layout()
+        plt.show()
+        plt.close(fig)
+        return sensors
+
 
 # SensorBasedEncodingLib.test()
 # SensorBasedEncodingLib.test2()
 # SensorBasedEncodingLib.test3()
+# osensors = SensorBasedEncodingLib.test4()
+# sensors = SensorBasedEncodingLib.test5()

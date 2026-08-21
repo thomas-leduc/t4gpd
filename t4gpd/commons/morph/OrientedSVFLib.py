@@ -3,7 +3,7 @@ Created on 12 mar. 2025
 
 @author: tleduc
 
-Copyright 2020-2025 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from geopandas import GeoDataFrame
+from pandas import DataFrame
 from numpy import asarray, deg2rad, ndarray, r_
 from t4gpd.commons.IllegalArgumentTypeException import IllegalArgumentTypeException
 from t4gpd.commons.SVFLib import SVFLib
@@ -37,8 +37,8 @@ class OrientedSVFLib(AbstractIndicesLib):
         """
         Constructor
         """
-        if not isinstance(skymaps, GeoDataFrame):
-            raise IllegalArgumentTypeException(skymaps, "GeoDataFrame")
+        if not isinstance(skymaps, DataFrame):
+            raise IllegalArgumentTypeException(skymaps, "DataFrame")
         self.gdf = skymaps
 
         if anglesFieldname not in skymaps:

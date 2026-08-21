@@ -3,7 +3,7 @@ Created on 10 nov. 2023
 
 @author: tleduc
 
-Copyright 2020-2024 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -21,6 +21,7 @@ You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from geopandas import GeoDataFrame
 from numpy import cos, linspace, pi, sin, stack
 from shapely import multilinestrings
 from shapely.affinity import translate
@@ -64,18 +65,25 @@ class PanopticRaysLib(object):
     """
 
     @staticmethod
-    def __get2DMultiLineString(rayLength, nRays):
+    def __get2DMultiLineString(rayLength: float, nRays: int):
         angles = linspace(0, 2.0 * pi, nRays, endpoint=False)
         shootingDirs = rayLength * stack([cos(angles), sin(angles)], axis=1)
         return multilinestrings([[(0, 0), xy] for xy in shootingDirs])
 
     @staticmethod
-    def get2DGeoDataFrame(sensors, rayLength=100.0, nRays=64):
+    def get2DGeoDataFrame(
+        sensors: GeoDataFrame, rayLength: float = 100.0, nRays: int = 64
+    ):
         rays2D = sensors.copy(deep=True)
-        rays2D["viewpoint"] = rays2D.loc[:, "geometry"]
-        rays2D.geometry = rays2D.geometry.apply(lambda geom: geom.centroid)
 
-        if (rayLength in sensors) and (nRays in sensors):
+        # Preserve the original sensor geometry as the ray viewpoint
+        rays2D["viewpoint"] = rays2D.geometry
+
+        # Rays are generated from the sensor centroid
+        rays2D.geometry = rays2D.geometry.centroid
+
+        # Allow ray length and number of rays to be specified per sensor
+        if (rayLength in sensors.columns) and (nRays in sensors.columns):
             rays2D.geometry = rays2D.apply(
                 lambda row: translate(
                     PanopticRaysLib.__get2DMultiLineString(row[rayLength], row[nRays]),
@@ -84,7 +92,7 @@ class PanopticRaysLib(object):
                 ),
                 axis=1,
             )
-        elif rayLength in sensors:
+        elif rayLength in sensors.columns:
             rays2D.geometry = rays2D.apply(
                 lambda row: translate(
                     PanopticRaysLib.__get2DMultiLineString(row[rayLength], nRays),
@@ -93,7 +101,7 @@ class PanopticRaysLib(object):
                 ),
                 axis=1,
             )
-        elif nRays in sensors:
+        elif nRays in sensors.columns:
             rays2D.geometry = rays2D.apply(
                 lambda row: translate(
                     PanopticRaysLib.__get2DMultiLineString(rayLength, row[nRays]),
@@ -108,6 +116,8 @@ class PanopticRaysLib(object):
                 lambda geom: translate(shootingDirs, xoff=geom.x, yoff=geom.y)
             )
 
+        # One row per ray. All sensor attributes, including a possible
+        # sensor-dependent elevation field, are replicated for each ray.
         rays2D = rays2D.explode(index_parts=True)
         """
         rays2D["compass"] = rays2D.geometry.apply(
@@ -119,7 +129,12 @@ class PanopticRaysLib(object):
         return rays2D
 
     @staticmethod
-    def get25DGeoDataFrame(sensors, rayLength=100.0, nRays=64, h0=0.0):
+    def get25DGeoDataFrame(
+        sensors: GeoDataFrame,
+        rayLength: float = 100.0,
+        nRays: int = 64,
+        h0: float = 0.0,
+    ):
         rays25D = PanopticRaysLib.get2DGeoDataFrame(sensors, rayLength, nRays)
         rays25D.geometry = rays25D.apply(
             lambda row: GeomLib.forceZCoordinateToZ0(

@@ -1,9 +1,9 @@
-'''
+"""
 Created on 15 dec. 2020
 
 @author: tleduc
 
-Copyright 2020 Thomas Leduc
+Copyright 2020-2026 Thomas Leduc
 
 This file is part of t4gpd.
 
@@ -19,14 +19,13 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with t4gpd.  If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
+
 import unittest
 
-from shapely.geometry import MultiPoint
-
+from shapely import MultiPoint, Point, Polygon, box
 from t4gpd.commons.ChrystalAlgorithm import ChrystalAlgorithm
-from shapely.geometry import Point, Polygon
-from numpy import pi
+from numpy import pi, sqrt
 
 
 class ChrystalAlgorithmTest(unittest.TestCase):
@@ -37,16 +36,29 @@ class ChrystalAlgorithmTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testRun(self):
+    def testRun1(self):
         inputGeom = MultiPoint([(0, 0), (5, 4), (7, 3), (6, 2)])
 
         circle, center, radius = ChrystalAlgorithm(inputGeom).run()
 
-        self.assertIsInstance(circle, Polygon, 'circle is a Polygon')
-        self.assertIsInstance(center, Point, 'center is a Point')
-        self.assertTrue(center.within(circle), 'center is in circle')
-        self.assertIsInstance(radius, float, 'radius is a float')
-        self.assertAlmostEqual(pi * radius * radius, circle.area, 0, 'Area test')
+        self.assertIsInstance(circle, Polygon, "circle is a Polygon")
+        self.assertIsInstance(center, Point, "center is a Point")
+        self.assertTrue(center.within(circle), "center is in circle")
+        self.assertIsInstance(radius, float, "radius is a float")
+        self.assertAlmostEqual(pi * radius * radius, circle.area, 0, "Area test")
+
+    def testRun2(self):
+        pairs = [
+            [box(0, 0, 0, 0), [Polygon(), Point([0, 0]), 0]],
+            [box(0, 0, 1, 0), [None, Point([0.5, 0]), 0.5]],
+            [box(0, 0, 1, 1), [None, Point([0.5, 0.5]), sqrt(2) / 2]],
+        ]
+        for geom, expected in pairs:
+            actual = ChrystalAlgorithm(geom).run()
+            if expected[0] is not None:
+                self.assertEqual(expected[0], actual[0], "Test geometry")
+            self.assertEqual(expected[1], actual[1], "Test circle")
+            self.assertEqual(expected[2], actual[2], "Test radius")
 
 
 if __name__ == "__main__":
